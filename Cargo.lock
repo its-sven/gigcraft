@@ -1441,6 +1441,7 @@ name = "gigcraft-commands"
 version = "0.1.0"
 dependencies = [
  "gigcraft-chordpro",
+ "gigcraft-formats",
  "gigcraft-model",
  "gigcraft-perform",
  "gigcraft-store",

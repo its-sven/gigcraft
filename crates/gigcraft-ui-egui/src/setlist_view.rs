@@ -266,7 +266,10 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
             }
             "__perform" => perform::start(app, id, None),
             "__copy" => {
-                let text = setlist_text(&d);
+                let text = app
+                    .run("export.setlist_text", json!({"id": sid}))
+                    .and_then(|o| o.result["text"].as_str().map(str::to_string))
+                    .unwrap_or_else(|| setlist_text(&d));
                 ui.ctx().copy_text(text);
                 app.notify("Setlist copied as text.");
             }

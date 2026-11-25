@@ -309,3 +309,48 @@ fn attach_and_detach() {
         .is_err()
     );
 }
+
+#[test]
+fn import_and_export() {
+    let (d, mut e) = engine();
+    let file = d.path().join("Morning Tide.onsong");
+    std::fs::write(
+        &file,
+        "Morning Tide\nThe Demo Band\nKey: D\n\nVerse 1:\nD        G\nWaves on the stones\n",
+    )
+    .expect("write");
+    let out = run(
+        &mut e,
+        "import.file",
+        json!({"path": file.display().to_string()}),
+    )
+    .result;
+    assert_eq!(out["songs_created"], 1);
+    let id = out["first_song"].as_str().expect("id").to_string();
+    let chart = run(&mut e, "song.chart", json!({"id": id})).result;
+    assert_eq!(
+        chart["chart"]["blocks"][0]["lines"][0]["segments"][0]["chord"],
+        "D"
+    );
+    let cho = run(&mut e, "export.chordpro", json!({"id": id})).result;
+    assert!(
+        cho["text"]
+            .as_str()
+            .is_some_and(|t| t.contains("{title: Morning Tide}"))
+    );
+    // One undo step removes the whole import.
+    run(&mut e, "edit.undo", Value::Null);
+    assert_eq!(e.library().songs().len(), 0);
+
+    let ug = run(&mut e, "import.ultimate_guitar", json!({"links": "see https://tabs.ultimate-guitar.com/tab/the-demo-band/harbour-lights-chords-123 and again https://tabs.ultimate-guitar.com/tab/the-demo-band/harbour-lights-chords-123?x=1"})).result;
+    assert_eq!(ug["created"].as_array().map(Vec::len), Some(1));
+    let tsv = run(&mut e, "export.bandhelper_tsv", Value::Null).result;
+    assert_eq!(tsv["songs"], 1);
+    assert!(matches!(
+        e.run(
+            "import.file",
+            &json!({"path": d.path().display().to_string()})
+        ),
+        Err(CommandError::Rejected(_))
+    ));
+}

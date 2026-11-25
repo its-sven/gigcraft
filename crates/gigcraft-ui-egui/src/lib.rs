@@ -96,6 +96,8 @@ pub struct GigCraftApp {
     rig_ui: rig_ui::RigUi,
     /// The rig configuration changed and must be saved.
     rig_dirty: bool,
+    /// Text of the "Paste" window (ChordPro, chords over lyrics, Ultimate Guitar links), if open.
+    paste: Option<String>,
 }
 
 impl GigCraftApp {
@@ -122,6 +124,7 @@ impl GigCraftApp {
             rig: Rig::new(RigConfig::demo()),
             rig_ui: rig_ui::RigUi::default(),
             rig_dirty: false,
+            paste: None,
         };
         if let Some(storage) = cc.storage {
             if let Some(size) = storage
@@ -368,6 +371,28 @@ impl GigCraftApp {
                 }
             });
         });
+        if self.view == View::Songs {
+            ui.horizontal(|ui| {
+                if self.hooks.pick_file.is_some()
+                    && ui
+                        .small_button("Import file…")
+                        .on_hover_text(
+                            "ChordPro, OnSong, OpenSong, text, BandHelper TSV, CSV, Cuebook",
+                        )
+                        .clicked()
+                    && let Some(path) = self.hooks.pick_file.as_ref().and_then(|p| p())
+                {
+                    self.import_path(path);
+                }
+                if ui
+                    .small_button("Paste…")
+                    .on_hover_text("Chords over lyrics, ChordPro or Ultimate Guitar links")
+                    .clicked()
+                {
+                    self.paste = Some(String::new());
+                }
+            });
+        }
         ui.separator();
         let Some(engine) = &self.engine else { return };
         let mut pick_song = None;
@@ -453,6 +478,81 @@ impl GigCraftApp {
         }
     }
 
+    fn import_path(&mut self, path: PathBuf) {
+        if let Some(out) = self.run("import.file", json!({"path": path.display().to_string()})) {
+            self.after_import(&out.result);
+        }
+    }
+
+    fn after_import(&mut self, r: &Value) {
+        let warnings = r["warnings"].as_array().map_or(0, Vec::len);
+        self.notify(format!(
+            "Imported: {} new, {} updated song(s), {} setlist(s){}.",
+            r["songs_created"],
+            r["songs_updated"],
+            r["setlists"],
+            if warnings > 0 {
+                format!(", {warnings} warning(s) – see the songs' notes")
+            } else {
+                String::new()
+            }
+        ));
+        if let Some(id) = r["first_song"].as_str().and_then(|s| s.parse().ok()) {
+            self.song = Some(id);
+            self.view = View::Songs;
+        }
+    }
+
+    fn paste_window(&mut self, ctx: &egui::Context) {
+        let Some(mut text) = self.paste.take() else {
+            return;
+        };
+        let mut open = true;
+        let mut action = None;
+        egui::Window::new("Paste songs")
+            .open(&mut open)
+            .default_width(520.0)
+            .show(ctx, |ui| {
+                ui.label("Paste a song (ChordPro or chords over lyrics) or Ultimate Guitar links.");
+                ui.add(
+                    egui::TextEdit::multiline(&mut text)
+                        .code_editor()
+                        .desired_rows(14)
+                        .desired_width(f32::INFINITY),
+                );
+                ui.horizontal(|ui| {
+                    if ui.button("Import song").clicked() {
+                        action = Some("import.text");
+                    }
+                    if ui.button("Add Ultimate Guitar links").clicked() {
+                        action = Some("import.ultimate_guitar");
+                    }
+                });
+            });
+        match action {
+            Some("import.text") => {
+                if let Some(out) = self.run("import.text", json!({"text": text})) {
+                    self.after_import(&out.result);
+                    return;
+                }
+            }
+            Some(_) => {
+                if let Some(out) = self.run("import.ultimate_guitar", json!({"links": text})) {
+                    let n = out.result["created"].as_array().map_or(0, Vec::len);
+                    self.notify(format!(
+                        "{n} song(s) added with their Ultimate Guitar link ({} already there).",
+                        out.result["skipped_existing"]
+                    ));
+                    return;
+                }
+            }
+            None => {}
+        }
+        if open {
+            self.paste = Some(text);
+        }
+    }
+
     fn welcome(&mut self, ui: &mut egui::Ui) {
         ui.vertical_centered(|ui| {
             ui.add_space(80.0);
@@ -470,6 +570,7 @@ impl eframe::App for GigCraftApp {
         let time = ui.input(|i| i.time);
         rig_ui::pump(self, ui.ctx(), time);
         rig_ui::window(self, ui.ctx(), time);
+        self.paste_window(ui.ctx());
         if self.perform.is_some() {
             perform::show(self, ui);
             return;

@@ -225,6 +225,32 @@ final class LibraryModel {
         return id
     }
 
+    /// Import a picked file (ChordPro, OnSong, OpenSong, text, BandHelper TSV, CSV, Cuebook library).
+    func importFile(_ url: URL) -> String? {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        return importResult(run("import.file", ["path": url.path(percentEncoded: false)]))
+    }
+
+    /// Import pasted text: a song, or Ultimate Guitar links.
+    func importText(_ text: String) -> String? {
+        if text.contains("ultimate-guitar.com/") {
+            guard let out = run("import.ultimate_guitar", ["links": text]), let r = out["result"] as? [String: Any] else { return nil }
+            refreshSongs(); bump()
+            let n = (r["created"] as? [Any])?.count ?? 0
+            return "\(n) song(s) added with their Ultimate Guitar link."
+        }
+        return importResult(run("import.text", ["text": text]))
+    }
+
+    private func importResult(_ out: [String: Any]?) -> String? {
+        guard let r = out?["result"] as? [String: Any] else { return nil }
+        refreshSongs(); refreshSetlists(); bump()
+        if let first = r["first_song"] as? String { selectedSong = first; section = .songs }
+        let warnings = (r["warnings"] as? [Any])?.count ?? 0
+        return "Imported \(r["songs_created"] ?? 0) new, \(r["songs_updated"] ?? 0) updated song(s), \(r["setlists"] ?? 0) setlist(s)" + (warnings > 0 ? ", \(warnings) warning(s)." : ".")
+    }
+
     func trashSong(_ id: String) {
         if run("song.trash", ["id": id]) != nil {
             if selectedSong == id { selectedSong = nil }

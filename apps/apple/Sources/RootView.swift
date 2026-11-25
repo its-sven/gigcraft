@@ -4,6 +4,10 @@ struct RootView: View {
     @Environment(LibraryModel.self) private var model
     @State private var editingSong: String?
     @State private var showingSettings = false
+    @State private var importing = false
+    @State private var pasting = false
+    @State private var pasteText = ""
+    @State private var importMessage: String?
 
     var body: some View {
         @Bindable var model = model
@@ -56,6 +60,12 @@ struct RootView: View {
                 ToolbarItem(placement: .bottomBar) {
                     Button { showingSettings = true } label: { Label("Library", systemImage: "folder") }
                 }
+                ToolbarItem(placement: .bottomBar) {
+                    Menu {
+                        Button("Import file…") { importing = true }
+                        Button("Paste song or links…") { pasteText = UIPasteboard.general.string ?? ""; pasting = true }
+                    } label: { Label("Import", systemImage: "square.and.arrow.down") }
+                }
             }
         } detail: {
             NavigationStack {
@@ -80,6 +90,26 @@ struct RootView: View {
                 .onDisappear { model.refreshSongs() }
         }
         .sheet(isPresented: $showingSettings) { LibrarySettingsView() }
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.data, .text, .json, .commaSeparatedText, .tabSeparatedText]) { result in
+            if case .success(let url) = result { importMessage = model.importFile(url) }
+        }
+        .sheet(isPresented: $pasting) {
+            NavigationStack {
+                TextEditor(text: $pasteText)
+                    .font(.system(.body, design: .monospaced))
+                    .padding()
+                    .navigationTitle("Paste a song or links")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) { Button("Cancel") { pasting = false } }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Import") { importMessage = model.importText(pasteText); pasting = false }.bold()
+                        }
+                    }
+            }
+        }
+        .alert("Import", isPresented: Binding(get: { importMessage != nil }, set: { if !$0 { importMessage = nil } })) {
+            Button("OK") { importMessage = nil }
+        } message: { Text(importMessage ?? "") }
         .fullScreenCover(isPresented: Binding(get: { model.performState != nil }, set: { if !$0 { model.stopPerform() } })) {
             PerformView().environment(model)
         }

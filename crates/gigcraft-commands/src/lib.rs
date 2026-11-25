@@ -9,6 +9,7 @@
 //! to the library's trash, so nothing is ever hard-deleted.
 
 pub mod demo;
+mod import_cmds;
 mod params;
 mod perform_cmds;
 mod setlist_cmds;
@@ -188,6 +189,9 @@ impl Engine {
             }
             _ if id.starts_with("song.") => song_cmds::run(self, id, p, tx),
             _ if id.starts_with("perform.") => perform_cmds::run(self, id, p),
+            _ if id.starts_with("import.") || id.starts_with("export.") => {
+                import_cmds::run(self, id, p, tx)
+            }
             _ if id.starts_with("setlist.") => setlist_cmds::run(self, id, p, tx),
             _ => Err(CommandError::UnknownCommand(id.to_string())),
         }
