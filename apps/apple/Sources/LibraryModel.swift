@@ -54,6 +54,8 @@ final class LibraryModel {
     private(set) var core: Core?
     /// MIDI devices and pedals.
     let rig = RigBridge()
+    /// Following a band leader (live session).
+    let live = LiveFollower()
     private(set) var libraryName = ""
     private(set) var errorMessage: String?
     var section: Section = .songs
@@ -86,6 +88,7 @@ final class LibraryModel {
             guard let self, self.performState != nil else { return }
             self.perform(action)
         }
+        live.onPartChanged = { [weak self] in self?.sendOwnPresetsForLive() }
         if let url = resolveBookmark(), open(url, createDemo: false) {
             applyLaunchSelection()
             return
@@ -394,5 +397,22 @@ final class LibraryModel {
         }
         launchEdit = defaults.bool(forKey: "gcEdit")
         if launchEdit, section == .songs { editRequest = selectedSong }
+        // `-gcJoin 192.168.1.20:8787 -gcName Anna`: follow a live leader.
+        if let address = defaults.string(forKey: "gcJoin") {
+            _ = live.join(address: address, name: defaults.string(forKey: "gcName") ?? "iPad", instrument: defaults.string(forKey: "gcInstrument") ?? "")
+        }
+    }
+}
+
+extension LibraryModel {
+    /// While following a leader: this library's presets for the leader's
+    /// current part, for the devices configured on this device only.
+    func sendOwnPresetsForLive() {
+        guard let snap = live.snapshot, let songId = snap.current?.song,
+              let rec = songRecord(songId),
+              let parts = rec.song["parts"] as? [[String: Any]], parts.indices.contains(snap.part) else { return }
+        let devices = Set(rig.deviceNames)
+        let actions = (parts[snap.part]["actions"] as? [[String: Any]] ?? []).filter { devices.contains($0["device"] as? String ?? "") }
+        if !actions.isEmpty { rig.sendPart(actions) }
     }
 }

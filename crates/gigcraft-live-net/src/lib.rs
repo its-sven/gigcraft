@@ -24,8 +24,7 @@ use std::time::{Duration, Instant};
 use tungstenite::protocol::WebSocketConfig;
 use tungstenite::{Message, WebSocket};
 
-/// The port tried first; another free one is used if it is taken.
-pub const DEFAULT_PORT: u16 = 8787;
+pub use gigcraft_live::{DEFAULT_PORT, ws_url};
 /// Largest WebSocket message accepted (a snapshot carries a chart).
 pub const MAX_MESSAGE_BYTES: usize = 4 << 20;
 /// The band's web viewer, served at `/`.
@@ -351,32 +350,6 @@ impl std::fmt::Debug for LiveClient {
             .field("url", &self.url)
             .finish()
     }
-}
-
-/// `ws://host:port/ws` for what a person types or scans: `http://host:port/`,
-/// `host:port`, or a `ws://` address.
-pub fn ws_url(address: &str) -> Option<String> {
-    let a = address.trim();
-    let rest = a
-        .strip_prefix("http://")
-        .or_else(|| a.strip_prefix("ws://"))
-        .unwrap_or(a);
-    let host = rest.split(['/', '?', '#']).next().unwrap_or("").trim();
-    if host.is_empty() || host.contains(' ') || a.starts_with("https://") || a.starts_with("wss://")
-    {
-        return None;
-    }
-    let has_port = if host.starts_with('[') {
-        host.contains("]:")
-    } else {
-        host.matches(':').count() == 1
-    };
-    let host = if has_port {
-        host.to_string()
-    } else {
-        format!("{host}:{DEFAULT_PORT}")
-    };
-    Some(format!("ws://{host}/ws"))
 }
 
 impl LiveClient {

@@ -8,6 +8,8 @@ struct RootView: View {
     @State private var pasting = false
     @State private var pasteText = ""
     @State private var importMessage: String?
+    @State private var joiningLive = false
+    @State private var showingHelp = false
 
     var body: some View {
         @Bindable var model = model
@@ -61,6 +63,13 @@ struct RootView: View {
                     Button { showingSettings = true } label: { Label("Library", systemImage: "folder") }
                 }
                 ToolbarItem(placement: .bottomBar) {
+                    Button { joiningLive = true } label: { Label("Follow a leader", systemImage: "antenna.radiowaves.left.and.right") }
+                        .accessibilityHint("Follow a band leader's setlist on the same Wi-Fi")
+                }
+                ToolbarItem(placement: .bottomBar) {
+                    Button { showingHelp = true } label: { Label("Help", systemImage: "questionmark.circle") }
+                }
+                ToolbarItem(placement: .bottomBar) {
                     Menu {
                         Button("Import file…") { importing = true }
                         Button("Paste song or links…") { pasteText = UIPasteboard.general.string ?? ""; pasting = true }
@@ -90,6 +99,11 @@ struct RootView: View {
                 .onDisappear { model.refreshSongs() }
         }
         .sheet(isPresented: $showingSettings) { LibrarySettingsView() }
+        .sheet(isPresented: $joiningLive) { JoinLiveView() }
+        .sheet(isPresented: $showingHelp) { HelpView() }
+        .fullScreenCover(isPresented: Binding(get: { model.live.active }, set: { if !$0 { model.live.leave() } })) {
+            FollowView().environment(model)
+        }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.data, .text, .json, .commaSeparatedText, .tabSeparatedText]) { result in
             if case .success(let url) = result { importMessage = model.importFile(url) }
         }

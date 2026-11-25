@@ -26,6 +26,35 @@ pub const MAX_NAME_CHARS: usize = 40;
 /// Cues kept for late joiners and the UI.
 pub const CUE_HISTORY: usize = 20;
 
+/// The port a leader listens on first (transports use another if it is taken).
+pub const DEFAULT_PORT: u16 = 8787;
+
+/// `ws://host:port/ws` for what a person types or scans: `http://host:port/`,
+/// `host:port`, or a `ws://` address.
+pub fn ws_url(address: &str) -> Option<String> {
+    let a = address.trim();
+    let rest = a
+        .strip_prefix("http://")
+        .or_else(|| a.strip_prefix("ws://"))
+        .unwrap_or(a);
+    let host = rest.split(['/', '?', '#']).next().unwrap_or("").trim();
+    if host.is_empty() || host.contains(' ') || a.starts_with("https://") || a.starts_with("wss://")
+    {
+        return None;
+    }
+    let has_port = if host.starts_with('[') {
+        host.contains("]:")
+    } else {
+        host.matches(':').count() == 1
+    };
+    let host = if has_port {
+        host.to_string()
+    } else {
+        format!("{host}:{DEFAULT_PORT}")
+    };
+    Some(format!("ws://{host}/ws"))
+}
+
 /// A transport's id for one connection.
 pub type ConnId = u64;
 

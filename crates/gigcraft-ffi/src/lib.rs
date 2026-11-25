@@ -182,6 +182,108 @@ pub fn preview_chart(source: String) -> Chart {
     convert(gigcraft_chordpro::parse(&source, 0))
 }
 
+/// A ChordPro text transposed by `semitones` (a live leader's chart for a song
+/// this library does not have).
+#[uniffi::export]
+pub fn transposed_chart(source: String, semitones: i8) -> Chart {
+    convert(gigcraft_chordpro::parse(&source, semitones))
+}
+
+/// `ws://host:port/ws` for an address a person typed or scanned, if it is one.
+#[uniffi::export]
+pub fn live_ws_url(address: String) -> Option<String> {
+    gigcraft_live::ws_url(&address)
+}
+
+/// A band member following a live leader (`gigcraft-live`). The WebSocket
+/// stays in Swift; this object keeps the state and makes the messages.
+#[derive(Debug, uniffi::Object)]
+pub struct FollowerCore {
+    inner: Mutex<gigcraft_live::Follower>,
+}
+
+#[uniffi::export]
+impl FollowerCore {
+    #[uniffi::constructor]
+    pub fn new(name: String, instrument: String) -> Arc<Self> {
+        Arc::new(Self {
+            inner: Mutex::new(gigcraft_live::Follower::new(&name, &instrument)),
+        })
+    }
+
+    /// The first message after connecting.
+    pub fn join_message(&self) -> String {
+        self.lock().join()
+    }
+
+    /// Say ready or not; returns the message to send.
+    pub fn set_ready(&self, ready: bool) -> String {
+        self.lock().set_ready(ready)
+    }
+
+    pub fn ready(&self) -> bool {
+        self.lock().ready()
+    }
+
+    pub fn joined(&self) -> bool {
+        self.lock().joined()
+    }
+
+    pub fn leader(&self) -> String {
+        self.lock().leader().to_string()
+    }
+
+    /// A cue to the band; returns the message to send.
+    pub fn cue_message(&self, text: String) -> String {
+        self.lock().cue(&text)
+    }
+
+    /// Text from the leader → events as JSON: `[{"type":"joined","leader":…},
+    /// {"type":"moved","song_changed":…,"part_changed":…}, {"type":"roster"},
+    /// {"type":"cue","from":…,"text":…}, {"type":"ended","reason":…}]`.
+    pub fn on_text(&self, text: String) -> Result<String, CoreError> {
+        use gigcraft_live::FollowerEvent as E;
+        let events = self
+            .lock()
+            .on_text(&text)
+            .map_err(|e| CoreError::new("invalid_message", e))?;
+        let json: Vec<serde_json::Value> = events
+            .into_iter()
+            .map(|e| match e {
+                E::Joined { leader } => serde_json::json!({"type": "joined", "leader": leader}),
+                E::Moved {
+                    song_changed,
+                    part_changed,
+                } => serde_json::json!({"type": "moved", "song_changed": song_changed, "part_changed": part_changed}),
+                E::Roster => serde_json::json!({"type": "roster"}),
+                E::Cue(c) => serde_json::json!({"type": "cue", "from": c.from, "text": c.text}),
+                E::Ended { reason } => serde_json::json!({"type": "ended", "reason": reason}),
+            })
+            .collect();
+        serde_json::to_string(&json).map_err(|e| CoreError::new("internal", e))
+    }
+
+    /// The leader's show (`gigcraft_live::Snapshot` as JSON), if it is running.
+    pub fn snapshot_json(&self) -> Option<String> {
+        self.lock()
+            .snapshot()
+            .and_then(|s| serde_json::to_string(s).ok())
+    }
+
+    /// The band (`[{"id","name","instrument","ready"}]`).
+    pub fn roster_json(&self) -> String {
+        serde_json::to_string(self.lock().roster()).unwrap_or_else(|_| "[]".into())
+    }
+}
+
+impl FollowerCore {
+    fn lock(&self) -> MutexGuard<'_, gigcraft_live::Follower> {
+        self.inner
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+}
+
 /// Semitones to transpose a chart written in `from` so it sounds in `to` (e.g. "G" → "A" = 2).
 #[uniffi::export]
 pub fn semitones_between(from: String, to: String) -> Option<i8> {

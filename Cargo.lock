@@ -1736,6 +1736,7 @@ version = "0.1.0"
 dependencies = [
  "gigcraft-chordpro",
  "gigcraft-commands",
+ "gigcraft-live",
  "gigcraft-model",
  "gigcraft-rig",
  "gigcraft-store",

@@ -8,12 +8,11 @@ rust-version.workspace = true
 repository.workspace = true
 
 [dependencies]
+gigcraft-live.workspace = true
 tungstenite = "0.30"
 if-addrs = "0.15"
 qrcode = { version = "0.15", default-features = false }
 
-[dev-dependencies]
-gigcraft-live.workspace = true
 
 [lints]
 workspace = true

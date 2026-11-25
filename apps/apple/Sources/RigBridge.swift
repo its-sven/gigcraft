@@ -30,6 +30,12 @@ final class RigBridge {
 
     private var nowMs: UInt64 { UInt64(HostClock.nowMs) }
 
+    /// Names of the devices configured on this device ("Play Acoustic"…).
+    var deviceNames: [String] {
+        let cfg = (try? JSONSerialization.jsonObject(with: Data(rig.configJson().utf8))) as? [String: Any] ?? [:]
+        return (cfg["devices"] as? [[String: Any]] ?? []).compactMap { $0["name"] as? String }
+    }
+
     var usesSimulatedPedal: Bool { rig.configJson().contains("\"simulated\":true") }
 
     private func portsChanged(_ list: [MIDIPortInfo]) {
