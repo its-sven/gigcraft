@@ -8,7 +8,13 @@ struct GigCraftApp: App {
         WindowGroup {
             RootView()
                 .environment(model)
-                .task { model.load() }
+                .task {
+                    model.load()
+                    while !Task.isCancelled {
+                        try? await Task.sleep(for: .seconds(3))
+                        model.watchDisk()
+                    }
+                }
         }
     }
 }

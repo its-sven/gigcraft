@@ -57,6 +57,8 @@ pub enum StoreError {
     UnknownSong(SongId),
     #[error("no setlist with id {0}")]
     UnknownSetlist(SetlistId),
+    #[error("{0} was changed by another device or program; reload the library first")]
+    Conflict(PathBuf),
 }
 
 pub type Result<T> = std::result::Result<T, StoreError>;
@@ -74,6 +76,8 @@ struct StoredSong {
     /// Folder name under `songs/`.
     slug: String,
     chart: String,
+    /// Fingerprint of the files on disk when last read or written.
+    disk: u64,
 }
 
 #[derive(Debug, Clone)]
@@ -81,6 +85,7 @@ struct StoredSetlist {
     setlist: Setlist,
     /// File stem under `setlists/`.
     slug: String,
+    disk: u64,
 }
 
 /// An open library: everything is held in memory, saves go straight to disk.
@@ -125,6 +130,22 @@ fn write_toml<T: serde::Serialize>(path: &Path, value: &T) -> Result<()> {
         message: e.to_string(),
     })?;
     write_file(path, text.as_bytes())
+}
+
+/// Fingerprint of the current contents of `paths` (a missing file counts as such).
+fn fingerprint(paths: &[PathBuf]) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    for p in paths {
+        match fs::read(p) {
+            Ok(bytes) => {
+                1u8.hash(&mut h);
+                bytes.hash(&mut h);
+            }
+            Err(_) => 0u8.hash(&mut h),
+        }
+    }
+    h.finish()
 }
 
 fn write_file(path: &Path, bytes: &[u8]) -> Result<()> {
@@ -216,7 +237,16 @@ impl Library {
             } else {
                 String::new()
             };
-            self.songs.insert(song.id, StoredSong { song, slug, chart });
+            let disk = fingerprint(&[path.clone(), chart_path.clone()]);
+            self.songs.insert(
+                song.id,
+                StoredSong {
+                    song,
+                    slug,
+                    chart,
+                    disk,
+                },
+            );
         }
         for (slug, path) in self.list_dir(SETLISTS_DIR, false) {
             let Some(stem) = slug.strip_suffix(".toml") else {
@@ -228,11 +258,13 @@ impl Library {
                     self.problems.push(Problem { path, message: msg });
                 }
                 Ok(setlist) => {
+                    let disk = fingerprint(std::slice::from_ref(&path));
                     self.setlists.insert(
                         setlist.id,
                         StoredSetlist {
                             setlist,
                             slug: stem.to_string(),
+                            disk,
                         },
                     );
                 }
@@ -340,6 +372,12 @@ impl Library {
             }),
         };
         let dir = self.root.join(SONGS_DIR).join(&slug);
+        let files = [dir.join(SONG_FILE), dir.join(CHART_FILE)];
+        if let Some(existing) = self.songs.get(&song.id)
+            && fingerprint(&files) != existing.disk
+        {
+            return Err(StoreError::Conflict(dir));
+        }
         write_toml(&dir.join(SONG_FILE), &song)?;
         let chart_text = match chart {
             Some(text) => {
@@ -352,15 +390,83 @@ impl Library {
                 .map(|s| s.chart.clone())
                 .unwrap_or_default(),
         };
+        let disk = fingerprint(&files);
         self.songs.insert(
             song.id,
             StoredSong {
                 song,
                 slug,
                 chart: chart_text,
+                disk,
             },
         );
         Ok(())
+    }
+
+    /// How many songs and setlists differ between memory and disk (changed,
+    /// added or removed by another device or program). Cheap enough to poll
+    /// every few seconds for libraries of a few thousand songs.
+    #[must_use]
+    pub fn external_changes(&self) -> usize {
+        let mut changed = 0;
+        let songs_dir = self.root.join(SONGS_DIR);
+        let mut seen = BTreeSet::new();
+        if let Ok(entries) = fs::read_dir(&songs_dir) {
+            for e in entries.flatten() {
+                let Some(name) = e.file_name().to_str().map(str::to_string) else {
+                    continue;
+                };
+                if name.starts_with('.') || !e.path().join(SONG_FILE).is_file() {
+                    continue;
+                }
+                seen.insert(name);
+            }
+        }
+        let known: BTreeSet<&str> = self.songs.values().map(|s| s.slug.as_str()).collect();
+        let problem_paths: BTreeSet<&Path> =
+            self.problems.iter().map(|p| p.path.as_path()).collect();
+        for slug in &seen {
+            let dir = songs_dir.join(slug);
+            if !known.contains(slug.as_str())
+                && !problem_paths.contains(dir.join(SONG_FILE).as_path())
+            {
+                changed += 1;
+            }
+        }
+        for s in self.songs.values() {
+            let dir = songs_dir.join(&s.slug);
+            if !seen.contains(&s.slug)
+                || fingerprint(&[dir.join(SONG_FILE), dir.join(CHART_FILE)]) != s.disk
+            {
+                changed += 1;
+            }
+        }
+        let lists_dir = self.root.join(SETLISTS_DIR);
+        let known_lists: BTreeSet<String> = self
+            .setlists
+            .values()
+            .map(|s| format!("{}.toml", s.slug))
+            .collect();
+        if let Ok(entries) = fs::read_dir(&lists_dir) {
+            for e in entries.flatten() {
+                let Some(name) = e.file_name().to_str().map(str::to_string) else {
+                    continue;
+                };
+                if name.ends_with(".toml")
+                    && !name.starts_with('.')
+                    && !known_lists.contains(&name)
+                    && !problem_paths.contains(e.path().as_path())
+                {
+                    changed += 1;
+                }
+            }
+        }
+        for s in self.setlists.values() {
+            if fingerprint(&[lists_dir.join(format!("{}.toml", s.slug))]) != s.disk {
+                changed += 1;
+            }
+        }
+        changed
     }
 
     /// Absolute path of an attachment file of a song, if the name is safe.
@@ -468,9 +574,21 @@ impl Library {
             }
         };
         let path = self.root.join(SETLISTS_DIR).join(format!("{slug}.toml"));
+        if let Some(existing) = self.setlists.get(&setlist.id)
+            && fingerprint(std::slice::from_ref(&path)) != existing.disk
+        {
+            return Err(StoreError::Conflict(path));
+        }
         write_toml(&path, &setlist)?;
-        self.setlists
-            .insert(setlist.id, StoredSetlist { setlist, slug });
+        let disk = fingerprint(std::slice::from_ref(&path));
+        self.setlists.insert(
+            setlist.id,
+            StoredSetlist {
+                setlist,
+                slug,
+                disk,
+            },
+        );
         Ok(())
     }
 

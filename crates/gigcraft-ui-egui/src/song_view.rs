@@ -466,6 +466,14 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
                         return;
                     }
                     draft.issues = issues;
+                } else if app.last_error == Some("conflict") {
+                    // Someone else changed this song: load their version, keep ours in the editor.
+                    app.run("library.reload", Value::Null);
+                    draft.issues = vec![
+                        "This song was changed on another device. The library has been reloaded; \
+                         save again to replace that version with yours, or cancel to keep it."
+                            .into(),
+                    ];
                 }
             }
             Err(msg) => draft.issues = vec![msg],

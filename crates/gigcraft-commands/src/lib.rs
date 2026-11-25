@@ -48,6 +48,7 @@ impl CommandError {
             Self::InvalidParams(_) => "invalid_params",
             Self::NotFound(_) => "not_found",
             Self::Rejected(_) => "rejected",
+            Self::Store(StoreError::Conflict(_)) => "conflict",
             Self::Store(_) => "storage",
         }
     }
@@ -176,6 +177,9 @@ impl Engine {
     ) -> Result<Value, CommandError> {
         match id {
             "library.info" => Ok(self.library_info()),
+            "library.check" => {
+                Ok(serde_json::json!({ "external_changes": self.lib.external_changes() }))
+            }
             "library.reload" => {
                 self.lib.reload()?;
                 self.undo.clear();

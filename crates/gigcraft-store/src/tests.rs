@@ -131,3 +131,48 @@ fn attachments_are_copied_with_safe_names() {
         "folders are refused"
     );
 }
+
+#[test]
+fn external_changes_and_conflicts() {
+    let (_d, mut l) = lib();
+    let mut a = Song::new("Alpha");
+    l.save_song(a.clone(), Some("[C]x")).expect("save");
+    let list = Setlist::new("Gig");
+    l.save_setlist(list.clone()).expect("save");
+    assert_eq!(l.external_changes(), 0);
+
+    // Another device edits the chart and adds a song.
+    fs::write(l.root().join("songs/alpha/chart.cho"), "[D]y").expect("write");
+    let mut other = Library::open(l.root()).expect("open");
+    other.save_song(Song::new("Bravo"), None).expect("save");
+    assert_eq!(l.external_changes(), 2);
+
+    // Saving over the changed song is refused instead of overwriting.
+    a.artist = "Me".into();
+    assert!(matches!(
+        l.save_song(a.clone(), None),
+        Err(StoreError::Conflict(_))
+    ));
+    l.reload().expect("reload");
+    assert_eq!(l.external_changes(), 0);
+    assert_eq!(l.chart(a.id), Some("[D]y"));
+    l.save_song(a, None).expect("save after reload");
+
+    // Setlists too.
+    fs::write(
+        l.root().join("setlists/gig.toml"),
+        toml::to_string(&Setlist {
+            name: "Changed".into(),
+            ..list.clone()
+        })
+        .expect("toml"),
+    )
+    .expect("write");
+    assert_eq!(l.external_changes(), 1);
+    assert!(matches!(l.save_setlist(list), Err(StoreError::Conflict(_))));
+    // A broken file counts once (as a problem), not as an endless change.
+    fs::create_dir_all(l.root().join("songs/broken")).expect("dir");
+    fs::write(l.root().join("songs/broken/song.toml"), "x = [").expect("write");
+    l.reload().expect("reload");
+    assert_eq!(l.external_changes(), 0);
+}

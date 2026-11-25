@@ -96,6 +96,24 @@ impl Core {
         }))
     }
 
+    /// Open the library in `path`, or create an empty one there.
+    #[uniffi::constructor]
+    pub fn open_or_create(path: String, name: String) -> Result<Arc<Self>, CoreError> {
+        let dir = std::path::PathBuf::from(&path);
+        if dir.join(gigcraft_store::MANIFEST).is_file() {
+            return Self::open(path);
+        }
+        let lib = Library::create(&dir, &name).map_err(|e| CoreError::new("storage", e))?;
+        Ok(Arc::new(Self {
+            engine: Mutex::new(Engine::new(lib)),
+        }))
+    }
+
+    /// Folder of the open library.
+    pub fn library_path(&self) -> String {
+        self.lock().library().root().display().to_string()
+    }
+
     pub fn library_name(&self) -> String {
         self.lock().library().info().name.clone()
     }

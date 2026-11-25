@@ -65,18 +65,78 @@ final class LibraryModel {
         URL.documentsDirectory.appending(path: "GigCraft Library", directoryHint: .isDirectory)
     }
 
+    private static let bookmarkKey = "gigcraft.libraryBookmark"
+    private var scopedURL: URL?
+
+    /// Where the library is: a folder the user chose (iCloud Drive, Nextcloud…)
+    /// or the app's own Documents folder.
+    private(set) var libraryLocation = ""
+
     func load() {
         guard core == nil else { return }
+        if let url = resolveBookmark(), open(url, createDemo: false) {
+            applyLaunchSelection()
+            return
+        }
+        _ = open(Self.libraryURL, createDemo: true)
+        applyLaunchSelection()
+    }
+
+    /// Open (or create) the library in `url`.
+    @discardableResult
+    private func open(_ url: URL, createDemo: Bool) -> Bool {
         do {
-            let core = try Core.openOrCreateDemo(path: Self.libraryURL.path(percentEncoded: false), name: "GigCraft Demo")
+            let path = url.path(percentEncoded: false)
+            let core = createDemo ? try Core.openOrCreateDemo(path: path, name: "GigCraft Demo")
+                                  : try Core.openOrCreate(path: path, name: url.lastPathComponent)
             self.core = core
             libraryName = core.libraryName()
+            libraryLocation = path
+            selectedSong = nil
+            selectedSetlist = nil
+            errorMessage = nil
             refreshSongs()
             refreshSetlists()
-            applyLaunchSelection()
+            bump()
+            return true
         } catch {
             errorMessage = "\(error)"
+            return false
         }
+    }
+
+    /// Use a folder picked in the Files app as the library (kept across launches).
+    func useFolder(_ url: URL) {
+        scopedURL?.stopAccessingSecurityScopedResource()
+        guard url.startAccessingSecurityScopedResource() else {
+            errorMessage = "No access to that folder."
+            return
+        }
+        scopedURL = url
+        if let data = try? url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
+            UserDefaults.standard.set(data, forKey: Self.bookmarkKey)
+        }
+        open(url, createDemo: false)
+    }
+
+    /// Go back to the library in the app's Documents folder.
+    func useAppFolder() {
+        scopedURL?.stopAccessingSecurityScopedResource()
+        scopedURL = nil
+        UserDefaults.standard.removeObject(forKey: Self.bookmarkKey)
+        open(Self.libraryURL, createDemo: true)
+    }
+
+    private func resolveBookmark() -> URL? {
+        guard let data = UserDefaults.standard.data(forKey: Self.bookmarkKey) else { return nil }
+        var stale = false
+        guard let url = try? URL(resolvingBookmarkData: data, options: [], relativeTo: nil, bookmarkDataIsStale: &stale),
+              url.startAccessingSecurityScopedResource() else { return nil }
+        scopedURL = url
+        if stale, let fresh = try? url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) {
+            UserDefaults.standard.set(fresh, forKey: Self.bookmarkKey)
+        }
+        return url
     }
 
     func refreshSongs() {
@@ -198,6 +258,25 @@ final class LibraryModel {
     private(set) var revision = 0
 
     func bump() { revision += 1 }
+
+    /// True while an editor is open; outside changes are then loaded afterwards.
+    var isEditing = false
+
+    /// Pick up changes made by another device (iCloud Drive, Nextcloud…) or the CLI.
+    /// Not while performing or editing.
+    func watchDisk() {
+        guard core != nil, performState == nil, !isEditing else { return }
+        guard let out = run("library.check"), let r = out["result"] as? [String: Any],
+              let n = r["external_changes"] as? Int, n > 0 else { return }
+        reload()
+    }
+
+    func reload() {
+        run("library.reload")
+        refreshSongs()
+        refreshSetlists()
+        bump()
+    }
 
     /// Semitones from the song's key to the gig key.
     func semitones(songKey: String?, gigKey: String?) -> Int8 {

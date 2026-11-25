@@ -95,7 +95,11 @@ struct SongEditorView: View {
             ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             ToolbarItem(placement: .confirmationAction) { Button("Save") { save() }.bold() }
         }
-        .onAppear(perform: load)
+        .onAppear {
+            model.isEditing = true
+            load()
+        }
+        .onDisappear { model.isEditing = false }
     }
 
     private func field(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default, prompt: String? = nil) -> some View {
@@ -150,7 +154,14 @@ struct SongEditorView: View {
             return ["name": p.name, "notes": p.notes, "actions": actions]
         }
         guard let result = model.updateSong(songId, fields: fields, chart: chart) else {
-            issues = [model.errorMessage ?? "Could not save"]
+            let message = model.errorMessage ?? "Could not save"
+            if message.contains("changed by another device") {
+                // Load the other version; ours stays in the editor and wins on the next save.
+                model.reload()
+                issues = ["This song was changed on another device. The library has been reloaded; save again to replace that version with yours, or cancel to keep it."]
+            } else {
+                issues = [message]
+            }
             return
         }
         if result.isEmpty { dismiss() } else { issues = result }

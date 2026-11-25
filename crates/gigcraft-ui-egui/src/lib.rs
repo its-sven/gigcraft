@@ -75,6 +75,12 @@ pub struct GigCraftApp {
     setlist_ui: setlist_view::State,
     perform: Option<perform::PerformUi>,
     keymap: Keymap,
+    /// Code of the last failed command (e.g. "conflict").
+    last_error: Option<&'static str>,
+    /// When the library folder was last checked for outside changes (egui time).
+    last_disk_check: f64,
+    /// Outside changes seen while editing (reload waits until the editor closes).
+    pending_reload: bool,
 }
 
 impl GigCraftApp {
@@ -95,6 +101,9 @@ impl GigCraftApp {
             setlist_ui: setlist_view::State::default(),
             perform: None,
             keymap: Keymap::default(),
+            last_error: None,
+            last_disk_check: 0.0,
+            pending_reload: false,
         };
         if let Some(storage) = cc.storage {
             if let Some(size) = storage
@@ -210,10 +219,43 @@ impl GigCraftApp {
     pub(crate) fn run(&mut self, id: &str, params: Value) -> Option<Outcome> {
         let engine = self.engine.as_mut()?;
         match engine.run(id, &params) {
-            Ok(out) => Some(out),
+            Ok(out) => {
+                self.last_error = None;
+                Some(out)
+            }
             Err(e) => {
+                self.last_error = Some(e.code());
                 self.message = Some((e.to_string(), true));
                 None
+            }
+        }
+    }
+
+    /// Every few seconds: pick up changes made by another device or program
+    /// (iCloud Drive, Nextcloud, Syncthing, the CLI). Not while performing;
+    /// while editing, only after the editor is closed.
+    fn watch_disk(&mut self, now: f64) {
+        if self.engine.is_none() || self.perform.is_some() || now - self.last_disk_check < 3.0 {
+            return;
+        }
+        self.last_disk_check = now;
+        let changed = self
+            .engine
+            .as_mut()
+            .and_then(|e| e.run("library.check", &Value::Null).ok())
+            .and_then(|o| o.result["external_changes"].as_u64())
+            .unwrap_or(0);
+        if changed > 0 || self.pending_reload {
+            if self.song_draft.is_some() || self.setlist_ui.editing {
+                self.pending_reload = true;
+                return;
+            }
+            self.pending_reload = false;
+            if self.run("library.reload", Value::Null).is_some() {
+                self.chart_cache = chart_view::Cache::default();
+                self.notify(format!(
+                    "Updated from disk ({changed} change(s) from another device or program)."
+                ));
             }
         }
     }
@@ -397,6 +439,10 @@ impl eframe::App for GigCraftApp {
             perform::show(self, ui);
             return;
         }
+        let now = ui.input(|i| i.time);
+        self.watch_disk(now);
+        ui.ctx()
+            .request_repaint_after(std::time::Duration::from_secs(3));
         let typing = ui.ctx().memory(|m| m.focused().is_some());
         let (undo, redo) = ui.input(|i| {
             let cmd = i.modifiers.command;

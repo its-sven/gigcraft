@@ -3,6 +3,7 @@ import SwiftUI
 struct RootView: View {
     @Environment(LibraryModel.self) private var model
     @State private var editingSong: String?
+    @State private var showingSettings = false
 
     var body: some View {
         @Bindable var model = model
@@ -52,6 +53,9 @@ struct RootView: View {
                 ToolbarItem(placement: .bottomBar) {
                     Button("Undo") { model.undo() }
                 }
+                ToolbarItem(placement: .bottomBar) {
+                    Button { showingSettings = true } label: { Label("Library", systemImage: "folder") }
+                }
             }
         } detail: {
             NavigationStack {
@@ -75,6 +79,7 @@ struct RootView: View {
             NavigationStack { SongEditorView(songId: target.id) }
                 .onDisappear { model.refreshSongs() }
         }
+        .sheet(isPresented: $showingSettings) { LibrarySettingsView() }
         .fullScreenCover(isPresented: Binding(get: { model.performState != nil }, set: { if !$0 { model.stopPerform() } })) {
             PerformView().environment(model)
         }
@@ -91,3 +96,32 @@ struct RootView: View {
 }
 
 struct EditTarget: Identifiable { let id: String }
+
+/// Where the library lives; sync between devices = the same folder in iCloud Drive or Nextcloud.
+struct LibrarySettingsView: View {
+    @Environment(LibraryModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+    @State private var picking = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Library") {
+                    LabeledContent("Name", value: model.libraryName)
+                    Text(model.libraryLocation).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
+                }
+                Section {
+                    Button("Choose a folder…") { picking = true }
+                    Button("Use the app's own folder") { model.useAppFolder(); dismiss() }
+                } footer: {
+                    Text("To use the same songs on iPhone, iPad and computer, pick the same folder in iCloud Drive, Nextcloud or another Files provider on each device. An empty folder becomes a new library. Changes from other devices appear within a few seconds; if both change the same song, the second save asks first.")
+                }
+            }
+            .navigationTitle("Library")
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            .fileImporter(isPresented: $picking, allowedContentTypes: [.folder]) { result in
+                if case .success(let url) = result { model.useFolder(url); dismiss() }
+            }
+        }
+    }
+}
