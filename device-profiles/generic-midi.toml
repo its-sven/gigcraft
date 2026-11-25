@@ -1,0 +1,31 @@
+# GigCraft device profile: a generic MIDI device.
+#
+# Device profiles tell GigCraft how a device numbers and switches its
+# presets. Copy this file, change it for your device and send a pull request.
+#
+#   schema        format version of this file (1)
+#   id            unique, lowercase letters, digits and dashes
+#   name          shown in the app
+#   manufacturer  maker of the device
+#   models        model names this profile covers (optional)
+#   preset_count  number of presets the device has (1–16384)
+#   numbering     "zero" or "one": how the device shows Program 0 (as 0 or as 1).
+#                 Only for display: songs always store the wire value 0–127.
+#   switching     "program_change" (bank select + Program Change) or
+#                 "play_acoustic_stepping" (GigCraft's TC-Helicon Play driver)
+#   [identity]    optional: how the device answers the universal identity request
+#     manufacturer  manufacturer ID bytes (one byte, or three starting with 0x00)
+#     [[identity.family]]  family code (14 bits) and the model it means
+#   notes         quirks, tips and sources
+
+schema = 1
+id = "generic-midi"
+name = "Generic MIDI device"
+manufacturer = "Any"
+preset_count = 128
+numbering = "zero"
+switching = "program_change"
+notes = """
+Any device that selects a preset with Program Change (and, for more than \
+128 presets, Bank Select MSB/LSB first). Program numbers are shown as sent \
+(0–127); use a profile with numbering = "one" for devices that count from 1."""
