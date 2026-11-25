@@ -2,7 +2,7 @@
 
 **An open-source app for gigging musicians and bands:** setlists, chord charts and PDFs, backing tracks and click, MIDI preset control for your rig, band sync on stage, and gig organisation. On iPad, iPhone, Mac, Windows, Linux and in the browser. Offline, no account, your data in readable files.
 
-> Status: **Phase 1 (solo on stage) – first complete version, not yet tested on a real gig.** Library, editors, setlists, perform mode with page turners and MIDI footswitches, pedal presets (TC-Helicon Play Acoustic, any MIDI device), PDF charts, import/export and folder sync work on the desktop and on iPad/iPhone, in English and German. See the [roadmap](docs/plan/roadmap.md).
+> Status: **Phase 1 (solo on stage) done, Phase 2 (band on stage) under way – not yet tested on a real gig.** Library, editors, setlists, perform mode, pedal presets, PDF charts, import/export and folder sync on the desktop and iPad/iPhone; live sessions (the band follows on phones, tablets or other GigCraft apps), backing tracks with click on the desktop; English and German, with help and tooltips. See the [roadmap](docs/plan/roadmap.md).
 
 ## Screenshots
 
@@ -24,11 +24,23 @@
 |---|---|
 | <img src="docs/img/desktop-rig.png" alt="Desktop rig window: simulated Play Acoustic with its current preset, test buttons, MIDI Learn buttons for every stage action" width="480"> | |
 
+| Live: the band follows on a phone (browser, no app) | Live: another GigCraft follows with its own chart |
+|---|---|
+| <img src="docs/img/phone-live-viewer.png" alt="Phone browser following the leader: song, key, gig note, chords, up next, Cue and Ready buttons" width="300"> | <img src="docs/img/desktop-live-follower.png" alt="Desktop app following a leader: current song with chart, Ready, quick cues, leave" width="480"> |
+
+| Help (F1) and tooltips everywhere | |
+|---|---|
+| <img src="docs/img/desktop-help.png" alt="Help window with topics: getting started, songs and charts, setlists, on stage, MIDI devices, playing together, import, keyboard shortcuts, language" width="480"> | |
+
 **Deutsch** – the interface follows the system language, or pick one in the app:
 
 | Auftritt auf dem iPad | Setliste bearbeiten (Desktop) |
 |---|---|
 | <img src="docs/img/ipad-perform-de.png" alt="Perform mode on iPad in German: Tonart G, auf der Bühne, Zurück/Weiter, Als Nächstes" width="400"> | <img src="docs/img/desktop-setlist-editor-de.png" alt="Desktop setlist editor in German: Hoch, Runter, Ins nächste Set, Notiz für diesen Gig" width="480"> |
+
+| iPad folgt dem Bandleader | Hilfe |
+|---|---|
+| <img src="docs/img/ipad-follow-de.png" alt="iPad following a live leader in German: Leader, chart, Als Nächstes, Cue, Bereit" width="400"> | <img src="docs/img/desktop-help-de.png" alt="Help window in German: Erste Schritte" width="480"> |
 
 ## What works today
 
@@ -39,6 +51,9 @@
 - **Rig**: song parts send presets to MIDI devices; the TC-Helicon Play Acoustic/Electric is driven by stepping with its own buttons when it ignores Program Change (read-only, never writes settings); a simulated pedal for rehearsing without hardware.
 - **Import/export**: ChordPro, OnSong, OpenSong, chords-over-lyrics text, BandHelper TSV, CSV, Cuebook libraries, Ultimate Guitar links and playlists; ChordPro, TSV and setlist text out.
 - **Sync** through any shared folder (iCloud Drive, Nextcloud, Syncthing): changes from other devices appear within seconds; conflicting saves are caught instead of overwriting.
+- **Live sessions**: one device leads the show; band members follow on the same Wi-Fi – in any browser via QR code, or in GigCraft (desktop, iPad, iPhone) with their own chart and their own pedal presets. Ready status and cues ("last chorus") for everyone. Nothing leaves the local network.
+- **Backing tracks and click** (desktop): audio files per song with volume, pan, mute and output pair (click to the in-ears on outputs 3/4), click with count-in, Play/Stop in perform mode; the next song loads in the background.
+- **Help and tooltips**: a help window (F1) and a tooltip on every control on the desktop, a help sheet on iOS.
 - **Languages and accessibility**: English and German (more languages are one catalog file each); screen readers on the desktop (AccessKit: VoiceOver, Narrator, Orca) and VoiceOver on iOS, where a chart line is read as one sentence with its chords after it; larger text sizes scale the charts.
 - **Automation**: every action is a command – from the CLI, as MCP tools for AI agents, or from the apps. Undo/redo for everything; deleting moves to the library's trash.
 
@@ -61,6 +76,8 @@ cargo run -p gigcraft-desktop -- ~/GigCraft-Demo --song "Harbour Lights"
 cargo run -p gigcraft-desktop -- ~/GigCraft-Demo --setlist "Demo Gig" --perform   # stage view
 cargo run -p gigcraft-desktop -- ~/GigCraft-Demo --rig                            # MIDI devices
 cargo run -p gigcraft-desktop -- ~/GigCraft-Demo --lang de                        # in German
+cargo run -p gigcraft-desktop -- ~/GigCraft-Demo --setlist "Demo Gig" --perform --live  # lead the band
+cargo run -p gigcraft-desktop -- ~/GigCraft-Demo --join 192.168.1.20:8787         # follow a leader
 
 # MCP server for AI agents (stdio)
 cargo run -p gigcraft-cli -- mcp -l ~/GigCraft-Demo
@@ -89,6 +106,8 @@ cargo xtask ci        # format, clippy, tests, layering check
 | `crates/gigcraft-perform` | perform mode: running order, stage actions, keymap |
 | `crates/gigcraft-midi` | MIDI parser, device profiles, Play Acoustic driver, MIDI Learn (no I/O) |
 | `crates/gigcraft-rig` | presets → devices, MIDI input → actions, simulated pedal (no I/O) |
+| `crates/gigcraft-live` | live sessions: protocol, leader and follower state (no I/O) |
+| `crates/gigcraft-live-net` | live sessions on the LAN: WebSocket server and client, the band's web viewer, QR codes |
 | `crates/gigcraft-audio` | backing-track engine: multitrack, buses, click/count-in, fades, regions (no I/O; [craft-audio](https://github.com/storytold/craft-libs) decoding) |
 | `crates/gigcraft-audio-cpal` | desktop audio host: runs the engine on an output device ([cpal](https://github.com/RustAudio/cpal), Apache-2.0) |
 | `crates/gigcraft-formats` | import/export (ChordPro, OnSong, OpenSong, BandHelper TSV, CSV, Cuebook, Ultimate Guitar) |

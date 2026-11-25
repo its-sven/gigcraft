@@ -1061,6 +1061,16 @@
         }
       }
     },
+    "On a shared venue Wi-Fi, better use the band's own router or a phone hotspot – no internet needed.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im geteilten WLAN einer Location nutzt ihr besser einen eigenen Router oder einen Handy-Hotspot – Internet braucht es nicht."
+          }
+        }
+      }
+    },
     "On first start you get a demo library to look around. Library (folder icon) lets you pick your own folder, also one in iCloud Drive or Nextcloud.": {
       "localizations": {
         "de": {

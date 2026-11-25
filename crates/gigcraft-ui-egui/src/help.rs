@@ -307,6 +307,9 @@ fn page(app: &mut GigCraftApp, ui: &mut egui::Ui, topic: Topic) {
                     tr!(
                         "Nothing leaves your network. Anyone on the network can follow, but only the leader moves the show."
                     ),
+                    tr!(
+                        "On a shared venue Wi-Fi, better use the band's own router or a phone hotspot – no internet needed."
+                    ),
                 ],
             );
         }

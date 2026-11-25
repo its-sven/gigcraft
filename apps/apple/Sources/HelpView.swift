@@ -46,6 +46,7 @@ struct HelpView: View {
             "Follow (antenna icon) and enter that address: you see the leader's song with your own chart, and your own presets go to your devices.",
             "Ready tells the leader you are ready for this song; Cue sends a short message to every screen.",
             "Without the app, band members can open the address in Safari.",
+            "On a shared venue Wi-Fi, better use the band's own router or a phone hotspot – no internet needed.",
         ]),
         Topic(id: 6, title: "Import, sync and safety", icon: "arrow.triangle.2.circlepath", points: [
             "Import reads ChordPro, OnSong, OpenSong, text with chords over the lyrics, BandHelper exports, CSV and Cuebook libraries; paste takes a song or Ultimate Guitar links.",
