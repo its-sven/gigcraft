@@ -188,6 +188,98 @@ pub fn semitones_between(from: String, to: String) -> Option<i8> {
     gigcraft_chordpro::semitones_between(&from, &to)
 }
 
+/// The rig (MIDI devices, pedals, MIDI Learn) for the iOS app. CoreMIDI stays
+/// in Swift; this object only turns events into outputs. Every method returns
+/// the outputs as JSON: `[{"type":"send","port":…,"bytes":[…]}, {"type":"notice",…},
+/// {"type":"action","action":"next"}, {"type":"learned",…}, {"type":"config_changed"}]`.
+#[derive(Debug, uniffi::Object)]
+pub struct RigCore {
+    rig: Mutex<gigcraft_rig::Rig>,
+}
+
+fn outs_json(outs: Vec<gigcraft_rig::RigOut>) -> String {
+    serde_json::to_string(&outs).unwrap_or_else(|_| "[]".into())
+}
+
+#[uniffi::export]
+impl RigCore {
+    /// A rig from its saved JSON configuration; an empty or invalid one gives the demo rig (simulated pedal).
+    #[uniffi::constructor]
+    pub fn new(config_json: String) -> Arc<Self> {
+        let cfg = serde_json::from_str::<gigcraft_rig::RigConfig>(&config_json)
+            .unwrap_or_else(|_| gigcraft_rig::RigConfig::demo());
+        Arc::new(Self {
+            rig: Mutex::new(gigcraft_rig::Rig::new(cfg)),
+        })
+    }
+
+    pub fn config_json(&self) -> String {
+        serde_json::to_string(self.lock().config()).unwrap_or_default()
+    }
+
+    pub fn set_config_json(&self, config_json: String, now_ms: u64) -> Result<String, CoreError> {
+        let cfg =
+            serde_json::from_str(&config_json).map_err(|e| CoreError::new("invalid_params", e))?;
+        Ok(outs_json(self.lock().set_config(cfg, now_ms)))
+    }
+
+    pub fn ports_changed(&self, outputs: Vec<String>, now_ms: u64) -> String {
+        outs_json(self.lock().ports_changed(&outputs, now_ms))
+    }
+
+    /// `actions_json`: the `actions` array of a `send_part` perform effect.
+    pub fn send_part(&self, actions_json: String, now_ms: u64) -> String {
+        let actions: Vec<gigcraft_model::MidiAction> =
+            serde_json::from_str(&actions_json).unwrap_or_default();
+        outs_json(self.lock().send_part(&actions, now_ms))
+    }
+
+    pub fn on_input(&self, port: String, bytes: Vec<u8>, now_ms: u64) -> String {
+        outs_json(self.lock().on_input(&port, &bytes, now_ms))
+    }
+
+    pub fn tick(&self, now_ms: u64) -> String {
+        outs_json(self.lock().tick(now_ms))
+    }
+
+    pub fn next_deadline(&self) -> Option<u64> {
+        self.lock().next_deadline()
+    }
+
+    pub fn panic(&self, now_ms: u64) -> String {
+        outs_json(self.lock().panic(now_ms))
+    }
+
+    pub fn learn(&self, on: bool) {
+        self.lock().learn(on);
+    }
+
+    /// Map a learned trigger (JSON from a `learned` output) to an action ("next", "previous"…).
+    pub fn add_mapping(&self, trigger_json: String, action: String) -> Result<String, CoreError> {
+        let trigger =
+            serde_json::from_str(&trigger_json).map_err(|e| CoreError::new("invalid_params", e))?;
+        let action = serde_json::from_value(serde_json::Value::String(action))
+            .map_err(|e| CoreError::new("invalid_params", e))?;
+        Ok(outs_json(self.lock().add_mapping(gigcraft_rig::Mapping {
+            trigger,
+            action,
+            port: None,
+        })))
+    }
+
+    pub fn status_json(&self) -> String {
+        serde_json::to_string(&self.lock().status()).unwrap_or_else(|_| "[]".into())
+    }
+}
+
+impl RigCore {
+    fn lock(&self) -> MutexGuard<'_, gigcraft_rig::Rig> {
+        self.rig
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+}
+
 fn convert(parsed: gigcraft_chordpro::Parsed) -> Chart {
     use gigcraft_chordpro::{BlockKind, ChartLine as L};
     let blocks = parsed

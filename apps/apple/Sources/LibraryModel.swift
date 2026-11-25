@@ -46,6 +46,8 @@ final class LibraryModel {
     }
 
     private(set) var core: Core?
+    /// MIDI devices and pedals.
+    let rig = RigBridge()
     private(set) var libraryName = ""
     private(set) var errorMessage: String?
     var section: Section = .songs
@@ -74,6 +76,10 @@ final class LibraryModel {
 
     func load() {
         guard core == nil else { return }
+        rig.onAction = { [weak self] action in
+            guard let self, self.performState != nil else { return }
+            self.perform(action)
+        }
         if let url = resolveBookmark(), open(url, createDemo: false) {
             applyLaunchSelection()
             return
@@ -347,7 +353,11 @@ final class LibraryModel {
     }
 
     private func apply(_ result: [String: Any]) {
+        for effect in result["effects"] as? [[String: Any]] ?? [] where effect["type"] as? String == "panic" {
+            rig.panic()
+        }
         for effect in result["effects"] as? [[String: Any]] ?? [] where effect["type"] as? String == "send_part" {
+            rig.sendPart(effect["actions"] as? [[String: Any]] ?? [])
             lastSent = (effect["actions"] as? [[String: Any]] ?? []).map { a in
                 "\(a["device"] as? String ?? ""): program \(a["program"].map { "\($0)" } ?? "?"), ch \(a["channel"].map { "\($0)" } ?? "?")"
             }

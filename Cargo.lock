@@ -1468,6 +1468,7 @@ dependencies = [
  "gigcraft-chordpro",
  "gigcraft-commands",
  "gigcraft-model",
+ "gigcraft-rig",
  "gigcraft-store",
  "serde_json",
  "tempfile",

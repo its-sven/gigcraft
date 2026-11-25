@@ -147,11 +147,39 @@ struct LibrarySettingsView: View {
                     Text("To use the same songs on iPhone, iPad and computer, pick the same folder in iCloud Drive, Nextcloud or another Files provider on each device. An empty folder becomes a new library. Changes from other devices appear within a few seconds; if both change the same song, the second save asks first.")
                 }
             }
+            .safeAreaInset(edge: .bottom) { RigSection().padding() }
             .navigationTitle("Library")
             .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
             .fileImporter(isPresented: $picking, allowedContentTypes: [.folder]) { result in
                 if case .success(let url) = result { model.useFolder(url); dismiss() }
             }
         }
+    }
+}
+
+/// MIDI devices and footswitches (simulated pedal, status, MIDI Learn).
+struct RigSection: View {
+    @Environment(LibraryModel.self) private var model
+
+    var body: some View {
+        let rig = model.rig
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Rig").font(.headline)
+            ForEach(rig.status, id: \.self) { Text($0).font(.callout) }
+            Toggle("Simulated Play Acoustic (no hardware)", isOn: Binding(get: { rig.usesSimulatedPedal }, set: { rig.setSimulated($0) }))
+            HStack {
+                ForEach(["next", "previous", "next_song", "previous_song"], id: \.self) { action in
+                    Button(rig.learningFor == action ? "Press the switch…" : "Learn \(action.replacingOccurrences(of: "_", with: " "))") {
+                        rig.learn(rig.learningFor == action ? nil : action)
+                    }
+                    .buttonStyle(.bordered)
+                    .font(.caption)
+                }
+            }
+            if let last = rig.log.last { Text(last).font(.caption).foregroundStyle(.secondary) }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(.background.secondary, in: .rect(cornerRadius: 12))
     }
 }

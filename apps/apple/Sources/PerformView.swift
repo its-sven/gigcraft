@@ -145,7 +145,9 @@ struct PerformView: View {
                 .buttonStyle(.borderedProminent)
             Text(nextText).font(.system(size: size * 0.8)).lineLimit(1)
             Spacer()
-            if !model.lastSent.isEmpty {
+            if !model.rig.status.isEmpty {
+                Text(model.rig.status.joined(separator: "   ")).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            } else if !model.lastSent.isEmpty {
                 Text("Presets: " + model.lastSent.joined(separator: "; ")).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
         }
