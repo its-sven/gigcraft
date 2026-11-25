@@ -183,3 +183,50 @@
 	no device with this name in the rig settings	kein Gerät mit diesem Namen in den Rig-Einstellungen
 	only preset changes are supported for this device	für dieses Gerät werden nur Presetwechsel unterstützt
 	no MIDI port; preset not sent	kein MIDI-Port; Preset nicht gesendet
+
+# Live
+	Live…	Live…
+	Play together: the band follows your setlist	Zusammen spielen: die Band folgt deiner Setliste
+	Live: play together	Live: zusammen spielen
+	Live sessions need the desktop app.	Live-Sitzungen brauchen die Desktop-App.
+	Your name	Dein Name
+	Instrument	Instrument
+	Lead the band	Band anführen
+	Band members follow your setlist on their phones, tablets or computers – on the same Wi-Fi, no app needed.	Die Band folgt deiner Setliste auf Handy, Tablet oder Computer – im selben WLAN, ohne App.
+	Start live session	Live-Sitzung starten
+	Follow a leader	Einem Leader folgen
+	Join	Beitreten
+	You see the leader's song with your own chart and key, and your own presets are sent for your devices.	Du siehst den Song des Leaders mit deinem eigenen Chart und deiner Tonart, und deine eigenen Presets gehen an deine Geräte.
+	Band members open this address on the same Wi-Fi:	Die Band öffnet diese Adresse im selben WLAN:
+	No network found. Connect to a Wi-Fi or a router.	Kein Netzwerk gefunden. Verbinde dich mit einem WLAN oder Router.
+	Other GigCraft apps: Live…, then Join with this address.	Andere GigCraft-Apps: Live…, dann Beitreten mit dieser Adresse.
+	QR code of the address	QR-Code der Adresse
+@plural	{n} band member|{n} band members	{n} Bandmitglied|{n} Bandmitglieder
+	End live session	Live-Sitzung beenden
+	Following {address}	Folge {address}
+	Following {leader}	Folge {leader}
+	Leave	Verlassen
+	Cues	Cues
+	Cue to the band	Nachricht an die Band
+	Send	Senden
+	Band leader	Bandleader
+	Live session started	Live-Sitzung gestartet
+	Could not start: {error}	Start fehlgeschlagen: {error}
+	The leader ended the session	Der Leader hat die Sitzung beendet
+	Session ended: {reason}	Sitzung beendet: {reason}
+	{name} joined	{name} ist dabei
+	{name} left	{name} ist gegangen
+	connected	verbunden
+	connecting…	verbinde…
+	disconnected: {reason}	getrennt: {reason}
+	Live: {members} in the band, {ready} ready	Live: {members} in der Band, {ready} bereit
+	Leader: {name}	Leader: {name}
+	Ready	Bereit
+	Waiting for the show to start…	Warte auf den Start der Show…
+	{minutes} min	{minutes} min
+	Last chorus	Letzter Refrain
+	Chorus again	Refrain nochmal
+	Extend solo	Solo verlängern
+	Slower	Langsamer
+	Faster	Schneller
+	Stop after this bar	Stopp nach dem Takt

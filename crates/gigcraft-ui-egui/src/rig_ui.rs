@@ -98,7 +98,7 @@ pub(crate) fn handle(app: &mut GigCraftApp, outs: Vec<RigOut>, time: f64) {
                     });
                     log(
                         app,
-                        format!("{trigger} @ {port} → {}", crate::i18n::t(action.label())),
+                        format!("{trigger} @ {port} -> {}", crate::i18n::t(action.label())),
                     );
                     handle(app, outs, time);
                 }

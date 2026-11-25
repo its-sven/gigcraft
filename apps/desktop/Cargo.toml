@@ -16,6 +16,7 @@ gigcraft-ui-egui.workspace = true
 eframe.workspace = true
 rfd.workspace = true
 midir.workspace = true
+gigcraft-live-net.workspace = true
 
 [lints]
 workspace = true

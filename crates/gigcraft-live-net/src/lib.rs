@@ -464,21 +464,36 @@ fn open(url: &str) -> Result<WebSocket<TcpStream>, String> {
 }
 
 /// `http://<address>:<port>/` for each IPv4 address of this computer on a
-/// network (private ranges first; no loopback).
+/// network, the likely Wi-Fi/Ethernet address first (home and venue routers
+/// use 192.168.x.x; VPN and virtual interfaces last). No loopback.
 pub fn lan_urls(port: u16) -> Vec<String> {
-    let mut ips: Vec<std::net::Ipv4Addr> = if_addrs::get_if_addrs()
+    const VIRTUAL: [&str; 10] = [
+        "utun", "tun", "tap", "wg", "ppp", "ipsec", "bridge", "vmnet", "docker", "veth",
+    ];
+    let mut ips: Vec<(u8, std::net::Ipv4Addr)> = if_addrs::get_if_addrs()
         .unwrap_or_default()
         .into_iter()
         .filter(|i| !i.is_loopback())
         .filter_map(|i| match i.ip() {
-            std::net::IpAddr::V4(v4) if !v4.is_link_local() => Some(v4),
+            std::net::IpAddr::V4(v4) if !v4.is_link_local() => {
+                let rank = if VIRTUAL.iter().any(|v| i.name.starts_with(v)) {
+                    3
+                } else if v4.octets()[..2] == [192, 168] {
+                    0
+                } else if v4.is_private() {
+                    1
+                } else {
+                    2
+                };
+                Some((rank, v4))
+            }
             _ => None,
         })
         .collect();
-    ips.sort_by_key(|ip| (!ip.is_private(), *ip));
-    ips.dedup();
+    ips.sort();
+    ips.dedup_by_key(|(_, ip)| *ip);
     ips.into_iter()
-        .map(|ip| format!("http://{ip}:{port}/"))
+        .map(|(_, ip)| format!("http://{ip}:{port}/"))
         .collect()
 }
 

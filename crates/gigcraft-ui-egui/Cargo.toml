@@ -15,6 +15,7 @@ gigcraft-commands.workspace = true
 gigcraft-perform.workspace = true
 gigcraft-rig.workspace = true
 gigcraft-midi.workspace = true
+gigcraft-live.workspace = true
 serde_json.workspace = true
 egui.workspace = true
 eframe.workspace = true

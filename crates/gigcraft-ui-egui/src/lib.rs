@@ -8,6 +8,7 @@
 #[macro_use]
 pub mod i18n;
 mod chart_view;
+mod live_ui;
 mod perform;
 mod rig_ui;
 mod setlist_view;
@@ -19,6 +20,7 @@ use gigcraft_perform::Keymap;
 use gigcraft_rig::{Rig, RigConfig};
 use gigcraft_store::Library;
 
+pub use live_ui::{HostEvent, Hosted, JoinEvent, LiveIo};
 pub use rig_ui::MidiIo;
 use serde_json::{Value, json};
 use std::path::PathBuf;
@@ -45,6 +47,8 @@ pub struct Hooks {
     pub pick_file: Option<Box<dyn Fn() -> Option<PathBuf>>>,
     /// MIDI ports (desktop).
     pub midi: Option<Box<dyn MidiIo>>,
+    /// Local network for live sessions (desktop).
+    pub live: Option<Box<dyn LiveIo>>,
 }
 
 impl std::fmt::Debug for Hooks {
@@ -53,6 +57,7 @@ impl std::fmt::Debug for Hooks {
             .field("pick_folder", &self.pick_folder.is_some())
             .field("pick_file", &self.pick_file.is_some())
             .field("midi", &self.midi.is_some())
+            .field("live", &self.live.is_some())
             .finish()
     }
 }
@@ -73,6 +78,10 @@ pub struct Start {
     pub rig: bool,
     /// Interface language for this run (`en`, `de`, `auto`); otherwise the saved setting.
     pub language: Option<String>,
+    /// Start leading a live session.
+    pub live: bool,
+    /// Join a live session at this address.
+    pub join: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -112,6 +121,7 @@ pub struct GigCraftApp {
     paste: Option<String>,
     /// Interface language setting.
     language: i18n::Setting,
+    live: live_ui::LiveUi,
 }
 
 impl GigCraftApp {
@@ -140,12 +150,14 @@ impl GigCraftApp {
             rig_dirty: false,
             paste: None,
             language: i18n::Setting::System,
+            live: live_ui::LiveUi::default(),
         };
         if let Some(storage) = cc.storage {
             if let Some(lang) = storage.get_string(LANGUAGE_KEY) {
                 app.language = i18n::Setting::parse(&lang);
             }
             i18n::set(app.language.lang());
+            live_ui::load(&mut app, storage);
             if let Some(size) = storage
                 .get_string(FONT_SIZE_KEY)
                 .and_then(|s| s.parse().ok())
@@ -179,7 +191,18 @@ impl GigCraftApp {
             app.open(path);
         }
         app.select(&start);
+        app.start_live(&start);
         app
+    }
+
+    fn start_live(&mut self, start: &Start) {
+        if let Some(addr) = &start.join {
+            self.live.address = addr.clone();
+            live_ui::start_join(self);
+        } else if start.live {
+            live_ui::start_host(self);
+            self.live.open = true;
+        }
     }
 
     fn select(&mut self, start: &Start) {
@@ -375,6 +398,13 @@ impl GigCraftApp {
             {
                 self.run("edit.redo", Value::Null);
                 self.song_draft = None;
+            }
+            if ui
+                .button(tr!("Live…"))
+                .on_hover_text(tr!("Play together: the band follows your setlist"))
+                .clicked()
+            {
+                self.live.open = !self.live.open;
             }
             if ui
                 .button(tr!("Rig…"))
@@ -674,7 +704,13 @@ impl eframe::App for GigCraftApp {
         let time = ui.input(|i| i.time);
         rig_ui::pump(self, ui.ctx(), time);
         rig_ui::window(self, ui.ctx(), time);
+        live_ui::pump(self, ui.ctx(), time);
+        live_ui::window(self, ui.ctx(), time);
         self.paste_window(ui.ctx());
+        if self.live.following() {
+            live_ui::follow_view(self, ui);
+            return;
+        }
         if self.perform.is_some() {
             perform::show(self, ui);
             return;
@@ -745,6 +781,7 @@ impl eframe::App for GigCraftApp {
         }
         storage.set_string(FONT_SIZE_KEY, self.font_size.to_string());
         storage.set_string(LANGUAGE_KEY, self.language.store());
+        live_ui::save(self, storage);
         if let Ok(km) = serde_json::to_string(&self.keymap) {
             storage.set_string(KEYMAP_KEY, km);
         }

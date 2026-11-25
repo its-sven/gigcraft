@@ -1724,6 +1724,7 @@ name = "gigcraft-desktop"
 version = "0.1.0"
 dependencies = [
  "eframe",
+ "gigcraft-live-net",
  "gigcraft-ui-egui",
  "midir",
  "rfd",
@@ -1841,6 +1842,7 @@ dependencies = [
  "egui",
  "gigcraft-chordpro",
  "gigcraft-commands",
+ "gigcraft-live",
  "gigcraft-midi",
  "gigcraft-model",
  "gigcraft-perform",

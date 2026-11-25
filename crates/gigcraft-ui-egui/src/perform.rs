@@ -27,6 +27,13 @@ pub(crate) struct PerformUi {
     last_sent: Vec<String>,
 }
 
+impl PerformUi {
+    /// The last `perform.*` result (position, current and next item).
+    pub(crate) fn state(&self) -> &Value {
+        &self.state
+    }
+}
+
 pub(crate) fn start(app: &mut GigCraftApp, setlist: SetlistId, index: Option<usize>) {
     let mut params = json!({ "setlist": setlist.to_string() });
     if let Some(i) = index {
@@ -223,6 +230,7 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
             });
         });
     });
+    let live_summary = app.live.summary();
     egui::Panel::bottom("perform-bottom").show(ui, |ui| {
         ui.add_space(6.0);
         ui.horizontal(|ui| {
@@ -267,6 +275,10 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                     format!("{}: {what}{}", d.name, if d.busy { " …" } else { "" })
                 })
                 .collect();
+            if let Some(live) = &live_summary {
+                ui.separator();
+                ui.label(egui::RichText::new(live).size(size * 0.6));
+            }
             if !devices.is_empty() {
                 ui.separator();
                 ui.label(egui::RichText::new(devices.join("   ")).size(size * 0.6));
@@ -285,6 +297,7 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
     let mut new_scroll = None;
     let mut view_height = 0.0;
     egui::CentralPanel::default().show(ui, |ui| {
+        crate::live_ui::cue_banner(&mut app.live, ui, now, size);
         let cur = &st["current"];
         match cur["type"].as_str() {
             Some("song") => {

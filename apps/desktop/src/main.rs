@@ -1,7 +1,8 @@
 //! GigCraft desktop app.
 //!
-//! `gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]] [--rig] [--lang en|de]`
+//! `gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]] [--rig] [--lang en|de] [--live | --join ADDRESS]`
 
+mod live_io;
 mod midi_io;
 
 use gigcraft_ui_egui::{GigCraftApp, Hooks, Start};
@@ -24,9 +25,11 @@ fn parse_args() -> Result<Start, String> {
             "--perform" => start.perform = true,
             "--rig" => start.rig = true,
             "--lang" => start.language = Some(value("--lang")?),
+            "--live" => start.live = true,
+            "--join" => start.join = Some(value("--join")?),
             "-h" | "--help" => {
                 return Err(
-                    "usage: gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]] [--rig] [--lang en|de]".into(),
+                    "usage: gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]] [--rig] [--lang en|de] [--live | --join ADDRESS]".into(),
                 );
             }
             _ if text.starts_with('-') => return Err(format!("unknown option {text}")),
@@ -59,6 +62,7 @@ fn main() -> eframe::Result {
                 pick_folder: Some(Box::new(|| rfd::FileDialog::new().pick_folder())),
                 pick_file: Some(Box::new(|| rfd::FileDialog::new().pick_file())),
                 midi: Some(Box::new(midi_io::Midir::new())),
+                live: Some(Box::new(live_io::Net::default())),
             };
             Ok(Box::new(GigCraftApp::new(cc, start, hooks)))
         }),

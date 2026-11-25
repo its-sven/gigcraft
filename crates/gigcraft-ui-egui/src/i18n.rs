@@ -110,7 +110,8 @@ pub fn state(text: &str) -> String {
     }
 }
 
-/// Fixed English texts the core hands to the interface; the catalogs must translate them.
+/// Fixed English texts looked up at run time (from the core, or from tables
+/// like the quick cues); the catalogs must translate them.
 pub const CORE_TEXTS: &[&str] = &[
     // gigcraft-rig device states
     "not connected",
@@ -134,6 +135,13 @@ pub const CORE_TEXTS: &[&str] = &[
     "Send presets again",
     "Panic",
     "Exit perform mode",
+    // quick cues (live_ui::QUICK_CUES)
+    "Last chorus",
+    "Chorus again",
+    "Extend solo",
+    "Slower",
+    "Faster",
+    "Stop after this bar",
 ];
 
 /// Every problem in the embedded catalogs (for the test).

@@ -88,9 +88,11 @@
   </header>
   <main id="main" aria-live="polite"></main>
   <footer>
-    <div class="row"><span class="next grow" id="next"></span><button id="ready" aria-pressed="false" data-t="ready">Ready</button></div>
-    <div class="row cues" id="cues"></div>
-    <div class="row"><input id="cueText" maxlength="200" aria-label="Cue to the band" placeholder="Cue to the band…"><button id="send" data-t="send">Send</button></div>
+    <div class="row"><span class="next grow" id="next"></span><button id="cueToggle" aria-expanded="false" aria-controls="cuePanel" data-t="cue">Cue…</button><button id="ready" aria-pressed="false" data-t="ready" title="Tell the band you are ready for this song">Ready</button></div>
+    <div id="cuePanel" class="hidden">
+      <div class="row cues" id="cues"></div>
+      <div class="row" style="margin-top:8px"><input id="cueText" maxlength="200" aria-label="Cue to the band" placeholder="Cue to the band…" style="flex:1;width:auto"><button id="send" data-t="send">Send</button></div>
+    </div>
     <div class="roster" id="roster"></div>
   </footer>
 </div>
@@ -100,14 +102,14 @@
 const de = (navigator.language || "").toLowerCase().startsWith("de");
 const T = de ? {
   intro: "Folge der Setliste und dem Chart des Bandleaders auf diesem Gerät.", name: "Dein Name", instrument: "Instrument",
-  join: "Beitreten", ready: "Bereit", send: "Senden", key: "Tonart", next: "Als Nächstes", last: "Letzter Song",
+  join: "Beitreten", ready: "Bereit", send: "Senden", cue: "Cue…", key: "Tonart", next: "Als Nächstes", last: "Letzter Song",
   brk: "Pause", missing: "Song fehlt in der Bibliothek des Leaders", waiting: "Warte auf den Start der Show…",
   connecting: "Verbinde…", offline: "Getrennt – verbinde neu…", ended: "Sitzung beendet", noChart: "Kein Chart.",
   cues: ["Letzter Refrain", "Refrain nochmal", "Solo verlängern", "Langsamer", "Schneller", "Stopp nach dem Takt"],
   ph: "Nachricht an die Band…", connected: "verbunden", disconnected: "getrennt", of: "von"
 } : {
   intro: "Follow the band leader's setlist and chart on this device.", name: "Your name", instrument: "Instrument",
-  join: "Join", ready: "Ready", send: "Send", key: "Key", next: "Up next", last: "Last song",
+  join: "Join", ready: "Ready", send: "Send", cue: "Cue…", key: "Key", next: "Up next", last: "Last song",
   brk: "Break", missing: "Song missing from the leader's library", waiting: "Waiting for the show to start…",
   connecting: "Connecting…", offline: "Disconnected – reconnecting…", ended: "Session ended", noChart: "No chart.",
   cues: ["Last chorus", "Chorus again", "Extend solo", "Slower", "Faster", "Stop after this bar"],
@@ -316,12 +318,18 @@ $("go").onclick = () => {
   connect();
   if (navigator.wakeLock) navigator.wakeLock.request("screen").catch(() => {});
 };
+$("cueToggle").onclick = () => {
+  const open = $("cuePanel").classList.toggle("hidden") === false;
+  $("cueToggle").setAttribute("aria-expanded", String(open));
+  if (open) $("cueText").focus();
+};
+const closeCues = () => { $("cuePanel").classList.add("hidden"); $("cueToggle").setAttribute("aria-expanded", "false"); };
 $("ready").onclick = () => { ready = !ready; renderReady(); send({ type: "ready", ready }); };
-$("send").onclick = () => { const t = $("cueText").value.trim(); if (t) { send({ type: "cue", text: t }); $("cueText").value = ""; } };
+$("send").onclick = () => { const t = $("cueText").value.trim(); if (t) { send({ type: "cue", text: t }); $("cueText").value = ""; closeCues(); } };
 $("cueText").onkeydown = e => { if (e.key === "Enter") $("send").click(); };
 for (const c of T.cues) {
   const b = el("button", "", c);
-  b.onclick = () => send({ type: "cue", text: c });
+  b.onclick = () => { send({ type: "cue", text: c }); closeCues(); };
   $("cues").append(b);
 }
 $("smaller").onclick = () => { size = Math.max(14, size - 2); store.set("gc.size", size); applySize(); };
