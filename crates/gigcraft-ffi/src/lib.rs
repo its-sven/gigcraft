@@ -11,6 +11,11 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 uniffi::setup_scaffolding!();
 
+mod audio;
+pub mod realtime;
+
+pub use audio::{AudioCore, AudioStatus};
+
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum CoreError {
     #[error("{message}")]
@@ -167,7 +172,7 @@ impl Core {
 }
 
 impl Core {
-    fn lock(&self) -> MutexGuard<'_, Engine> {
+    pub(crate) fn lock(&self) -> MutexGuard<'_, Engine> {
         // A panic while holding the lock cannot leave the library half-written
         // (saves are atomic), so recovering the guard is safe.
         self.engine

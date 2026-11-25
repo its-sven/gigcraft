@@ -301,6 +301,16 @@
         }
       }
     },
+    "Add track": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spur hinzufügen"
+          }
+        }
+      }
+    },
     "Artist": {
       "localizations": {
         "de": {
@@ -331,12 +341,62 @@
         }
       }
     },
+    "Attach an audio file to the song first (Attach in the song view).": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Häng dem Song zuerst eine Audiodatei an (Anhängen in der Songansicht)."
+          }
+        }
+      }
+    },
+    "Audio output: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audioausgabe: %@"
+          }
+        }
+      }
+    },
     "BPM": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "BPM"
+          }
+        }
+      }
+    },
+    "Backing": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backing"
+          }
+        }
+      }
+    },
+    "Backing track: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backing-Track: %@"
+          }
+        }
+      }
+    },
+    "Backing tracks and click": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backing-Tracks und Click"
           }
         }
       }
@@ -471,12 +531,82 @@
         }
       }
     },
+    "Click": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click"
+          }
+        }
+      }
+    },
+    "Click track": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click-Spur"
+          }
+        }
+      }
+    },
+    "Click volume": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click-Lautstärke"
+          }
+        }
+      }
+    },
     "Could not save": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
             "value": "Speichern fehlgeschlagen"
+          }
+        }
+      }
+    },
+    "Count-in: %lld bars": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Count-in: %lld bar"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Count-in: %lld bars"
+                }
+              }
+            }
+          }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vorzähler: %lld Takt"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Vorzähler: %lld Takte"
+                }
+              }
+            }
           }
         }
       }
@@ -691,6 +821,16 @@
         }
       }
     },
+    "Guide / cues": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Guide / Ansagen"
+          }
+        }
+      }
+    },
     "Help": {
       "localizations": {
         "de": {
@@ -747,6 +887,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Importiert: %lld neue, %lld geänderte Songs, %lld Setlisten."
+          }
+        }
+      }
+    },
+    "In perform mode, Play starts the tracks and the click together (key P or a footswitch). The iPad plays in stereo.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Im Auftritt startet Abspielen die Spuren und den Click gemeinsam (Taste P oder Fußschalter). Das iPad spielt in Stereo."
           }
         }
       }
@@ -941,6 +1091,16 @@
         }
       }
     },
+    "Loading backing tracks…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lade Backing-Tracks…"
+          }
+        }
+      }
+    },
     "Long-press a song to start performing from there. Share sends the list as text.": {
       "localizations": {
         "de": {
@@ -987,6 +1147,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "In den Papierkorb"
+          }
+        }
+      }
+    },
+    "Mute": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stumm"
           }
         }
       }
@@ -1291,6 +1461,16 @@
         }
       }
     },
+    "Play": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abspielen"
+          }
+        }
+      }
+    },
     "Playing together": {
       "localizations": {
         "de": {
@@ -1417,6 +1597,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Rig"
+          }
+        }
+      }
+    },
+    "Role": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rolle"
           }
         }
       }
@@ -1571,6 +1761,46 @@
         }
       }
     },
+    "Songs with backing tracks or a click show Play at the top; P or a footswitch also starts and stops them. Set them up in the song editor under Backing tracks and click.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Songs mit Backing-Tracks oder Click zeigen oben Abspielen; auch P oder ein Fußschalter starten und stoppen sie. Eingerichtet werden sie im Song-Editor unter Backing-Tracks und Click."
+          }
+        }
+      }
+    },
+    "Start or stop the backing tracks and click (key P)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backing-Tracks und Click starten oder stoppen (Taste P)"
+          }
+        }
+      }
+    },
+    "Stem": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stem"
+          }
+        }
+      }
+    },
+    "Stop": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopp"
+          }
+        }
+      }
+    },
     "Stop after this bar": {
       "localizations": {
         "de": {
@@ -1671,6 +1901,16 @@
         }
       }
     },
+    "The click needs a tempo (BPM) above.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Click braucht oben ein Tempo (BPM)."
+          }
+        }
+      }
+    },
     "The screen stays on while you perform. Panic sends all notes off.": {
       "localizations": {
         "de": {
@@ -1747,6 +1987,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Gesamt %@"
+          }
+        }
+      }
+    },
+    "Track": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spur"
           }
         }
       }
@@ -1861,6 +2111,16 @@
         }
       }
     },
+    "Volume": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lautstärke"
+          }
+        }
+      }
+    },
     "Waiting for the show to start…": {
       "localizations": {
         "de": {
@@ -1969,6 +2229,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "verbinde…"
+          }
+        }
+      }
+    },
+    "count-in": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorzähler"
           }
         }
       }

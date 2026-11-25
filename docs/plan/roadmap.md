@@ -95,7 +95,7 @@ Order matters: each step is usable on its own.
 |---|---|
 | 1 Live protocol, LAN transport, web viewer with QR code | done: `gigcraft-live` (no I/O), `gigcraft-live-net` (WebSocket + viewer on one port, Bonjour announcement and discovery), ADR-0013; MultipeerConnectivity open |
 | 2 Followers with own charts/presets, ready, cues | done on desktop and iOS (iOS as follower only; iOS leading open) |
-| 3 Audio engine | engine and desktop host done (ADR-0012), wired into perform mode and the song editor; iOS host, cue slots, speed/pitch open |
+| 3 Audio engine | engine and hosts done: desktop (cpal, ADR-0012) and iOS (AVAudioEngine through a real-time C function, ADR-0014), wired into perform mode and both song editors; multichannel outputs on iOS, cue slots, speed/pitch open |
 | 4 MIDI clock/MTC, timed MIDI, macros, MIDI files | open |
 | 5 Timed lyrics, PDF timestamps, external display | open |
 | 6 Variants, history, queue, backups, settings export | open |
@@ -109,7 +109,8 @@ Also done along the way: help window (F1) and tooltips on every control (desktop
    - Done (branch `phase-2/audio`, ADR-0012): `gigcraft-audio` (clips via craft-audio, tracks with gain/pan/mute/solo/bus, click and count-in, play/pause/stop/seek with declick, fades, crossfades, loop regions, marker jumps now or on the next bar), song settings `tracks`/`click`/`markers` in song.toml, desktop host `gigcraft-audio-cpal`.
    - Wired into the desktop: Play/Stop in perform mode, tracks and click in the song editor, audio device in the rig window.
    - Play/stop as a stage action (key P, learnable footswitch); PANIC stops the audio.
-   - Open: iOS host (AVAudioEngine source node calling the renderer through the FFI); cue slots.
+   - iOS host: `AudioCore` (UniFFI) loads and decodes, an `AVAudioSourceNode` renders through `gigcraft_audio_render` (ADR-0014); stereo for now.
+   - Open: multichannel outputs on iOS (channel map), cue slots.
    - TODO: playback speed and pitch. craft-audio-dsp has building blocks but nothing drop-in: `stretch::Wsola` is allocation-free but leaves the grain chain per track to the caller (and it interacts with loops, jumps and the click grid), and the phase-vocoder pitch effect allocates per STFT frame, so it cannot run in the callback. Options: WSOLA in the renderer for speed, offline-rendered pitch variants cached with the clip.
 4. MIDI clock/MTC, timed MIDI events, macros, MIDI file playback.
 5. Timed lyrics and PDF timestamps; external display.

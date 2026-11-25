@@ -56,6 +56,8 @@ final class LibraryModel {
     let rig = RigBridge()
     /// Following a band leader (live session).
     let live = LiveFollower()
+    /// Backing tracks and click.
+    let audio = AudioBridge()
     private(set) var libraryName = ""
     private(set) var errorMessage: String?
     var section: Section = .songs
@@ -363,14 +365,23 @@ final class LibraryModel {
 
     func stopPerform() {
         run("perform.stop")
+        audio.unload()
         performState = nil
         performSetlist = nil
         lastSent = []
     }
 
     private func apply(_ result: [String: Any]) {
-        for effect in result["effects"] as? [[String: Any]] ?? [] where effect["type"] as? String == "panic" {
-            rig.panic()
+        for effect in result["effects"] as? [[String: Any]] ?? [] {
+            switch effect["type"] as? String {
+            case "panic":
+                rig.panic()
+                audio.stop()
+            case "playback":
+                if let core { audio.toggle(core: core) }
+            default:
+                break
+            }
         }
         for effect in result["effects"] as? [[String: Any]] ?? [] where effect["type"] as? String == "send_part" {
             rig.sendPart(effect["actions"] as? [[String: Any]] ?? [])
@@ -379,6 +390,16 @@ final class LibraryModel {
             }
         }
         performState = result
+        followAudio()
+    }
+
+    /// Load the current song's backing tracks, decode the next song's.
+    private func followAudio() {
+        guard let core, let out = run("perform.snapshot"),
+              let snap = (out["result"] as? [String: Any])?["snapshot"] as? [String: Any] else { return }
+        let current = (snap["current"] as? [String: Any])?["song"] as? String
+        let next = (snap["next"] as? [String: Any])?["song"] as? String
+        audio.follow(core: core, current: current, next: next)
     }
 
     /// `-gcSong <title>` / `-gcSetlist <name>` launch arguments (for screenshots and tests).
@@ -393,6 +414,10 @@ final class LibraryModel {
             selectedSetlist = setlists.first { $0.name.lowercased().contains(want) }?.id
             if defaults.bool(forKey: "gcPerform"), let id = selectedSetlist {
                 startPerform(id)
+                // `-gcPlay YES`: press Play once the backing tracks are loaded (tests, screenshots).
+                if defaults.bool(forKey: "gcPlay") {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in self?.perform("playback") }
+                }
             }
         }
         launchEdit = defaults.bool(forKey: "gcEdit")

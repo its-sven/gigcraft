@@ -19,6 +19,7 @@ gigcraft-store.workspace = true
 gigcraft-commands.workspace = true
 gigcraft-rig.workspace = true
 gigcraft-live.workspace = true
+gigcraft-audio.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 uniffi.workspace = true

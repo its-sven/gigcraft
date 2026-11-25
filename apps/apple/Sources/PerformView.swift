@@ -50,6 +50,7 @@ struct PerformView: View {
         .onKeyPress(.pageDown) { model.perform("next"); return .handled }
         .onKeyPress(.pageUp) { model.perform("previous"); return .handled }
         .onKeyPress(.escape) { model.stopPerform(); return .handled }
+        .onKeyPress("p") { model.perform("playback"); return .handled }
         .onAppear {
             focused = true
             UIApplication.shared.isIdleTimerDisabled = true
@@ -73,11 +74,39 @@ struct PerformView: View {
                 let s = Int(ctx.date.timeIntervalSince(startedAt))
                 Readout(label: "On stage", value: String(format: "%d:%02d", s / 60, s % 60), size: 15)
             }
+            transport(st)
             Spacer()
             Button("Panic", role: .destructive) { model.perform("panic") }
             Button("Exit") { model.stopPerform() }.bold()
         }
         .padding(.horizontal).padding(.vertical, 8)
+    }
+
+    /// Play/stop and position, for songs with backing tracks or a click.
+    @ViewBuilder
+    private func transport(_ st: [String: Any]) -> some View {
+        let songId = (st["current"] as? [String: Any])?["song"] as? String
+        let audio = model.audio
+        if let songId, audio.loadingSong == songId {
+            ProgressView().controlSize(.small)
+            Text("Loading backing tracks…").font(.caption).foregroundStyle(.secondary)
+        } else if let songId, audio.readySong == songId {
+            let status = audio.status
+            let playing = status?.playing ?? false
+            Button { model.perform("playback") } label: {
+                Label(playing ? "Stop" : "Play", systemImage: playing ? "stop.fill" : "play.fill")
+            }
+            .buttonStyle(StageButtonStyle(prominent: !playing))
+            .accessibilityHint("Start or stop the backing tracks and click (key P)")
+            if let status {
+                Readout(label: "Track", value: status.countingIn ? String(localized: "count-in") : clock(status.positionSecs, status.lengthSecs), size: 15)
+            }
+        }
+    }
+
+    private func clock(_ pos: Double, _ len: Double) -> String {
+        func mmss(_ s: Double) -> String { let t = max(0, Int(s)); return String(format: "%d:%02d", t / 60, t % 60) }
+        return len > 0 ? "\(mmss(pos)) / \(mmss(len))" : mmss(pos)
     }
 
     private func song(_ cur: [String: Any], st: [String: Any], size: Double) -> some View {

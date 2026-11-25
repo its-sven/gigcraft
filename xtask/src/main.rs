@@ -217,6 +217,22 @@ fn apple(release: bool) -> Result {
         }
     }
     let swift_file = swift_file.ok_or("bindgen produced no Swift file")?;
+    // The real-time audio functions (ADR-0014) are plain C, next to UniFFI's header.
+    std::fs::copy(
+        root().join("crates/gigcraft-ffi/include/gigcraft_audio.h"),
+        headers.join("gigcraft_audio.h"),
+    )
+    .map_err(|e| e.to_string())?;
+    let map_path = headers.join("module.modulemap");
+    let map = std::fs::read_to_string(&map_path).map_err(|e| e.to_string())?;
+    if !map.contains("gigcraft_audio.h") {
+        let map = map.replacen(
+            "    export *",
+            "    header \"gigcraft_audio.h\"\n    export *",
+            1,
+        );
+        std::fs::write(&map_path, map).map_err(|e| e.to_string())?;
+    }
 
     let apple_dir = root().join("apps/apple");
     let xcf = apple_dir.join("Frameworks/GigCraftCore.xcframework");

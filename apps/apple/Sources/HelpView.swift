@@ -35,6 +35,7 @@ struct HelpView: View {
             "Bluetooth page turners and keyboards work right away: arrow keys, space and page up/down.",
             "Next goes part by part, then to the next song; each part sends its presets.",
             "The screen stays on while you perform. Panic sends all notes off.",
+            "Songs with backing tracks or a click show Play at the top; P or a footswitch also starts and stops them. Set them up in the song editor under Backing tracks and click.",
         ]),
         Topic(id: 4, title: "MIDI devices and pedals", icon: "pianokeys", points: [
             "Under Library you find the rig: the status of your devices and MIDI Learn for footswitches.",

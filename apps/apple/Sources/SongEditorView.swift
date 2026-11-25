@@ -8,6 +8,18 @@ struct PresetDraft: Identifiable, Hashable {
     var program = 0
 }
 
+/// A backing track in the editor (the model's `Track`).
+struct TrackDraft: Identifiable, Hashable {
+    var id: String { file }
+    var file: String
+    var label = ""
+    var role = "backing"
+    var gainDb = 0.0
+    var pan = 0.0
+    var bus = 0
+    var mute = false
+}
+
 struct PartDraft: Identifiable, Hashable {
     let id = UUID()
     var name = ""
@@ -34,6 +46,11 @@ struct SongEditorView: View {
     @State private var notes = ""
     @State private var chart = ""
     @State private var parts: [PartDraft] = []
+    @State private var tracks: [TrackDraft] = []
+    @State private var audioFiles: [String] = []
+    @State private var clickOn = false
+    @State private var countIn = 0
+    @State private var clickVolume = 0.0
     @State private var issues: [String] = []
     @State private var loaded = false
 
@@ -78,6 +95,56 @@ struct SongEditorView: View {
                 Text("Parts and presets")
             } footer: {
                 Text("Each part sends its presets when it starts. Program numbers are MIDI values 0–127.")
+            }
+            Section {
+                Toggle("Click", isOn: $clickOn)
+                if clickOn {
+                    Stepper(value: $countIn, in: 0...4) { Text("Count-in: \(countIn) bars") }
+                    LabeledContent("Click volume") {
+                        Slider(value: $clickVolume, in: -40...12) { Text("Click volume") }
+                            .frame(maxWidth: 260)
+                        Text(verbatim: String(format: "%+.0f dB", clickVolume)).monospacedDigit().frame(width: 60, alignment: .trailing)
+                    }
+                    if tempo.trimmingCharacters(in: .whitespaces).isEmpty {
+                        Text("The click needs a tempo (BPM) above.").foregroundStyle(.orange)
+                    }
+                }
+                ForEach($tracks) { $track in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text(track.file).font(.headline).lineLimit(1)
+                            Spacer()
+                            Picker("Role", selection: $track.role) {
+                                Text("Backing").tag("backing")
+                                Text("Click track").tag("click")
+                                Text("Guide / cues").tag("guide")
+                                Text("Stem").tag("stem")
+                            }
+                            .labelsHidden()
+                        }
+                        HStack {
+                            Text("Volume").font(.caption).foregroundStyle(.secondary)
+                            Slider(value: $track.gainDb, in: -40...12) { Text("Volume") }
+                            Text(verbatim: String(format: "%+.0f dB", track.gainDb)).monospacedDigit().font(.caption).frame(width: 56, alignment: .trailing)
+                            Toggle("Mute", isOn: $track.mute).toggleStyle(.button).font(.caption)
+                        }
+                    }
+                }
+                .onDelete { tracks.remove(atOffsets: $0) }
+                let unused = audioFiles.filter { f in !tracks.contains { $0.file == f } }
+                if unused.isEmpty {
+                    if tracks.isEmpty {
+                        Text("Attach an audio file to the song first (Attach in the song view).").font(.caption).foregroundStyle(.secondary)
+                    }
+                } else {
+                    Menu("Add track") {
+                        ForEach(unused, id: \.self) { f in Button(f) { tracks.append(TrackDraft(file: f)) } }
+                    }
+                }
+            } header: {
+                Text("Backing tracks and click")
+            } footer: {
+                Text("In perform mode, Play starts the tracks and the click together (key P or a footswitch). The iPad plays in stereo.")
             }
             Section("Chart (ChordPro)") {
                 TextEditor(text: $chart)
@@ -124,6 +191,18 @@ struct SongEditorView: View {
         tags = (s["tags"] as? [String] ?? []).joined(separator: ", ")
         notes = s["notes"] as? String ?? ""
         chart = rec.chart
+        tracks = (s["tracks"] as? [[String: Any]] ?? []).compactMap { t in
+            guard let file = t["file"] as? String else { return nil }
+            return TrackDraft(file: file, label: t["label"] as? String ?? "", role: t["role"] as? String ?? "backing",
+                              gainDb: t["gain_db"] as? Double ?? 0, pan: t["pan"] as? Double ?? 0,
+                              bus: t["bus"] as? Int ?? 0, mute: t["mute"] as? Bool ?? false)
+        }
+        if let click = s["click"] as? [String: Any] {
+            clickOn = click["enabled"] as? Bool ?? true
+            countIn = click["count_in_bars"] as? Int ?? 0
+            clickVolume = click["volume_db"] as? Double ?? 0
+        }
+        audioFiles = model.attachments(songId).filter { $0.kind == "audio" }.map(\.file)
         parts = (s["parts"] as? [[String: Any]] ?? []).map { p in
             var d = PartDraft(name: p["name"] as? String ?? "", notes: p["notes"] as? String ?? "")
             for a in p["actions"] as? [[String: Any]] ?? [] {
@@ -149,6 +228,10 @@ struct SongEditorView: View {
         if t.isEmpty { fields["tempo_bpm"] = NSNull() } else if let v = Double(t) { fields["tempo_bpm"] = v } else { issues = [String(localized: "Tempo is not a number")]; return }
         let c = capo.trimmingCharacters(in: .whitespaces)
         if c.isEmpty { fields["capo"] = NSNull() } else if let v = Int(c) { fields["capo"] = v } else { issues = [String(localized: "Capo is not a number")]; return }
+        fields["tracks"] = tracks.map { t -> [String: Any] in
+            ["file": t.file, "label": t.label, "role": t.role, "gain_db": t.gainDb, "pan": t.pan, "bus": t.bus, "mute": t.mute]
+        }
+        fields["click"] = clickOn ? (["enabled": true, "count_in_bars": countIn, "volume_db": clickVolume] as [String: Any]) : NSNull()
         fields["parts"] = parts.map { p -> [String: Any] in
             let actions: [[String: Any]] = p.presets.map { ["device": $0.device, "type": "program_change", "channel": $0.channel, "program": $0.program] } + p.other.map { $0 as [String: Any] }
             return ["name": p.name, "notes": p.notes, "actions": actions]

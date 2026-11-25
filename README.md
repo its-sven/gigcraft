@@ -54,7 +54,7 @@
 - **Import/export**: ChordPro, OnSong, OpenSong, chords-over-lyrics text, BandHelper TSV, CSV, Cuebook libraries, Ultimate Guitar links and playlists; ChordPro, TSV and setlist text out.
 - **Sync** through any shared folder (iCloud Drive, Nextcloud, Syncthing): changes from other devices appear within seconds; conflicting saves are caught instead of overwriting.
 - **Live sessions**: one device leads the show; band members follow on the same Wi-Fi – in any browser via QR code, or in GigCraft (desktop, iPad, iPhone) with their own chart and their own pedal presets. Ready status and cues ("last chorus") for everyone. Nothing leaves the local network.
-- **Backing tracks and click** (desktop): audio files per song with volume, pan, mute and output pair (click to the in-ears on outputs 3/4), click with count-in, Play/Stop in perform mode; the next song loads in the background.
+- **Backing tracks and click** (desktop, iPad, iPhone): audio files per song with volume, pan, mute and output pair (click to the in-ears on outputs 3/4), click with count-in, Play/Stop in perform mode; the next song loads in the background.
 - **Look**: calm, modern surfaces with a light touch of stage gear – an amber LED accent, values like key, tempo and position in small display readouts, status lights; light and dark follow the system, the stage views are dark.
 - **Help and tooltips**: a help window (F1) and a tooltip on every control on the desktop, a help sheet on iOS.
 - **Languages and accessibility**: English and German (more languages are one catalog file each); screen readers on the desktop (AccessKit: VoiceOver, Narrator, Orca) and VoiceOver on iOS, where a chart line is read as one sentence with its chords after it; larger text sizes scale the charts.
