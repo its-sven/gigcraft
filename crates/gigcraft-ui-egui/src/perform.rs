@@ -88,7 +88,9 @@ fn rig_effects(app: &mut GigCraftApp, result: &Value, now: f64) {
             "panic" => {
                 let outs = app.rig.panic(ms);
                 crate::rig_ui::handle(app, outs, now);
+                crate::audio_ui::panic(app);
             }
+            "playback" => crate::audio_ui::toggle(app),
             _ => {}
         }
     }

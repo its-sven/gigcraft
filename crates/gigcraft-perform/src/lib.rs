@@ -36,10 +36,12 @@ pub enum Action {
     Panic,
     /// Leave perform mode.
     Exit,
+    /// Start or stop the current song's backing tracks and click.
+    Playback,
 }
 
 impl Action {
-    pub const ALL: [Action; 9] = [
+    pub const ALL: [Action; 10] = [
         Action::Next,
         Action::Previous,
         Action::NextSong,
@@ -49,6 +51,7 @@ impl Action {
         Action::Resend,
         Action::Panic,
         Action::Exit,
+        Action::Playback,
     ];
 
     /// Human-readable name.
@@ -64,6 +67,7 @@ impl Action {
             Action::Resend => "Send presets again",
             Action::Panic => "Panic",
             Action::Exit => "Exit perform mode",
+            Action::Playback => "Play/stop backing tracks",
         }
     }
 }
@@ -89,6 +93,8 @@ pub enum Effect {
     PageBack,
     Panic,
     Exit,
+    /// Start or stop the backing tracks (the platform's audio engine).
+    Playback,
     /// Already at the start or end; nothing changed.
     Edge,
 }
@@ -239,6 +245,7 @@ impl Show {
             return match action {
                 Action::Panic => vec![Effect::Panic],
                 Action::Exit => vec![Effect::Exit],
+                Action::Playback => vec![Effect::Playback],
                 _ => vec![Effect::Edge],
             };
         }
@@ -290,6 +297,7 @@ impl Show {
             Action::Resend => self.part_changed(),
             Action::Panic => vec![Effect::Panic],
             Action::Exit => vec![Effect::Exit],
+            Action::Playback => vec![Effect::Playback],
         }
     }
 

@@ -135,6 +135,7 @@ pub const CORE_TEXTS: &[&str] = &[
     "Send presets again",
     "Panic",
     "Exit perform mode",
+    "Play/stop backing tracks",
     // quick cues (live_ui::QUICK_CUES)
     "Last chorus",
     "Chorus again",

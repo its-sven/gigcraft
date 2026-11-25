@@ -380,12 +380,12 @@
 	Play one of this song's audio attachments in perform mode	Eine Audiodatei dieses Songs im Auftritt abspielen
 	Refresh	Aktualisieren
 	Remove the track (the file stays attached)	Spur entfernen (die Datei bleibt angehängt)
-	Start the backing tracks after the count-in	Backing-Tracks nach dem Vorzähler starten
-	Start the backing tracks and click	Backing-Tracks und Click starten
+	Start the backing tracks after the count-in (key P)	Backing-Tracks nach dem Vorzähler starten (Taste P)
+	Start the backing tracks and click (key P)	Backing-Tracks und Click starten (Taste P)
 	Stem	Stem
 	Stop	Stopp
 	Stop test	Test beenden
-	Stop the backing tracks (short fade)	Backing-Tracks stoppen (kurz ausblenden)
+	Stop the backing tracks (short fade; key P)	Backing-Tracks stoppen (kurz ausblenden; Taste P)
 	System default	Systemstandard
 	Test click	Test-Click
 	The click needs a tempo (BPM) above.	Der Click braucht oben ein Tempo (BPM).
@@ -406,3 +406,4 @@
 	Track	Spur
 	Transpose	Transponiert
 	not ready	nicht bereit
+	Play/stop backing tracks	Backing-Tracks abspielen/stoppen

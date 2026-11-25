@@ -318,6 +318,31 @@ fn halt(app: &mut GigCraftApp) {
     }
 }
 
+/// Play or stop the loaded song (keyboard P, a footswitch, a MIDI controller).
+pub(crate) fn toggle(app: &mut GigCraftApp) {
+    let Some((id, _)) = app.audio.loaded.clone() else {
+        return;
+    };
+    let count_in = app
+        .engine
+        .as_ref()
+        .and_then(|e| e.library().song(id))
+        .and_then(|s| s.click.as_ref())
+        .is_some_and(|c| c.enabled && c.count_in_bars > 0);
+    if let Some(c) = app.hooks.audio.as_mut().and_then(|h| h.controller()) {
+        let _ = if c.status().state == PlayState::Playing {
+            c.stop()
+        } else {
+            c.play(count_in)
+        };
+    }
+}
+
+/// PANIC: stop the audio too.
+pub(crate) fn panic(app: &mut GigCraftApp) {
+    halt(app);
+}
+
 /// Leaving perform mode: stop.
 fn stop(app: &mut GigCraftApp) {
     halt(app);
@@ -355,11 +380,11 @@ pub(crate) fn transport(app: &mut GigCraftApp, ui: &mut egui::Ui, song: Option<S
     let count_in = s.click.as_ref().map_or(0, |c| c.count_in_bars);
     let label = if playing { tr!("Stop") } else { tr!("Play") };
     let tip = if playing {
-        tr!("Stop the backing tracks (short fade)")
+        tr!("Stop the backing tracks (short fade; key P)")
     } else if count_in > 0 {
-        tr!("Start the backing tracks after the count-in")
+        tr!("Start the backing tracks after the count-in (key P)")
     } else {
-        tr!("Start the backing tracks and click")
+        tr!("Start the backing tracks and click (key P)")
     };
     let button = if playing {
         egui::Button::new(egui::RichText::new(label).strong())

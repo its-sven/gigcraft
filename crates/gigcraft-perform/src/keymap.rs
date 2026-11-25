@@ -52,6 +52,7 @@ impl Default for Keymap {
                 b("PageUp", Press, PageBack),
                 b("ArrowUp", Press, PageBack),
                 b("Escape", Press, Exit),
+                b("P", Press, Playback),
             ],
         }
     }
