@@ -216,3 +216,57 @@ fn demo_library_is_valid() {
     assert_eq!(detail["sets"].as_array().map(Vec::len), Some(2));
     assert_eq!(detail["total"], "20:45");
 }
+
+#[test]
+fn perform_flow_and_entry_updates() {
+    let (_d, mut e) = engine();
+    demo::populate(&mut e).expect("demo");
+    let lists = run(&mut e, "setlist.list", Value::Null).result;
+    let sl = lists[0]["id"].as_str().expect("id").to_string();
+
+    run(
+        &mut e,
+        "setlist.update_entry",
+        json!({"id": sl, "set": 0, "index": 0, "fields": {"key": "A", "notes": "capo 2"}}),
+    );
+    run(
+        &mut e,
+        "setlist.update_entry",
+        json!({"id": sl, "set": 0, "index": 2, "fields": {"minutes": 5}}),
+    );
+    assert!(matches!(
+        e.run(
+            "setlist.update_entry",
+            &json!({"id": sl, "set": 0, "index": 2, "fields": {"key": "A"}})
+        ),
+        Err(CommandError::InvalidParams(_))
+    ));
+
+    assert!(matches!(
+        e.run("perform.action", &json!({"action": "next"})),
+        Err(CommandError::Rejected(_))
+    ));
+    let st = run(&mut e, "perform.start", json!({"setlist": sl})).result;
+    assert_eq!(st["current"]["title"], "Harbour Lights");
+    assert_eq!(st["current"]["key"], "A");
+    assert_eq!(st["current"]["gig_notes"], "capo 2");
+    assert_eq!(st["effects"][1]["type"], "send_part");
+    assert_eq!(st["effects"][1]["actions"][0]["device"], "Play Acoustic");
+    assert_eq!(st["next"]["title"], "Northbound Train");
+
+    let st = run(&mut e, "perform.action", json!({"action": "next"})).result;
+    assert_eq!(st["index"], 1);
+    let st = run(&mut e, "perform.action", json!({"action": "next"})).result;
+    assert_eq!(st["effects"][1], json!({"type": "break", "minutes": 5}));
+    assert!(matches!(
+        e.run("perform.action", &json!({"action": "dance"})),
+        Err(CommandError::InvalidParams(_))
+    ));
+    let st = run(&mut e, "perform.action", json!({"action": "exit"})).result;
+    assert_eq!(st["effects"][0]["type"], "exit");
+    assert_eq!(
+        run(&mut e, "perform.state", Value::Null).result["running"],
+        false
+    );
+    assert!(e.undo_label().is_some(), "entry updates are undoable");
+}

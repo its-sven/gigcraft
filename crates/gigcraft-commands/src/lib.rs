@@ -10,6 +10,7 @@
 
 pub mod demo;
 mod params;
+mod perform_cmds;
 mod setlist_cmds;
 mod song_cmds;
 mod specs;
@@ -98,6 +99,8 @@ pub struct Engine {
     lib: Library,
     undo: Vec<Transaction>,
     redo: Vec<Transaction>,
+    /// The running show in perform mode, if any.
+    show: Option<gigcraft_perform::Show>,
 }
 
 impl Engine {
@@ -107,12 +110,19 @@ impl Engine {
             lib,
             undo: Vec::new(),
             redo: Vec::new(),
+            show: None,
         }
     }
 
     #[must_use]
     pub fn library(&self) -> &Library {
         &self.lib
+    }
+
+    /// The running show (perform mode), if any.
+    #[must_use]
+    pub fn show(&self) -> Option<&gigcraft_perform::Show> {
+        self.show.as_ref()
     }
 
     /// Forget undo and redo (after loading demo content or reloading).
@@ -173,6 +183,7 @@ impl Engine {
                 Ok(self.library_info())
             }
             _ if id.starts_with("song.") => song_cmds::run(self, id, p, tx),
+            _ if id.starts_with("perform.") => perform_cmds::run(self, id, p),
             _ if id.starts_with("setlist.") => setlist_cmds::run(self, id, p, tx),
             _ => Err(CommandError::UnknownCommand(id.to_string())),
         }

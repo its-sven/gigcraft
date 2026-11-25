@@ -12,6 +12,7 @@ gigcraft-model.workspace = true
 gigcraft-chordpro.workspace = true
 gigcraft-store.workspace = true
 gigcraft-commands.workspace = true
+gigcraft-perform.workspace = true
 serde_json.workspace = true
 egui.workspace = true
 eframe.workspace = true

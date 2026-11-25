@@ -116,6 +116,14 @@ pub(crate) fn run(
             list.sets[to_set].entries.insert(to, entry);
             save(e, tx, list)
         }
+        "setlist.update_entry" => {
+            let mut list = find(e, p.id("id")?)?.clone();
+            let si = set_index(&list, p.opt_usize("set")?.unwrap_or(0))?;
+            let ei = entry_index(&list, si, p.opt_usize("index")?.unwrap_or(0))?;
+            let fields = p.opt_object("fields")?.cloned().unwrap_or_default();
+            update_entry(&mut list.sets[si].entries[ei], &fields)?;
+            save(e, tx, list)
+        }
         "setlist.remove_entry" => {
             let mut list = find(e, p.id("id")?)?.clone();
             let si = set_index(&list, p.opt_usize("set")?.unwrap_or(0))?;
@@ -245,4 +253,48 @@ fn detail(e: &Engine, s: &Setlist) -> Value {
         "unknown_durations": t.unknown,
         "issues": s.issues().into_iter().map(|i| json!({"field": i.field, "message": i.message})).collect::<Vec<_>>(),
     })
+}
+
+fn update_entry(
+    entry: &mut Entry,
+    fields: &serde_json::Map<String, Value>,
+) -> Result<(), CommandError> {
+    let bad = |k: &str, what: &str| CommandError::InvalidParams(format!("`{k}` must be {what}"));
+    for (k, v) in fields {
+        match (entry as &mut Entry, k.as_str()) {
+            (Entry::Song(e), "key") => {
+                e.key = match v {
+                    Value::Null => None,
+                    Value::String(s) if s.trim().is_empty() => None,
+                    Value::String(s) => Some(s.trim().to_string()),
+                    _ => return Err(bad(k, "a string or null")),
+                }
+            }
+            (Entry::Song(e), "tempo_bpm") => {
+                e.tempo_bpm = match v {
+                    Value::Null => None,
+                    other => Some(other.as_f64().ok_or_else(|| bad(k, "a number or null"))?),
+                }
+            }
+            (Entry::Song(e), "notes") => e.notes = v.as_str().unwrap_or_default().to_string(),
+            (Entry::Song(e), "optional") => {
+                e.optional = v.as_bool().ok_or_else(|| bad(k, "true or false"))?
+            }
+            (Entry::Break { label, .. }, "label") => {
+                *label = v.as_str().unwrap_or_default().to_string()
+            }
+            (Entry::Break { minutes, .. }, "minutes") => {
+                *minutes = v
+                    .as_u64()
+                    .and_then(|n| u32::try_from(n).ok())
+                    .ok_or_else(|| bad(k, "minutes"))?;
+            }
+            _ => {
+                return Err(CommandError::InvalidParams(format!(
+                    "`{k}` does not apply to this entry"
+                )));
+            }
+        }
+    }
+    Ok(())
 }

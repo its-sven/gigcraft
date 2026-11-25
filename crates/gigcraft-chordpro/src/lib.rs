@@ -206,6 +206,35 @@ fn to_chart(song: &cs::ast::Song) -> Chart {
     chart
 }
 
+/// Pitch class (0–11) of a key or chord root such as "G", "F#m", "Bb", "Hm" (German H = B).
+#[must_use]
+pub fn pitch_class(key: &str) -> Option<i8> {
+    let mut chars = key.trim().chars();
+    let base: i8 = match chars.next()?.to_ascii_uppercase() {
+        'C' => 0,
+        'D' => 2,
+        'E' => 4,
+        'F' => 5,
+        'G' => 7,
+        'A' => 9,
+        'B' | 'H' => 11,
+        _ => return None,
+    };
+    let shift = match chars.next() {
+        Some('#' | '♯') => 1,
+        Some('b' | '♭') => -1,
+        _ => 0,
+    };
+    Some((base + shift).rem_euclid(12))
+}
+
+/// Semitones (−5…6) to transpose a chart written in `from` so it sounds in `to`.
+#[must_use]
+pub fn semitones_between(from: &str, to: &str) -> Option<i8> {
+    let d = (pitch_class(to)? - pitch_class(from)?).rem_euclid(12);
+    Some(if d > 6 { d - 12 } else { d })
+}
+
 impl ChartLine {
     /// Chord line and lyric line as aligned monospace text (for plain views and tests).
     #[must_use]
@@ -278,6 +307,17 @@ mod tests {
         };
         let chords: Vec<_> = segments.iter().filter_map(|s| s.chord.clone()).collect();
         assert_eq!(chords, ["A", "D"]);
+    }
+
+    #[test]
+    fn key_distances() {
+        assert_eq!(semitones_between("G", "A"), Some(2));
+        assert_eq!(semitones_between("G", "F"), Some(-2));
+        assert_eq!(semitones_between("Em", "Gm"), Some(3));
+        assert_eq!(semitones_between("Bb", "H"), Some(1));
+        assert_eq!(semitones_between("C", "F#"), Some(6));
+        assert_eq!(semitones_between("C", "x"), None);
+        assert_eq!(semitones_between("", "C"), None);
     }
 
     #[test]

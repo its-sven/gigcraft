@@ -1,6 +1,6 @@
 //! GigCraft desktop app.
 //!
-//! `gigcraft [LIBRARY] [--song TITLE|ID] [--setlist NAME|ID]`
+//! `gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]]`
 
 use gigcraft_ui_egui::{GigCraftApp, Hooks, Start};
 use std::path::PathBuf;
@@ -18,9 +18,11 @@ fn parse_args() -> Result<Start, String> {
         match text.as_str() {
             "--song" => start.song = Some(value("--song")?),
             "--setlist" => start.setlist = Some(value("--setlist")?),
+            "--edit" => start.edit = true,
+            "--perform" => start.perform = true,
             "-h" | "--help" => {
                 return Err(
-                    "usage: gigcraft [LIBRARY] [--song TITLE|ID] [--setlist NAME|ID]".into(),
+                    "usage: gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]]".into(),
                 );
             }
             _ if text.starts_with('-') => return Err(format!("unknown option {text}")),

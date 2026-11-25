@@ -1,21 +1,25 @@
 //! GigCraft's desktop and web interface in egui.
 //!
-//! Phase 0 shell: open a library, browse and search songs, read charts with
-//! transposition, browse setlists with sets, breaks and running times, undo
-//! and redo. Every change goes through `gigcraft-commands`, like the CLI and
+//! Library browser and editors for songs and setlists, and perform mode for
+//! the stage. Every change goes through `gigcraft-commands`, like the CLI and
 //! MCP. Platform services (folder dialogs) are passed in as [`Hooks`], so this
 //! crate also builds for the web.
 
 mod chart_view;
+mod perform;
+mod setlist_view;
+mod song_view;
 
 use gigcraft_commands::{Engine, Outcome};
-use gigcraft_model::{SetlistId, SongId, format_duration};
+use gigcraft_model::{SetlistId, SongId};
+use gigcraft_perform::Keymap;
 use gigcraft_store::Library;
 use serde_json::{Value, json};
 use std::path::PathBuf;
 
 const LAST_LIBRARY_KEY: &str = "gigcraft.last_library";
 const FONT_SIZE_KEY: &str = "gigcraft.font_size";
+const KEYMAP_KEY: &str = "gigcraft.keymap";
 
 /// Platform services the shell can offer.
 #[derive(Default)]
@@ -40,6 +44,10 @@ pub struct Start {
     pub song: Option<String>,
     /// Setlist name (first match) or id.
     pub setlist: Option<String>,
+    /// Open the song in the editor.
+    pub edit: bool,
+    /// Start perform mode with the setlist.
+    pub perform: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -61,12 +69,15 @@ pub struct GigCraftApp {
     font_size: f32,
     message: Option<(String, bool)>,
     chart_cache: chart_view::Cache,
+    song_draft: Option<song_view::Draft>,
+    setlist_ui: setlist_view::State,
+    perform: Option<perform::PerformUi>,
+    keymap: Keymap,
 }
 
 impl GigCraftApp {
-    /// Create the app; opens `library` or the last library used.
+    /// Create the app; opens `start.library` or the last library used.
     pub fn new(cc: &eframe::CreationContext<'_>, start: Start, hooks: Hooks) -> Self {
-        let library = start.library.clone();
         let mut app = Self {
             engine: None,
             hooks,
@@ -78,6 +89,10 @@ impl GigCraftApp {
             font_size: 20.0,
             message: None,
             chart_cache: chart_view::Cache::default(),
+            song_draft: None,
+            setlist_ui: setlist_view::State::default(),
+            perform: None,
+            keymap: Keymap::default(),
         };
         if let Some(storage) = cc.storage {
             if let Some(size) = storage
@@ -86,14 +101,20 @@ impl GigCraftApp {
             {
                 app.font_size = size;
             }
+            if let Some(km) = storage
+                .get_string(KEYMAP_KEY)
+                .and_then(|s| serde_json::from_str(&s).ok())
+            {
+                app.keymap = km;
+            }
             let last = storage.get_string(LAST_LIBRARY_KEY).map(PathBuf::from);
-            if library.is_none()
+            if start.library.is_none()
                 && let Some(path) = last.filter(|p| p.is_dir())
             {
                 app.open(path);
             }
         }
-        if let Some(path) = library {
+        if let Some(path) = start.library.clone() {
             app.open(path);
         }
         app.select(&start);
@@ -122,6 +143,20 @@ impl GigCraftApp {
                 .map(|s| s.id);
             self.view = View::Setlists;
         }
+        if start.edit
+            && let Some(id) = self.song
+        {
+            self.song_draft = song_view::Draft::load(self, id);
+            self.view = View::Songs;
+        }
+        if start.edit && start.song.is_none() && self.setlist.is_some() {
+            self.setlist_ui = setlist_view::State::editing();
+        }
+        if start.perform
+            && let Some(id) = self.setlist
+        {
+            perform::start(self, id, None);
+        }
     }
 
     fn open(&mut self, path: PathBuf) {
@@ -131,6 +166,8 @@ impl GigCraftApp {
                 self.engine = Some(Engine::new(lib));
                 self.song = None;
                 self.setlist = None;
+                self.song_draft = None;
+                self.perform = None;
                 self.message = (problems > 0).then(|| {
                     (
                         format!("{problems} file(s) could not be read – see library.info"),
@@ -168,7 +205,7 @@ impl GigCraftApp {
     }
 
     /// Run a command and report errors in the status line.
-    fn run(&mut self, id: &str, params: Value) -> Option<Outcome> {
+    pub(crate) fn run(&mut self, id: &str, params: Value) -> Option<Outcome> {
         let engine = self.engine.as_mut()?;
         match engine.run(id, &params) {
             Ok(out) => Some(out),
@@ -177,6 +214,10 @@ impl GigCraftApp {
                 None
             }
         }
+    }
+
+    pub(crate) fn notify(&mut self, text: impl Into<String>) {
+        self.message = Some((text.into(), false));
     }
 
     fn top_bar(&mut self, ui: &mut egui::Ui) {
@@ -216,6 +257,7 @@ impl GigCraftApp {
                 .clicked()
             {
                 self.run("edit.undo", Value::Null);
+                self.song_draft = None;
             }
             if ui
                 .add_enabled(redo.is_some(), egui::Button::new("Redo"))
@@ -223,6 +265,7 @@ impl GigCraftApp {
                 .clicked()
             {
                 self.run("edit.redo", Value::Null);
+                self.song_draft = None;
             }
             ui.separator();
             ui.label("Text");
@@ -239,9 +282,20 @@ impl GigCraftApp {
         ui.horizontal(|ui| {
             ui.selectable_value(&mut self.view, View::Songs, "Songs");
             ui.selectable_value(&mut self.view, View::Setlists, "Setlists");
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                let (label, cmd) = match self.view {
+                    View::Songs => ("New song", "song"),
+                    View::Setlists => ("New setlist", "setlist"),
+                };
+                if ui.small_button(label).clicked() {
+                    self.create(cmd);
+                }
+            });
         });
         ui.separator();
         let Some(engine) = &self.engine else { return };
+        let mut pick_song = None;
+        let mut pick_list = None;
         match self.view {
             View::Songs => {
                 ui.add(
@@ -265,8 +319,7 @@ impl GigCraftApp {
                                 r.on_hover_text(&song.artist)
                             };
                             if r.clicked() {
-                                self.song = Some(song.id);
-                                self.transpose = 0;
+                                pick_song = Some(song.id);
                             }
                         }
                     });
@@ -284,176 +337,43 @@ impl GigCraftApp {
                                 .selectable_label(self.setlist == Some(list.id), label)
                                 .clicked()
                             {
-                                self.setlist = Some(list.id);
+                                pick_list = Some(list.id);
                             }
                         }
                     });
             }
         }
-    }
-
-    fn song_view(&mut self, ui: &mut egui::Ui, id: SongId) {
-        let Some(engine) = &self.engine else { return };
-        let lib = engine.library();
-        let Some(song) = lib.song(id) else {
-            ui.label("This song is no longer in the library.");
-            return;
-        };
-        ui.horizontal(|ui| {
-            ui.heading(egui::RichText::new(&song.title).size(self.font_size * 1.4));
-            if !song.artist.is_empty() {
-                ui.label(egui::RichText::new(&song.artist).size(self.font_size));
-            }
-        });
-        let chart = self.chart_cache.get(lib, id, self.transpose);
-        ui.horizontal(|ui| {
-            let mut facts = Vec::new();
-            if let Some(k) = chart.chart.key.clone().or_else(|| song.key.clone()) {
-                facts.push(format!("Key {k}"));
-            }
-            if let Some(t) = song.tempo_bpm {
-                facts.push(format!("{t:.0} BPM"));
-            }
-            if let Some(ts) = &song.time_signature {
-                facts.push(ts.clone());
-            }
-            if let Some(c) = song.capo.filter(|c| *c > 0) {
-                facts.push(format!("Capo {c}"));
-            }
-            if let Some(d) = song.duration_secs {
-                facts.push(format_duration(d));
-            }
-            ui.label(facts.join("  ·  "));
-            ui.separator();
-            if ui.button("−").on_hover_text("Transpose down").clicked() {
-                self.transpose = if self.transpose <= -11 {
-                    0
-                } else {
-                    self.transpose - 1
-                };
-            }
-            ui.label(format!("{:+}", self.transpose));
-            if ui.button("+").on_hover_text("Transpose up").clicked() {
-                self.transpose = if self.transpose >= 11 {
-                    0
-                } else {
-                    self.transpose + 1
-                };
-            }
-        });
-        for part in &song.parts {
-            let actions: Vec<String> = part
-                .actions
-                .iter()
-                .map(|a| format!("{}: {}", a.device, a.message))
-                .collect();
-            if !actions.is_empty() {
-                ui.small(format!("{}  –  {}", part.name, actions.join("; ")));
-            }
-        }
-        if !song.notes.is_empty() {
-            ui.label(egui::RichText::new(&song.notes).italics());
-        }
-        ui.separator();
-        for w in &chart.warnings {
-            ui.colored_label(ui.visuals().warn_fg_color, w);
-        }
-        let font = self.font_size;
-        egui::ScrollArea::vertical()
-            .auto_shrink(false)
-            .show(ui, |ui| {
-                chart_view::show(ui, &chart.chart, font);
-            });
-    }
-
-    fn setlist_view(&mut self, ui: &mut egui::Ui, id: SetlistId) {
-        let Some(out) = self.run("setlist.get", json!({ "id": id.to_string() })) else {
-            return;
-        };
-        let d = out.result;
-        ui.heading(
-            egui::RichText::new(d["name"].as_str().unwrap_or_default()).size(self.font_size * 1.4),
-        );
-        ui.label(format!(
-            "{}  ·  {} total{}",
-            d["date"].as_str().unwrap_or("no date"),
-            d["total"].as_str().unwrap_or_default(),
-            match d["unknown_durations"].as_u64() {
-                Some(n) if n > 0 => format!(" (+{n} songs without length)"),
-                _ => String::new(),
-            }
-        ));
-        if let Some(n) = d["notes"].as_str().filter(|n| !n.is_empty()) {
-            ui.label(egui::RichText::new(n).italics());
-        }
-        ui.separator();
-        let size = self.font_size;
-        let mut open_song = None;
-        egui::ScrollArea::vertical()
-            .auto_shrink(false)
-            .show(ui, |ui| {
-                for set in d["sets"].as_array().into_iter().flatten() {
-                    ui.add_space(8.0);
-                    ui.label(
-                        egui::RichText::new(format!(
-                            "{}  ({})",
-                            set["name"].as_str().unwrap_or_default(),
-                            set["duration"].as_str().unwrap_or_default()
-                        ))
-                        .size(size * 1.1)
-                        .strong(),
-                    );
-                    let mut n = 0;
-                    for e in set["entries"].as_array().into_iter().flatten() {
-                        if e["type"] == "break" {
-                            ui.label(
-                                egui::RichText::new(format!(
-                                    "— {} {} min —",
-                                    e["label"]
-                                        .as_str()
-                                        .filter(|l| !l.is_empty())
-                                        .unwrap_or("Break"),
-                                    e["minutes"]
-                                ))
-                                .size(size * 0.8)
-                                .weak(),
-                            );
-                            continue;
-                        }
-                        n += 1;
-                        let missing = e["missing"] == true;
-                        let title = e["title"].as_str().unwrap_or("(missing song)");
-                        let mut line = format!("{n}. {title}");
-                        if let Some(k) = e["key"].as_str() {
-                            line.push_str(&format!("   [{k}]"));
-                        }
-                        if e["optional"] == true {
-                            line.push_str("   (optional)");
-                        }
-                        let mut text = egui::RichText::new(line).size(size);
-                        if missing {
-                            text = text.strikethrough().weak();
-                        }
-                        let r = ui.add_enabled(!missing, egui::Button::new(text).frame(false));
-                        if r.clicked()
-                            && let Some(id) = e["song"].as_str().and_then(|s| s.parse().ok())
-                        {
-                            open_song = Some(id);
-                        }
-                        if let Some(note) = e["notes"].as_str().filter(|x| !x.is_empty()) {
-                            ui.label(
-                                egui::RichText::new(format!("    {note}"))
-                                    .size(size * 0.75)
-                                    .italics(),
-                            );
-                        }
-                    }
-                }
-            });
-        if let Some(id) = open_song {
+        if let Some(id) = pick_song {
             self.song = Some(id);
-            self.view = View::Songs;
             self.transpose = 0;
+            self.song_draft = None;
+        }
+        if let Some(id) = pick_list {
+            self.setlist = Some(id);
+            self.setlist_ui = setlist_view::State::default();
+        }
+    }
+
+    fn create(&mut self, what: &str) {
+        match what {
+            "song" => {
+                if let Some(out) = self.run("song.create", json!({"title": "New song", "chart": "{title: New song}\n\n[C]Lyrics with [G]chords\n"}))
+                    && let Some(id) = out.result["id"].as_str().and_then(|s| s.parse().ok())
+                {
+                    self.song = Some(id);
+                    self.view = View::Songs;
+                    self.song_draft = song_view::Draft::load(self, id);
+                }
+            }
+            _ => {
+                if let Some(out) = self.run("setlist.create", json!({"name": "New setlist"}))
+                    && let Some(id) = out.result["id"].as_str().and_then(|s| s.parse().ok())
+                {
+                    self.setlist = Some(id);
+                    self.view = View::Setlists;
+                    self.setlist_ui = setlist_view::State::editing();
+                }
+            }
         }
     }
 
@@ -471,6 +391,11 @@ impl GigCraftApp {
 
 impl eframe::App for GigCraftApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        if self.perform.is_some() {
+            perform::show(self, ui);
+            return;
+        }
+        let typing = ui.ctx().memory(|m| m.focused().is_some());
         let (undo, redo) = ui.input(|i| {
             let cmd = i.modifiers.command;
             (
@@ -478,11 +403,13 @@ impl eframe::App for GigCraftApp {
                 cmd && i.modifiers.shift && i.key_pressed(egui::Key::Z),
             )
         });
-        if undo {
+        if !typing && undo {
             self.run("edit.undo", Value::Null);
+            self.song_draft = None;
         }
-        if redo {
+        if !typing && redo {
             self.run("edit.redo", Value::Null);
+            self.song_draft = None;
         }
         egui::Panel::top("top").show(ui, |ui| self.top_bar(ui));
         if let Some((msg, is_error)) = self.message.clone() {
@@ -509,15 +436,16 @@ impl eframe::App for GigCraftApp {
         egui::CentralPanel::default().show(ui, |ui| match (self.engine.is_some(), self.view) {
             (false, _) => self.welcome(ui),
             (true, View::Songs) => match self.song {
-                Some(id) => self.song_view(ui, id),
+                Some(id) if self.song_draft.is_some() => song_view::editor(self, ui, id),
+                Some(id) => song_view::view(self, ui, id),
                 None => {
-                    ui.label("Pick a song.");
+                    ui.label("Pick a song, or create one with “New song”.");
                 }
             },
             (true, View::Setlists) => match self.setlist {
-                Some(id) => self.setlist_view(ui, id),
+                Some(id) => setlist_view::view(self, ui, id),
                 None => {
-                    ui.label("Pick a setlist.");
+                    ui.label("Pick a setlist, or create one with “New setlist”.");
                 }
             },
         });
@@ -528,5 +456,8 @@ impl eframe::App for GigCraftApp {
             storage.set_string(LAST_LIBRARY_KEY, e.library().root().display().to_string());
         }
         storage.set_string(FONT_SIZE_KEY, self.font_size.to_string());
+        if let Ok(km) = serde_json::to_string(&self.keymap) {
+            storage.set_string(KEYMAP_KEY, km);
+        }
     }
 }

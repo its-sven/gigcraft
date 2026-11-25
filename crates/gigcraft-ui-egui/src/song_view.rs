@@ -1,0 +1,426 @@
+//! Song view and song editor.
+
+use crate::{GigCraftApp, chart_view};
+use gigcraft_model::{MidiAction, MidiMessage, Part, SongId, format_duration};
+use serde_json::{Value, json};
+
+/// A program change shown as editable fields.
+#[derive(Debug, Clone, Default)]
+struct PresetDraft {
+    device: String,
+    channel: String,
+    program: String,
+}
+
+#[derive(Debug, Clone, Default)]
+struct PartDraft {
+    name: String,
+    notes: String,
+    presets: Vec<PresetDraft>,
+    /// Actions this editor does not edit (CC, SysEx…), kept unchanged.
+    other: Vec<MidiAction>,
+}
+
+/// The song being edited, as text fields.
+#[derive(Debug, Clone)]
+pub(crate) struct Draft {
+    id: SongId,
+    title: String,
+    artist: String,
+    key: String,
+    tempo: String,
+    time: String,
+    duration: String,
+    capo: String,
+    tags: String,
+    notes: String,
+    chart: String,
+    parts: Vec<PartDraft>,
+    issues: Vec<String>,
+}
+
+impl Draft {
+    pub(crate) fn load(app: &GigCraftApp, id: SongId) -> Option<Self> {
+        let lib = app.engine.as_ref()?.library();
+        let s = lib.song(id)?;
+        let parts = s
+            .parts
+            .iter()
+            .map(|p| {
+                let mut d = PartDraft {
+                    name: p.name.clone(),
+                    notes: p.notes.clone(),
+                    ..Default::default()
+                };
+                for a in &p.actions {
+                    match &a.message {
+                        MidiMessage::ProgramChange {
+                            channel,
+                            program,
+                            bank_msb: None,
+                            bank_lsb: None,
+                        } => {
+                            d.presets.push(PresetDraft {
+                                device: a.device.clone(),
+                                channel: channel.to_string(),
+                                program: program.to_string(),
+                            });
+                        }
+                        _ => d.other.push(a.clone()),
+                    }
+                }
+                d
+            })
+            .collect();
+        Some(Self {
+            id,
+            title: s.title.clone(),
+            artist: s.artist.clone(),
+            key: s.key.clone().unwrap_or_default(),
+            tempo: s.tempo_bpm.map(|t| format!("{t}")).unwrap_or_default(),
+            time: s.time_signature.clone().unwrap_or_default(),
+            duration: s.duration_secs.map(format_duration).unwrap_or_default(),
+            capo: s.capo.map(|c| c.to_string()).unwrap_or_default(),
+            tags: s.tags.join(", "),
+            notes: s.notes.clone(),
+            chart: lib.chart(id).unwrap_or_default().to_string(),
+            parts,
+            issues: Vec::new(),
+        })
+    }
+
+    /// The fields for `song.update`, or a message about what is wrong.
+    fn fields(&self) -> Result<Value, String> {
+        let opt = |s: &str| {
+            if s.trim().is_empty() {
+                Value::Null
+            } else {
+                json!(s.trim())
+            }
+        };
+        let tempo = match self.tempo.trim() {
+            "" => Value::Null,
+            t => json!(
+                t.replace(',', ".")
+                    .parse::<f64>()
+                    .map_err(|_| format!("Tempo “{t}” is not a number"))?
+            ),
+        };
+        let capo = match self.capo.trim() {
+            "" => Value::Null,
+            c => json!(
+                c.parse::<u8>()
+                    .map_err(|_| format!("Capo “{c}” is not a number"))?
+            ),
+        };
+        let mut parts = Vec::new();
+        for p in &self.parts {
+            let mut actions = Vec::new();
+            for pr in &p.presets {
+                let channel: u8 = pr
+                    .channel
+                    .trim()
+                    .parse()
+                    .map_err(|_| format!("{}: channel must be 1–16", p.name))?;
+                let program: u8 = pr
+                    .program
+                    .trim()
+                    .parse()
+                    .map_err(|_| format!("{}: program must be 0–127", p.name))?;
+                actions.push(MidiAction {
+                    device: pr.device.trim().to_string(),
+                    message: MidiMessage::ProgramChange {
+                        channel,
+                        program,
+                        bank_msb: None,
+                        bank_lsb: None,
+                    },
+                });
+            }
+            actions.extend(p.other.iter().cloned());
+            parts.push(Part {
+                name: p.name.trim().to_string(),
+                actions,
+                notes: p.notes.clone(),
+            });
+        }
+        let tags: Vec<String> = self
+            .tags
+            .split(',')
+            .map(str::trim)
+            .filter(|t| !t.is_empty())
+            .map(str::to_string)
+            .collect();
+        Ok(json!({
+            "title": self.title.trim(),
+            "artist": self.artist.trim(),
+            "key": opt(&self.key),
+            "tempo_bpm": tempo,
+            "time_signature": opt(&self.time),
+            "duration": opt(&self.duration),
+            "capo": capo,
+            "tags": tags,
+            "notes": self.notes,
+            "parts": serde_json::to_value(parts).unwrap_or(Value::Null),
+        }))
+    }
+}
+
+pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
+    let Some(engine) = &app.engine else { return };
+    let lib = engine.library();
+    let Some(song) = lib.song(id).cloned() else {
+        ui.label("This song is no longer in the library.");
+        return;
+    };
+    let chart = app.chart_cache.get(lib, id, app.transpose);
+    let size = app.font_size;
+    let mut edit = false;
+    let mut trash = false;
+    ui.horizontal(|ui| {
+        ui.heading(egui::RichText::new(&song.title).size(size * 1.4));
+        if !song.artist.is_empty() {
+            ui.label(egui::RichText::new(&song.artist).size(size));
+        }
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            trash = ui.button("Move to trash").clicked();
+            edit = ui.button("Edit").clicked();
+        });
+    });
+    ui.horizontal(|ui| {
+        let mut facts = Vec::new();
+        if let Some(k) = chart.chart.key.clone().or_else(|| song.key.clone()) {
+            facts.push(format!("Key {k}"));
+        }
+        if let Some(t) = song.tempo_bpm {
+            facts.push(format!("{t:.0} BPM"));
+        }
+        if let Some(ts) = &song.time_signature {
+            facts.push(ts.clone());
+        }
+        if let Some(c) = song.capo.filter(|c| *c > 0) {
+            facts.push(format!("Capo {c}"));
+        }
+        if let Some(d) = song.duration_secs {
+            facts.push(format_duration(d));
+        }
+        ui.label(facts.join("  ·  "));
+        ui.separator();
+        if ui.button("−").on_hover_text("Transpose down").clicked() {
+            app.transpose = if app.transpose <= -11 {
+                0
+            } else {
+                app.transpose - 1
+            };
+        }
+        ui.label(format!("{:+}", app.transpose));
+        if ui.button("+").on_hover_text("Transpose up").clicked() {
+            app.transpose = if app.transpose >= 11 {
+                0
+            } else {
+                app.transpose + 1
+            };
+        }
+    });
+    for part in &song.parts {
+        let actions: Vec<String> = part
+            .actions
+            .iter()
+            .map(|a| format!("{}: {}", a.device, a.message))
+            .collect();
+        if !actions.is_empty() {
+            ui.small(format!("{}  –  {}", part.name, actions.join("; ")));
+        }
+    }
+    if !song.notes.is_empty() {
+        ui.label(egui::RichText::new(&song.notes).italics());
+    }
+    if !song.links.is_empty() {
+        ui.horizontal_wrapped(|ui| {
+            for l in &song.links {
+                ui.hyperlink_to(l.label.clone().unwrap_or_else(|| l.url.clone()), &l.url);
+            }
+        });
+    }
+    ui.separator();
+    for w in &chart.warnings {
+        ui.colored_label(ui.visuals().warn_fg_color, w);
+    }
+    egui::ScrollArea::vertical()
+        .auto_shrink(false)
+        .show(ui, |ui| {
+            chart_view::show(ui, &chart.chart, size);
+        });
+    if edit {
+        app.song_draft = Draft::load(app, id);
+    }
+    if trash
+        && app
+            .run("song.trash", json!({"id": id.to_string()}))
+            .is_some()
+    {
+        app.song = None;
+        app.notify(format!(
+            "“{}” moved to the library's trash (Undo brings it back).",
+            song.title
+        ));
+    }
+}
+
+fn field(ui: &mut egui::Ui, label: &str, value: &mut String, width: f32) {
+    ui.label(label);
+    ui.add_sized(
+        [width, ui.spacing().interact_size.y],
+        egui::TextEdit::singleline(value),
+    );
+}
+
+pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
+    let Some(mut draft) = app.song_draft.take() else {
+        return;
+    };
+    if draft.id != id {
+        app.song_draft = Draft::load(app, id);
+        return;
+    }
+    let mut save = false;
+    let mut cancel = false;
+    ui.horizontal(|ui| {
+        ui.heading("Edit song");
+        ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            cancel = ui.button("Cancel").clicked();
+            save = ui.button(egui::RichText::new("Save").strong()).clicked();
+        });
+    });
+    let save_key = ui.input(|i| i.modifiers.command && i.key_pressed(egui::Key::S));
+    save |= save_key;
+    for issue in &draft.issues {
+        ui.colored_label(ui.visuals().warn_fg_color, issue);
+    }
+    egui::ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
+        egui::Grid::new("song-fields").num_columns(4).spacing([12.0, 6.0]).show(ui, |ui| {
+            field(ui, "Title", &mut draft.title, 280.0);
+            field(ui, "Artist", &mut draft.artist, 220.0);
+            ui.end_row();
+            field(ui, "Key", &mut draft.key, 60.0);
+            field(ui, "Tempo (BPM)", &mut draft.tempo, 60.0);
+            ui.end_row();
+            field(ui, "Time", &mut draft.time, 60.0);
+            field(ui, "Duration (m:ss)", &mut draft.duration, 60.0);
+            ui.end_row();
+            field(ui, "Capo", &mut draft.capo, 60.0);
+            field(ui, "Tags (comma)", &mut draft.tags, 220.0);
+            ui.end_row();
+        });
+        ui.label("Notes");
+        ui.add(egui::TextEdit::multiline(&mut draft.notes).desired_rows(2).desired_width(f32::INFINITY));
+
+        ui.add_space(8.0);
+        ui.horizontal(|ui| {
+            ui.strong("Parts and presets");
+            if ui.small_button("Add part").clicked() {
+                let name = format!("Part {}", draft.parts.len() + 1);
+                draft.parts.push(PartDraft { name, ..Default::default() });
+            }
+        });
+        ui.small("Each part sends its presets when it starts. Program numbers are MIDI values 0–127.");
+        let mut remove_part = None;
+        let mut move_up = None;
+        for (pi, part) in draft.parts.iter_mut().enumerate() {
+            ui.group(|ui| {
+                ui.horizontal(|ui| {
+                    ui.add(egui::TextEdit::singleline(&mut part.name).desired_width(140.0).hint_text("Part name"));
+                    ui.add(egui::TextEdit::singleline(&mut part.notes).desired_width(220.0).hint_text("Notes"));
+                    if pi > 0 && ui.small_button("Up").clicked() {
+                        move_up = Some(pi);
+                    }
+                    if ui.small_button("Remove part").clicked() {
+                        remove_part = Some(pi);
+                    }
+                });
+                let mut remove_preset = None;
+                for (ri, pr) in part.presets.iter_mut().enumerate() {
+                    ui.horizontal(|ui| {
+                        ui.label("Device");
+                        ui.add(egui::TextEdit::singleline(&mut pr.device).desired_width(140.0));
+                        ui.label("Channel");
+                        ui.add(egui::TextEdit::singleline(&mut pr.channel).desired_width(30.0));
+                        ui.label("Program");
+                        ui.add(egui::TextEdit::singleline(&mut pr.program).desired_width(40.0));
+                        if ui.small_button("Remove").clicked() {
+                            remove_preset = Some(ri);
+                        }
+                    });
+                }
+                if let Some(ri) = remove_preset {
+                    part.presets.remove(ri);
+                }
+                if !part.other.is_empty() {
+                    ui.small(format!("+ {} other MIDI message(s), kept as they are", part.other.len()));
+                }
+                if ui.small_button("Add program change").clicked() {
+                    let device = part.presets.last().map(|p| p.device.clone()).unwrap_or_else(|| "Play Acoustic".into());
+                    part.presets.push(PresetDraft { device, channel: "1".into(), program: "0".into() });
+                }
+            });
+        }
+        if let Some(pi) = remove_part {
+            draft.parts.remove(pi);
+        }
+        if let Some(pi) = move_up {
+            draft.parts.swap(pi - 1, pi);
+        }
+
+        ui.add_space(8.0);
+        ui.strong("Chart (ChordPro)");
+        ui.small("Chords in [brackets] before the syllable; sections with {start_of_chorus} … {end_of_chorus}; {comment: …}.");
+        ui.columns(2, |cols| {
+            cols[0].add(
+                egui::TextEdit::multiline(&mut draft.chart)
+                    .code_editor()
+                    .desired_rows(24)
+                    .desired_width(f32::INFINITY),
+            );
+            let parsed = gigcraft_chordpro::parse(&draft.chart, 0);
+            for w in &parsed.warnings {
+                cols[1].colored_label(cols[1].visuals().warn_fg_color, w);
+            }
+            chart_view::show(&mut cols[1], &parsed.chart, (app.font_size * 0.8).max(12.0));
+        });
+    });
+
+    if cancel {
+        return;
+    }
+    if save {
+        match draft.fields() {
+            Ok(fields) => {
+                let chart = draft.chart.clone();
+                if let Some(out) = app.run(
+                    "song.update",
+                    json!({"id": id.to_string(), "fields": fields, "chart": chart}),
+                ) {
+                    let issues: Vec<String> = out.result["issues"]
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .map(|i| {
+                            format!(
+                                "{}: {}",
+                                i["field"].as_str().unwrap_or(""),
+                                i["message"].as_str().unwrap_or("")
+                            )
+                        })
+                        .collect();
+                    if issues.is_empty() {
+                        app.notify("Saved.");
+                        return;
+                    }
+                    draft.issues = issues;
+                }
+            }
+            Err(msg) => draft.issues = vec![msg],
+        }
+    }
+    app.song_draft = Some(draft);
+}

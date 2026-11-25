@@ -104,6 +104,7 @@ fn layering() -> Result {
         "gigcraft-chordpro",
         "gigcraft-store",
         "gigcraft-commands",
+        "gigcraft-perform",
         "gigcraft-automation",
     ];
     const FORBIDDEN: &[&str] = &[

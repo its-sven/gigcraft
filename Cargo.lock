@@ -1363,6 +1363,7 @@ version = "0.1.0"
 dependencies = [
  "gigcraft-chordpro",
  "gigcraft-model",
+ "gigcraft-perform",
  "gigcraft-store",
  "serde",
  "serde_json",
@@ -1405,6 +1406,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "gigcraft-perform"
+version = "0.1.0"
+dependencies = [
+ "gigcraft-model",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.21",
+ "toml",
+]
+
+[[package]]
 name = "gigcraft-store"
 version = "0.1.0"
 dependencies = [
@@ -1426,6 +1438,7 @@ dependencies = [
  "gigcraft-chordpro",
  "gigcraft-commands",
  "gigcraft-model",
+ "gigcraft-perform",
  "gigcraft-store",
  "serde_json",
 ]

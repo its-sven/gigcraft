@@ -54,10 +54,10 @@ const SONG_FIELDS: &[ParamSpec] = &[
 /// All commands, in a stable order.
 #[must_use]
 pub fn specs() -> &'static [CommandSpec] {
-    &SPECS
+    SPECS
 }
 
-static SPECS: [CommandSpec; 23] = [
+static SPECS: &[CommandSpec] = &[
     CommandSpec {
         id: "library.info",
         summary: "Name, location, counts and load problems of the library",

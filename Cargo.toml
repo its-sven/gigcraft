@@ -14,6 +14,7 @@ gigcraft-model = { path = "crates/gigcraft-model" }
 gigcraft-chordpro = { path = "crates/gigcraft-chordpro" }
 gigcraft-store = { path = "crates/gigcraft-store" }
 gigcraft-commands = { path = "crates/gigcraft-commands" }
+gigcraft-perform = { path = "crates/gigcraft-perform" }
 gigcraft-automation = { path = "crates/gigcraft-automation" }
 gigcraft-ui-egui = { path = "crates/gigcraft-ui-egui" }
 
