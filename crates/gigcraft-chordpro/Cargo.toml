@@ -1,0 +1,15 @@
+[package]
+name = "gigcraft-chordpro"
+description = "ChordPro charts for GigCraft: a display model on top of ChordSketch"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+chordsketch-chordpro.workspace = true
+serde.workspace = true
+
+[lints]
+workspace = true

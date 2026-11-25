@@ -15,6 +15,24 @@
 
 ## Phase 0: Foundation
 
+**Status (2026-11-25):** done except the items marked open below.
+
+| Item | State |
+|---|---|
+| Workspace, lints, `cargo xtask ci` (fmt, clippy, tests, layering), GitHub Actions | done |
+| ChordSketch evaluated and adopted (ADR-0007), craft-libs pinned (ADR-0008), UniFFI (ADR-0009) | done |
+| `gigcraft-model`, `-chordpro`, `-store`, `-commands` (23 commands, undo/redo, inspect) | done |
+| `gigcraft-cli` (`init`, `run`, `commands`, `mcp`) with craft-jsonrpc/craft-mcp | done |
+| egui desktop shell: library, search, chart with transpose, setlists | done |
+| `cargo xtask apple` → XCFramework + Swift bindings; SwiftUI app on iPad simulator | done |
+| Demo library (own songs) | done |
+| Automerge vs. own record versioning | open, needed before Phase 3 |
+| Web (wasm) build of the egui UI | open, moved to Phase 2 |
+| Test on a real iPad (signing with a personal team) | open |
+| CODE_OF_CONDUCT, SECURITY | open |
+
+Original plan:
+
 1. **Repo and tooling**
    - Cargo workspace (edition 2024, resolver 3), shared lints, `rust-toolchain.toml`.
    - `xtask` with `ci` (fmt, clippy `-D warnings`, tests, layering check "no UI crate below the UI", wasm build), `ios` (XCFramework + Swift package), `release`.

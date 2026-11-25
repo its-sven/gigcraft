@@ -1,0 +1,20 @@
+[package]
+name = "gigcraft-model"
+description = "GigCraft data model: songs, parts, MIDI actions, setlists"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+uuid.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+toml.workspace = true
+
+[lints]
+workspace = true

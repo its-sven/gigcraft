@@ -1,0 +1,24 @@
+{title: Northbound Train}
+{artist: The Demo Band}
+{key: E}
+{tempo: 132}
+{time: 4/4}
+
+{comment: Intro: E riff x4}
+
+{start_of_verse}
+[E]Ticket in my pocket and a [A]suitcase full of [E]rain
+[E]Every mile a little lighter on the [B]northbound [E]train
+{end_of_verse}
+
+{start_of_chorus}
+[A]Roll on, roll [E]on
+[A]steel wheels [B]singing a [E]song
+{end_of_chorus}
+
+{start_of_bridge}
+[C#m]Stations fade like [A]photographs
+[E]nobody waves, [B]nobody laughs
+{end_of_bridge}
+
+{chorus}

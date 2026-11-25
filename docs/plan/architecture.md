@@ -45,7 +45,7 @@ gigcraft/
 │   │                          setlist text/PDF, Stage Traxx playlist text, MusicXML (later)
 │   ├── gigcraft-store         file-based library (one file per song), index, search, smart lists,
 │   │                          atomic saves (craft-atomic), migrations
-│   ├── gigcraft-commands      command registry (id + JSON params), undo/redo, inspect, permissions
+│   ├── gigcraft-commands      command registry (id + JSON params), undo/redo, inspect, demo content
 │   ├── gigcraft-perform       show state machine: setlist → song → part/region → page; timers,
 │   │                          set breaks, action mapping (pedal/MIDI/keys → commands)
 │   ├── gigcraft-midi          message model, device presets & profiles, macros, MIDI Learn,
@@ -58,8 +58,10 @@ gigcraft/
 │   ├── gigcraft-ffi           UniFFI surface for Swift and Kotlin
 │   ├── gigcraft-platform-*    desktop I/O (cpal, midir, mdns-sd), web I/O (wasm-bindgen)
 │   └── gigcraft-ui-egui       desktop + web UI
+├── tools/gigcraft-bindgen     uniffi-bindgen for `cargo xtask apple`
 ├── apps/
-│   ├── desktop/               `gigcraft` and `gigcraft-cli` binaries
+│   ├── cli/                   `gigcraft-cli` (init, run, commands, mcp)
+│   ├── desktop/               `gigcraft` (egui)
 │   ├── web/                   wasm build (Trunk)
 │   ├── apple/                 Xcode project, SwiftUI, Swift package wrapping the XCFramework
 │   └── android/               later

@@ -1,0 +1,11 @@
+// Shared build settings for the GigCraft iOS app. Committed; holds no personal data.
+// Signing: copy Local.xcconfig.example to Local.xcconfig (git-ignored) and put your team ID there.
+
+APP_BUNDLE_ID = io.github.its-sven.gigcraft
+DEVELOPMENT_TEAM =
+CODE_SIGN_STYLE = Automatic
+
+// The Rust core is built for Apple-silicon simulators only (cargo xtask apple).
+EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64
+
+#include? "Local.xcconfig"

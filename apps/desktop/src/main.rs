@@ -1,0 +1,58 @@
+//! GigCraft desktop app.
+//!
+//! `gigcraft [LIBRARY] [--song TITLE|ID] [--setlist NAME|ID]`
+
+use gigcraft_ui_egui::{GigCraftApp, Hooks, Start};
+use std::path::PathBuf;
+
+fn parse_args() -> Result<Start, String> {
+    let mut start = Start::default();
+    let mut args = std::env::args_os().skip(1);
+    while let Some(arg) = args.next() {
+        let text = arg.to_string_lossy().into_owned();
+        let mut value = |name: &str| {
+            args.next()
+                .map(|v| v.to_string_lossy().into_owned())
+                .ok_or_else(|| format!("{name} needs a value"))
+        };
+        match text.as_str() {
+            "--song" => start.song = Some(value("--song")?),
+            "--setlist" => start.setlist = Some(value("--setlist")?),
+            "-h" | "--help" => {
+                return Err(
+                    "usage: gigcraft [LIBRARY] [--song TITLE|ID] [--setlist NAME|ID]".into(),
+                );
+            }
+            _ if text.starts_with('-') => return Err(format!("unknown option {text}")),
+            _ => start.library = Some(PathBuf::from(arg)),
+        }
+    }
+    Ok(start)
+}
+
+fn main() -> eframe::Result {
+    let start = match parse_args() {
+        Ok(s) => s,
+        Err(msg) => {
+            eprintln!("{msg}");
+            std::process::exit(2);
+        }
+    };
+    let options = eframe::NativeOptions {
+        viewport: eframe::egui::ViewportBuilder::default()
+            .with_title("GigCraft")
+            .with_inner_size([1100.0, 760.0])
+            .with_min_inner_size([640.0, 420.0]),
+        ..Default::default()
+    };
+    eframe::run_native(
+        "GigCraft",
+        options,
+        Box::new(move |cc| {
+            let hooks = Hooks {
+                pick_folder: Some(Box::new(|| rfd::FileDialog::new().pick_folder())),
+            };
+            Ok(Box::new(GigCraftApp::new(cc, start, hooks)))
+        }),
+    )
+}

@@ -1,0 +1,8 @@
+// Copy to Local.xcconfig (git-ignored) and fill in. Never commit Local.xcconfig.
+//
+// Your team ID: Xcode ▸ Settings ▸ Accounts ▸ your Apple ID ▸ the "Personal Team" row
+// (or developer.apple.com ▸ Membership). It is a 10-character code like ABCDE12345.
+DEVELOPMENT_TEAM = ABCDE12345
+
+// With a free Apple ID the bundle identifier must be unique to you:
+// APP_BUNDLE_ID = io.github.<your-github-user>.gigcraft

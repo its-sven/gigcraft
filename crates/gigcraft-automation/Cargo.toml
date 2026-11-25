@@ -1,0 +1,21 @@
+[package]
+name = "gigcraft-automation"
+description = "GigCraft automation: command lines and an MCP server over stdio"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+gigcraft-commands.workspace = true
+serde_json.workspace = true
+craft-jsonrpc.workspace = true
+craft-mcp.workspace = true
+
+[dev-dependencies]
+gigcraft-store.workspace = true
+tempfile.workspace = true
+
+[lints]
+workspace = true

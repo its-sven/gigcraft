@@ -1,0 +1,25 @@
+{title: Harbour Lights}
+{artist: The Demo Band}
+{key: G}
+{tempo: 96}
+{time: 4/4}
+
+{start_of_verse: 1}
+[G]Lanterns on the [C]water, [G]ropes along the [D]pier
+[Em]Every boat that's [C]coming home [G]brings the [D]evening [G]near
+{end_of_verse}
+
+{start_of_chorus}
+[C]Harbour lights, [G]harbour lights
+[Em]guide us [D]through the night
+[C]Hold the line and [G]hold it tight
+[D]till the morning [G]light
+{end_of_chorus}
+
+{start_of_verse: 2}
+[G]Salt upon the [C]window, [G]bread upon the [D]shelf
+[Em]Someone keeps a [C]candle lit [G]just to [D]see it [G]melt
+{end_of_verse}
+
+{comment: Solo over verse chords, then chorus twice}
+{chorus}
