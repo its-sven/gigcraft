@@ -97,6 +97,53 @@ pub fn parse(source: &str, semitones: i8) -> Parsed {
     }
 }
 
+/// Song metadata declared by a chart's directives, as written.
+///
+/// Values keep the source order; `keys`, `tempos` and `times` list every
+/// declaration (a song may change key), so the first one is the song's start.
+/// Aliases are resolved by ChordSketch (`{t}`, `{st}`, `{meta: artist …}`).
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize)]
+pub struct Metadata {
+    pub title: Option<String>,
+    pub subtitles: Vec<String>,
+    pub artists: Vec<String>,
+    pub keys: Vec<String>,
+    pub tempos: Vec<String>,
+    pub times: Vec<String>,
+    pub capo: Option<String>,
+    pub duration: Option<String>,
+    pub tags: Vec<String>,
+}
+
+/// Read the metadata directives of a ChordPro chart (title, artist, key…).
+///
+/// Lenient like [`parse`]; input larger than [`MAX_SOURCE_BYTES`] yields empty metadata.
+#[must_use]
+pub fn metadata(source: &str) -> Metadata {
+    if source.len() > MAX_SOURCE_BYTES {
+        return Metadata::default();
+    }
+    let m = cs::parse_lenient(source).song.metadata;
+    let clean = |v: Vec<String>| -> Vec<String> {
+        v.into_iter()
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect()
+    };
+    let one = |v: Option<String>| v.map(|s| s.trim().to_string()).filter(|s| !s.is_empty());
+    Metadata {
+        title: one(m.title),
+        subtitles: clean(m.subtitles),
+        artists: clean(m.artists),
+        keys: clean(m.keys),
+        tempos: clean(m.tempos),
+        times: clean(m.times),
+        capo: one(m.capo),
+        duration: one(m.duration),
+        tags: clean(m.tags),
+    }
+}
+
 fn kind_of(k: &DirectiveKind) -> BlockKind {
     match k {
         DirectiveKind::StartOfVerse => BlockKind::Verse,
@@ -278,6 +325,30 @@ mod tests {
         };
         let chords: Vec<_> = segments.iter().filter_map(|s| s.chord.clone()).collect();
         assert_eq!(chords, ["A", "D"]);
+    }
+
+    #[test]
+    fn reads_metadata_with_aliases_and_repeats() {
+        let m = metadata(
+            "{t: Grüße vom Hafen}\n{st: Die Demo-Band}\n{meta: artist Anna}\n{key: G}\n\
+             [G]Hello\n{key: A}\n{tempo: 96}\n{time: 3/4}\n{capo: 2}\n{duration: 3:30}\n\
+             {tag: Folk}\n{tag: Ballad}\n",
+        );
+        assert_eq!(m.title.as_deref(), Some("Grüße vom Hafen"));
+        assert_eq!(m.subtitles, ["Die Demo-Band"]);
+        assert_eq!(m.artists, ["Anna"]);
+        assert_eq!(m.keys, ["G", "A"]);
+        assert_eq!(m.tempos, ["96"]);
+        assert_eq!(m.times, ["3/4"]);
+        assert_eq!(m.capo.as_deref(), Some("2"));
+        assert_eq!(m.duration.as_deref(), Some("3:30"));
+        assert_eq!(m.tags, ["Folk", "Ballad"]);
+        assert_eq!(metadata(""), Metadata::default());
+        assert_eq!(metadata("{title: }").title, None);
+        assert_eq!(
+            metadata(&"x".repeat(MAX_SOURCE_BYTES + 1)),
+            Metadata::default()
+        );
     }
 
     #[test]
