@@ -97,7 +97,9 @@ fn ci() -> Result {
     }
 }
 
-/// Crates below the UIs must not know any UI toolkit or binding layer.
+/// Crates below the UIs must not know any UI toolkit, binding layer or
+/// platform host (audio device access lives in host crates such as
+/// `gigcraft-audio-cpal`).
 fn layering() -> Result {
     const CORE: &[&str] = &[
         "gigcraft-model",
@@ -109,6 +111,7 @@ fn layering() -> Result {
         "gigcraft-midi",
         "gigcraft-rig",
         "gigcraft-formats",
+        "gigcraft-audio",
     ];
     const FORBIDDEN: &[&str] = &[
         "egui",
@@ -119,6 +122,8 @@ fn layering() -> Result {
         "gigcraft-ffi",
         "winit",
         "wgpu",
+        "cpal",
+        "gigcraft-audio-cpal",
     ];
     let out = cargo()
         .args(["metadata", "--format-version", "1", "--no-deps"])

@@ -1,0 +1,21 @@
+[package]
+name = "gigcraft-audio"
+description = "GigCraft backing-track engine: multitrack player, buses, click and count-in, fades, regions (no I/O, no threads)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+gigcraft-model.workspace = true
+craft-audio = { workspace = true, features = ["decode"] }
+craft-audio-dsp.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+# Encoders, to make test files in every supported format from generated signals.
+craft-audio = { workspace = true, features = ["decode", "lossless-encode", "mp3-encode", "aac-encode"] }
+
+[lints]
+workspace = true
