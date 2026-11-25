@@ -13,6 +13,7 @@ gigcraft-store.workspace = true
 gigcraft-chordpro.workspace = true
 gigcraft-perform.workspace = true
 gigcraft-formats.workspace = true
+gigcraft-live.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

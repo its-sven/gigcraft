@@ -1,5 +1,6 @@
 use crate::params::Params;
 use crate::{CommandError, Engine};
+use gigcraft_live::{Slot, Snapshot, SongSlot};
 use gigcraft_model::SetlistId;
 use gigcraft_perform::{Action, Effect, Item, Show};
 use serde_json::{Value, json};
@@ -50,6 +51,7 @@ pub(crate) fn run(e: &mut Engine, id: &str, p: &Params<'_>) -> Result<Value, Com
             Ok(report(e, &effects))
         }
         "perform.state" => Ok(report(e, &[])),
+        "perform.snapshot" => Ok(json!({ "snapshot": snapshot(e) })),
         "perform.stop" => {
             e.show = None;
             Ok(json!({ "running": false }))
@@ -104,5 +106,70 @@ fn report(e: &Engine, effects: &[Effect]) -> Value {
         "current": current,
         "next": next,
         "effects": effects,
+    })
+}
+
+/// The show for band members (`gigcraft-live`): position, current and next
+/// item; the current song with its chart (source and parsed, in the gig key).
+pub(crate) fn snapshot(e: &Engine) -> Option<Snapshot> {
+    let show = e.show.as_ref()?;
+    let slot = |item: &Item, with_chart: bool| match item {
+        Item::Song {
+            song,
+            title,
+            artist,
+            key,
+            tempo_bpm,
+            gig_notes,
+            part_names,
+            number,
+            ..
+        } => {
+            let stored = e.lib.song(*song);
+            let song_key = stored.and_then(|s| s.key.clone());
+            let semitones = match (song_key.as_deref(), key.as_deref()) {
+                (Some(from), Some(to)) => {
+                    gigcraft_chordpro::semitones_between(from, to).unwrap_or(0)
+                }
+                _ => 0,
+            };
+            let source = if with_chart {
+                e.lib.chart(*song).map(str::to_string)
+            } else {
+                None
+            };
+            let chart = source
+                .as_deref()
+                .map(|src| gigcraft_chordpro::parse(src, semitones).chart)
+                .and_then(|c| serde_json::to_value(c).ok());
+            Slot::Song(SongSlot {
+                song: *song,
+                title: title.clone(),
+                artist: artist.clone(),
+                key: key.clone(),
+                tempo_bpm: *tempo_bpm,
+                time_signature: stored.and_then(|s| s.time_signature.clone()),
+                gig_notes: gig_notes.clone(),
+                part_names: part_names.clone(),
+                number: *number,
+                chart_source: source,
+                semitones,
+                chart,
+            })
+        }
+        Item::Break { label, minutes, .. } => Slot::Break {
+            label: label.clone(),
+            minutes: *minutes,
+        },
+        Item::Missing { .. } => Slot::Missing,
+    };
+    Some(Snapshot {
+        setlist: show.setlist,
+        setlist_name: show.name.clone(),
+        index: show.index,
+        count: show.items.len(),
+        part: show.part,
+        current: show.current().map(|i| slot(i, true)),
+        next: show.up_next().map(|i| slot(i, false)),
     })
 }

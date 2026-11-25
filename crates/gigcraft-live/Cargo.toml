@@ -1,0 +1,16 @@
+[package]
+name = "gigcraft-live"
+description = "GigCraft live: the band-on-stage protocol, leader and follower state (no I/O)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+gigcraft-model.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

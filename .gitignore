@@ -25,3 +25,6 @@ apps/apple/Frameworks/
 apps/apple/Generated/
 apps/apple/GigCraft.xcodeproj/
 apps/apple/build/
+
+# Local agent and editor state
+.claude/

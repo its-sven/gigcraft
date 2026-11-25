@@ -109,6 +109,7 @@ fn layering() -> Result {
         "gigcraft-midi",
         "gigcraft-rig",
         "gigcraft-formats",
+        "gigcraft-live",
     ];
     const FORBIDDEN: &[&str] = &[
         "egui",

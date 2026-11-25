@@ -254,6 +254,24 @@ fn perform_flow_and_entry_updates() {
     assert_eq!(st["effects"][1]["actions"][0]["device"], "Play Acoustic");
     assert_eq!(st["next"]["title"], "Northbound Train");
 
+    let snap = run(&mut e, "perform.snapshot", Value::Null).result["snapshot"].clone();
+    let snap: gigcraft_live::Snapshot = serde_json::from_value(snap).expect("snapshot");
+    let song = snap.song().expect("current song");
+    assert_eq!(song.title, "Harbour Lights");
+    assert_eq!(song.key.as_deref(), Some("A"));
+    assert_eq!(song.semitones, 2);
+    assert!(
+        song.chart_source
+            .as_deref()
+            .is_some_and(|c| c.contains("[G]"))
+    );
+    // The parsed chart is in the gig key (G → A).
+    assert!(
+        song.chart
+            .as_ref()
+            .is_some_and(|c| c.to_string().contains("\"A\""))
+    );
+    assert!(matches!(snap.next, Some(gigcraft_live::Slot::Song(ref n)) if n.chart.is_none()));
     let st = run(&mut e, "perform.action", json!({"action": "next"})).result;
     assert_eq!(st["index"], 1);
     let st = run(&mut e, "perform.action", json!({"action": "next"})).result;
