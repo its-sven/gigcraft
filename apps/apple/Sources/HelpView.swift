@@ -43,7 +43,7 @@ struct HelpView: View {
         ]),
         Topic(id: 5, title: "Playing together", icon: "person.3", points: [
             "A band leader on a computer starts Live… → Start live session and gets an address.",
-            "Follow (antenna icon) and enter that address: you see the leader's song with your own chart, and your own presets go to your devices.",
+            "Follow (antenna icon) lists the leaders on your network – or enter the address. You see the leader's song with your own chart, and your own presets go to your devices.",
             "Ready tells the leader you are ready for this song; Cue sends a short message to every screen.",
             "Without the app, band members can open the address in Safari.",
             "On a shared venue Wi-Fi, better use the band's own router or a phone hotspot – no internet needed.",

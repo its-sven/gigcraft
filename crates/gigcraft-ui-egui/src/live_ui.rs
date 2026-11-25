@@ -36,8 +36,11 @@ pub struct Hosted {
 
 /// The local network, provided by the shell.
 pub trait LiveIo {
-    /// Start serving the web viewer and the live WebSocket.
-    fn host(&mut self) -> Result<Hosted, String>;
+    /// Start serving the web viewer and the live WebSocket, announced on the
+    /// network under `name`.
+    fn host(&mut self, name: &str) -> Result<Hosted, String>;
+    /// Leaders found on the local network: (name, address).
+    fn browse(&mut self) -> Vec<(String, String)>;
     fn stop_host(&mut self);
     fn poll_host(&mut self) -> Vec<HostEvent>;
     fn send(&mut self, conn: u64, text: String);
@@ -337,16 +340,16 @@ fn send_own_presets(app: &mut GigCraftApp, time: f64) {
 }
 
 pub(crate) fn start_host(app: &mut GigCraftApp) {
+    let name = if app.live.name.trim().is_empty() {
+        tr!("Band leader").to_string()
+    } else {
+        app.live.name.clone()
+    };
     let Some(io) = app.hooks.live.as_mut() else {
         return;
     };
-    match io.host() {
+    match io.host(&name) {
         Ok(h) => {
-            let name = if app.live.name.trim().is_empty() {
-                tr!("Band leader").to_string()
-            } else {
-                app.live.name.clone()
-            };
             app.live.mode = Mode::Leading {
                 leader: Leader::new(h.session, name),
                 urls: h.urls,
@@ -511,6 +514,35 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                     }
                     ui.add_space(8.0);
                     crate::theme::section(ui, tr!("Follow a leader"));
+                    let found = app
+                        .hooks
+                        .live
+                        .as_mut()
+                        .map(|io| io.browse())
+                        .unwrap_or_default();
+                    if found.is_empty() {
+                        ui.horizontal(|ui| {
+                            ui.spinner();
+                            ui.small(tr!("Looking for leaders on this network…"));
+                        });
+                    }
+                    for (name, address) in &found {
+                        ui.horizontal(|ui| {
+                            let p = crate::theme::pal(ui);
+                            crate::theme::led(ui, p.ok, name);
+                            ui.label(egui::RichText::new(name).strong());
+                            ui.small(address);
+                            if ui
+                                .add(crate::theme::primary(tr!("Join")))
+                                .on_hover_text(tr!("Follow this leader"))
+                                .clicked()
+                            {
+                                app.live.address = address.clone();
+                                action = Some("join");
+                            }
+                        });
+                    }
+                    ui.small(tr!("Or enter the address the leader's screen shows:"));
                     ui.horizontal(|ui| {
                         ui.add(
                             egui::TextEdit::singleline(&mut app.live.address)

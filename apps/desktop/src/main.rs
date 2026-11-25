@@ -28,6 +28,7 @@ fn parse_args() -> Result<Start, String> {
             "--lang" => start.language = Some(value("--lang")?),
             "--live" => start.live = true,
             "--show-help" => start.help = true,
+            "--show-live" => start.show_live = true,
             "--join" => start.join = Some(value("--join")?),
             "-h" | "--help" => {
                 return Err(

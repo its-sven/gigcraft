@@ -21,6 +21,8 @@ targets:
       properties:
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSBonjourServices:
+          - _gigcraft._tcp
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
     dependencies:

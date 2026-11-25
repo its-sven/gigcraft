@@ -621,12 +621,12 @@
         }
       }
     },
-    "Follow (antenna icon) and enter that address: you see the leader's song with your own chart, and your own presets go to your devices.": {
+    "Follow (antenna icon) lists the leaders on your network – or enter the address. You see the leader's song with your own chart, and your own presets go to your devices.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tippe auf Folgen (Antennen-Symbol) und gib die Adresse ein: Du siehst den Song des Leaders mit deinem eigenen Chart, und deine eigenen Presets gehen an deine Geräte."
+            "value": "Folgen (Antennen-Symbol) listet die Leader in deinem Netzwerk – oder du gibst die Adresse ein. Du siehst den Song des Leaders mit deinem eigenen Chart, und deine eigenen Presets gehen an deine Geräte."
           }
         }
       }
@@ -647,6 +647,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Einem Leader folgen"
+          }
+        }
+      }
+    },
+    "Follow this leader": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diesem Leader folgen"
           }
         }
       }
@@ -861,6 +871,16 @@
         }
       }
     },
+    "Leaders on this network": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leader in diesem Netzwerk"
+          }
+        }
+      }
+    },
     "Learn: %@": {
       "localizations": {
         "de": {
@@ -927,6 +947,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lange auf einen Song drücken startet den Auftritt ab dort. Teilen schickt die Liste als Text."
+          }
+        }
+      }
+    },
+    "Looking for leaders on this network…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suche Leader in diesem Netzwerk…"
           }
         }
       }
@@ -1127,6 +1157,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Optional"
+          }
+        }
+      }
+    },
+    "Or enter the address": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oder Adresse eingeben"
           }
         }
       }

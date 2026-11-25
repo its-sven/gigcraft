@@ -93,7 +93,7 @@ Order matters: each step is usable on its own.
 
 | Item | State |
 |---|---|
-| 1 Live protocol, LAN transport, web viewer with QR code | done: `gigcraft-live` (no I/O), `gigcraft-live-net` (WebSocket + viewer on one port), ADR-0013; MultipeerConnectivity and Bonjour discovery open (join by address/QR today) |
+| 1 Live protocol, LAN transport, web viewer with QR code | done: `gigcraft-live` (no I/O), `gigcraft-live-net` (WebSocket + viewer on one port, Bonjour announcement and discovery), ADR-0013; MultipeerConnectivity open |
 | 2 Followers with own charts/presets, ready, cues | done on desktop and iOS (iOS as follower only; iOS leading open) |
 | 3 Audio engine | engine and desktop host done (ADR-0012), wired into perform mode and the song editor; iOS host, cue slots, speed/pitch open |
 | 4 MIDI clock/MTC, timed MIDI, macros, MIDI files | open |
@@ -101,14 +101,15 @@ Order matters: each step is usable on its own.
 | 6 Variants, history, queue, backups, settings export | open |
 | 7 Web build (wasm) | open (the UI crate keeps network and audio behind hooks so it can build for the web) |
 
-Also done along the way: help window (F1) and tooltips on every control (desktop), help sheet (iOS).
+Also done along the way: help window (F1) and tooltips on every control (desktop), help sheet (iOS); the design pass (amber LED accent, display readouts, status LEDs, app icon).
 
 1. Live protocol (`gigcraft-live`): messages, roles, MultipeerConnectivity transport (Apple), Bonjour + WebSocket transport (desktop/LAN), web viewer with QR code.
 2. Followers with own charts/presets; ready status; cue messages.
 3. Audio engine (`gigcraft-audio`): multitrack player, buses → outputs, click/count-in, fades/crossfades, regions and cue slots, pitch/speed; iOS host (AVAudioEngine) and desktop host (cpal).
    - Done (branch `phase-2/audio`, ADR-0012): `gigcraft-audio` (clips via craft-audio, tracks with gain/pan/mute/solo/bus, click and count-in, play/pause/stop/seek with declick, fades, crossfades, loop regions, marker jumps now or on the next bar), song settings `tracks`/`click`/`markers` in song.toml, desktop host `gigcraft-audio-cpal`.
    - Wired into the desktop: Play/Stop in perform mode, tracks and click in the song editor, audio device in the rig window.
-   - Open: iOS host (AVAudioEngine source node calling the renderer through the FFI); cue slots; a footswitch action for play/stop.
+   - Play/stop as a stage action (key P, learnable footswitch); PANIC stops the audio.
+   - Open: iOS host (AVAudioEngine source node calling the renderer through the FFI); cue slots.
    - TODO: playback speed and pitch. craft-audio-dsp has building blocks but nothing drop-in: `stretch::Wsola` is allocation-free but leaves the grain chain per track to the caller (and it interacts with loops, jumps and the click grid), and the phase-vocoder pitch effect allocates per STFT frame, so it cannot run in the callback. Options: WSOLA in the renderer for speed, offline-rendered pitch variants cached with the clip.
 4. MIDI clock/MTC, timed MIDI events, macros, MIDI file playback.
 5. Timed lyrics and PDF timestamps; external display.

@@ -100,6 +100,7 @@ struct RootView: View {
         }
         .sheet(isPresented: $showingSettings) { LibrarySettingsView() }
         .sheet(isPresented: $joiningLive) { JoinLiveView() }
+        .onAppear { if UserDefaults.standard.bool(forKey: "gcShowJoin") { joiningLive = true } }
         .sheet(isPresented: $showingHelp) { HelpView() }
         .fullScreenCover(isPresented: Binding(get: { model.live.active }, set: { if !$0 { model.live.leave() } })) {
             FollowView().environment(model)

@@ -14,7 +14,7 @@ fn wait_for<T>(mut f: impl FnMut() -> Option<T>) -> T {
 
 #[test]
 fn serves_the_viewer_and_404() {
-    let server = LiveServer::start(0).unwrap();
+    let mut server = LiveServer::start(0).unwrap();
     let get = |path: &str| {
         let mut s = TcpStream::connect(("127.0.0.1", server.port())).unwrap();
         write!(s, "GET {path} HTTP/1.1\r\nHost: x\r\n\r\n").unwrap();
@@ -125,4 +125,21 @@ fn qr_codes_are_square() {
     assert!(q.iter().all(|row| row.len() == q.len()));
     assert!(q[0][0]); // finder pattern corner
     assert!(qr(&"x".repeat(10_000)).is_none());
+}
+
+/// Needs multicast on the local network (often blocked in CI containers).
+#[test]
+#[ignore = "needs mDNS multicast"]
+fn finds_itself_on_the_network() {
+    let mut server = LiveServer::start(0).unwrap();
+    server.announce("Test Leader").unwrap();
+    let mut discovery = Discovery::start().unwrap();
+    let found = wait_for(|| {
+        discovery
+            .leaders()
+            .into_iter()
+            .find(|l| l.name == "Test Leader")
+    });
+    assert!(found.address.ends_with(&format!(":{}", server.port())));
+    server.stop();
 }

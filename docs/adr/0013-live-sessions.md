@@ -14,4 +14,4 @@ On stage one musician leads the setlist; the others need the same song, their ow
 ## Consequences
 - Works on a router or a phone hotspot without internet.
 - Anyone on the same network can follow and send cues; on shared venue Wi-Fi the band should use its own hotspot (documented in the help).
-- Discovery is by address/QR code; Bonjour and Apple's MultipeerConnectivity can be added as further transports without changing the protocol.
+- Leaders announce themselves with Bonjour (`_gigcraft._tcp`, name and address in the TXT record); GigCraft followers list them, browsers use the QR code. Apple's MultipeerConnectivity can be added as a further transport without changing the protocol.

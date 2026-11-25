@@ -91,6 +91,8 @@ pub struct Start {
     pub join: Option<String>,
     /// Open the help window.
     pub help: bool,
+    /// Open the Live window (without starting or joining).
+    pub show_live: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -208,6 +210,9 @@ impl GigCraftApp {
         app.select(&start);
         app.start_live(&start);
         app.help.open = start.help;
+        if start.show_live {
+            app.live.open = true;
+        }
         app
     }
 

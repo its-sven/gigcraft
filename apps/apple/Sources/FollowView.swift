@@ -9,6 +9,7 @@ struct JoinLiveView: View {
     @AppStorage("gc.live.instrument") private var instrument = ""
     @AppStorage("gc.live.address") private var address = ""
     @State private var invalid = false
+    @State private var browser = LeaderBrowser()
 
     var body: some View {
         NavigationStack {
@@ -18,13 +19,42 @@ struct JoinLiveView: View {
                     TextField("Instrument", text: $instrument, prompt: Text("Bass, Drums, Vocals…"))
                 } header: { Text("You") }
                 Section {
+                    if browser.leaders.isEmpty {
+                        HStack(spacing: 10) {
+                            ProgressView()
+                            Text("Looking for leaders on this network…").foregroundStyle(.secondary)
+                        }
+                    }
+                    ForEach(browser.leaders) { leader in
+                        Button {
+                            address = leader.address
+                            if model.live.join(address: leader.address, name: name, instrument: instrument) { dismiss() }
+                        } label: {
+                            HStack(spacing: 10) {
+                                LED(color: .ledGreen)
+                                VStack(alignment: .leading) {
+                                    Text(leader.name).font(.headline).foregroundStyle(.primary)
+                                    Text(verbatim: leader.address).font(.caption.monospaced()).foregroundStyle(.secondary)
+                                }
+                                Spacer()
+                                Text("Join").bold().foregroundStyle(Color.accentColor)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Follow this leader")
+                    }
+                } header: {
+                    Text("Leaders on this network")
+                }
+                Section {
                     TextField("192.168.1.20:8787", text: $address)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .accessibilityLabel("Leader's address")
                 } header: {
-                    Text("Leader's address")
+                    Text("Or enter the address")
                 } footer: {
                     Text("On the leader's computer: Live… → Start live session shows the address. You see the leader's song with your own chart, and your own presets are sent to your devices. Without GigCraft, band members can open the address in Safari instead.")
                 }
@@ -33,6 +63,8 @@ struct JoinLiveView: View {
                 }
             }
             .navigationTitle("Follow a leader")
+            .onAppear { browser.start() }
+            .onDisappear { browser.stop() }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

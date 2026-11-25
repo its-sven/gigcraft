@@ -25,6 +25,9 @@ use tungstenite::protocol::WebSocketConfig;
 use tungstenite::{Message, WebSocket};
 
 pub use gigcraft_live::{DEFAULT_PORT, ws_url};
+/// The Bonjour service type of a GigCraft live leader.
+pub const SERVICE_TYPE: &str = "_gigcraft._tcp.local.";
+
 /// Largest WebSocket message accepted (a snapshot carries a chart).
 pub const MAX_MESSAGE_BYTES: usize = 4 << 20;
 /// The band's web viewer, served at `/`.
@@ -62,6 +65,8 @@ pub struct LiveServer {
     events: Receiver<NetEvent>,
     peers: Peers,
     stop: Arc<AtomicBool>,
+    /// The Bonjour announcement while it runs.
+    announced: Option<(mdns_sd::ServiceDaemon, String)>,
 }
 
 impl std::fmt::Debug for LiveServer {
@@ -111,7 +116,42 @@ impl LiveServer {
             events,
             peers,
             stop,
+            announced: None,
         })
+    }
+
+    /// Announce the session on the local network (Bonjour/mDNS), so followers
+    /// find it by name instead of typing the address.
+    pub fn announce(&mut self, name: &str) -> Result<(), String> {
+        let daemon = mdns_sd::ServiceDaemon::new().map_err(|e| e.to_string())?;
+        let address = self
+            .urls()
+            .first()
+            .map(|u| {
+                u.trim_start_matches("http://")
+                    .trim_end_matches('/')
+                    .to_string()
+            })
+            .unwrap_or_default();
+        let props = [
+            ("protocol", "1"),
+            ("name", name),
+            ("address", address.as_str()),
+        ];
+        let info = mdns_sd::ServiceInfo::new(
+            SERVICE_TYPE,
+            name,
+            &format!("gigcraft-{}.local.", self.port),
+            (),
+            self.port,
+            &props[..],
+        )
+        .map_err(|e| e.to_string())?
+        .enable_addr_auto();
+        let fullname = info.get_fullname().to_string();
+        daemon.register(info).map_err(|e| e.to_string())?;
+        self.announced = Some((daemon, fullname));
+        Ok(())
     }
 
     pub fn port(&self) -> u16 {
@@ -158,9 +198,13 @@ impl LiveServer {
             .len()
     }
 
-    /// Stop listening and close every connection.
-    pub fn stop(&self) {
+    /// Stop listening, close every connection and withdraw the announcement.
+    pub fn stop(&mut self) {
         self.stop.store(true, Ordering::Relaxed);
+        if let Some((daemon, fullname)) = self.announced.take() {
+            let _ = daemon.unregister(&fullname);
+            let _ = daemon.shutdown();
+        }
     }
 }
 
@@ -468,6 +512,88 @@ pub fn lan_urls(port: u16) -> Vec<String> {
     ips.into_iter()
         .map(|(_, ip)| format!("http://{ip}:{port}/"))
         .collect()
+}
+
+/// A leader found on the local network.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct FoundLeader {
+    pub name: String,
+    /// `host:port` to join.
+    pub address: String,
+}
+
+/// Looking for leaders on the local network (Bonjour/mDNS).
+pub struct Discovery {
+    daemon: mdns_sd::ServiceDaemon,
+    events: mdns_sd::Receiver<mdns_sd::ServiceEvent>,
+    found: std::collections::BTreeMap<String, FoundLeader>,
+}
+
+impl std::fmt::Debug for Discovery {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Discovery")
+            .field("found", &self.found.len())
+            .finish()
+    }
+}
+
+impl Discovery {
+    pub fn start() -> Result<Self, String> {
+        let daemon = mdns_sd::ServiceDaemon::new().map_err(|e| e.to_string())?;
+        let events = daemon.browse(SERVICE_TYPE).map_err(|e| e.to_string())?;
+        Ok(Self {
+            daemon,
+            events,
+            found: std::collections::BTreeMap::new(),
+        })
+    }
+
+    /// The leaders seen so far (still announced).
+    pub fn leaders(&mut self) -> Vec<FoundLeader> {
+        while let Ok(ev) = self.events.try_recv() {
+            match ev {
+                mdns_sd::ServiceEvent::ServiceResolved(s) => {
+                    let name = s
+                        .txt_properties
+                        .get_property_val_str("name")
+                        .map(str::to_string)
+                        .unwrap_or_else(|| s.fullname.split('.').next().unwrap_or("").to_string());
+                    let announced = s
+                        .txt_properties
+                        .get_property_val_str("address")
+                        .filter(|a| !a.is_empty())
+                        .map(str::to_string);
+                    let ip = s
+                        .addresses
+                        .iter()
+                        .map(|a| a.to_ip_addr())
+                        .filter(|ip| ip.is_ipv4())
+                        .min();
+                    let address = announced
+                        .or_else(|| ip.map(|ip| format!("{ip}:{}", s.port)))
+                        .unwrap_or_default();
+                    if !address.is_empty() {
+                        self.found
+                            .insert(s.fullname.clone(), FoundLeader { name, address });
+                    }
+                }
+                mdns_sd::ServiceEvent::ServiceRemoved(_, fullname) => {
+                    self.found.remove(&fullname);
+                }
+                _ => {}
+            }
+        }
+        let mut list: Vec<FoundLeader> = self.found.values().cloned().collect();
+        list.sort();
+        list
+    }
+}
+
+impl Drop for Discovery {
+    fn drop(&mut self) {
+        let _ = self.daemon.stop_browse(SERVICE_TYPE);
+        let _ = self.daemon.shutdown();
+    }
 }
 
 /// A QR code for `text` as rows of dark (true) / light modules, or `None` if
