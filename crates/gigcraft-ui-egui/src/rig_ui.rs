@@ -143,7 +143,7 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
             let mut remove = None;
             let mut changed = false;
             for (i, d) in cfg.devices.iter_mut().enumerate() {
-                ui.group(|ui| {
+                crate::theme::card(ui, |ui| {
                     ui.horizontal(|ui| {
                         ui.label(tr!("Name"));
                         changed |= ui
@@ -231,7 +231,7 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                 }
             });
             ui.separator();
-            ui.strong(tr!("MIDI footswitches and controllers"));
+            crate::theme::section(ui, tr!("MIDI footswitches and controllers"));
             ui.small(tr!(
                 "Click Learn, then press the switch or move the controller."
             ));

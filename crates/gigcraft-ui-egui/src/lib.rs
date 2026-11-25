@@ -15,6 +15,7 @@ mod perform;
 mod rig_ui;
 mod setlist_view;
 mod song_view;
+mod theme;
 
 use gigcraft_commands::{Engine, Outcome};
 use gigcraft_model::{SetlistId, SongId};
@@ -137,6 +138,7 @@ pub struct GigCraftApp {
 impl GigCraftApp {
     /// Create the app; opens `start.library` or the last library used.
     pub fn new(cc: &eframe::CreationContext<'_>, start: Start, hooks: Hooks) -> Self {
+        theme::install(&cc.egui_ctx);
         let mut app = Self {
             engine: None,
             hooks,

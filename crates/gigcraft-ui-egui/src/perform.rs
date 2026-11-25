@@ -200,18 +200,29 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
 
     egui::Panel::top("perform-top").show(ui, |ui| {
         ui.horizontal(|ui| {
-            ui.label(egui::RichText::new(st["name"].as_str().unwrap_or_default()).strong());
-            ui.label(format!(
-                "{} / {}",
-                st["index"].as_u64().unwrap_or(0) + 1,
-                st["count"].as_u64().unwrap_or(0)
-            ));
+            ui.label(
+                egui::RichText::new(st["name"].as_str().unwrap_or_default())
+                    .strong()
+                    .size(16.0),
+            );
+            crate::theme::readout(
+                ui,
+                tr!("Song"),
+                &format!(
+                    "{}/{}",
+                    st["index"].as_u64().unwrap_or(0) + 1,
+                    st["count"].as_u64().unwrap_or(0)
+                ),
+                15.0,
+            );
             if let Some(t0) = p.started_at {
                 let secs = (now - t0).max(0.0) as u32;
-                ui.label(tr!(
-                    "on stage {time}",
-                    time = gigcraft_model::format_duration(secs)
-                ));
+                crate::theme::readout(
+                    ui,
+                    tr!("On stage"),
+                    &gigcraft_model::format_duration(secs),
+                    15.0,
+                );
             }
             ui.separator();
             let current_song = st["current"]["song"].as_str().and_then(|s| s.parse().ok());
@@ -249,8 +260,16 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
             {
                 clicked = Some(Action::Previous);
             }
+            let pal = crate::theme::palette(true);
+            let next_button = egui::Button::new(
+                egui::RichText::new(tr!("Next"))
+                    .size(size)
+                    .color(pal.on_accent),
+            )
+            .fill(pal.accent)
+            .min_size(egui::vec2(160.0, size * 2.0));
             if ui
-                .add(big(tr!("Next")))
+                .add(next_button)
                 .on_hover_text(tr!(
                     "Next part or song (Right arrow or Space; hold for the next song)"
                 ))
@@ -277,16 +296,22 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                 None => tr!("Last song").into(),
             };
             ui.label(egui::RichText::new(next_text).size(size * 0.8));
-            let devices: Vec<String> = app
+            let devices: Vec<(bool, String)> = app
                 .rig
                 .status()
                 .into_iter()
                 .map(|d| {
+                    let ok = d.current.is_some()
+                        || matches!(d.state.as_str(), "ready" | "simulated")
+                        || d.state.ends_with(" ready");
                     let what = d
                         .current
                         .map(|c| tr!("preset {number}", number = c))
                         .unwrap_or_else(|| crate::i18n::state(&d.state));
-                    format!("{}: {what}{}", d.name, if d.busy { " …" } else { "" })
+                    (
+                        ok,
+                        format!("{}: {what}{}", d.name, if d.busy { " …" } else { "" }),
+                    )
                 })
                 .collect();
             if let Some(live) = &live_summary {
@@ -295,7 +320,11 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
             }
             if !devices.is_empty() {
                 ui.separator();
-                ui.label(egui::RichText::new(devices.join("   ")).size(size * 0.6));
+                let pal = crate::theme::pal(ui);
+                for (ok, text) in &devices {
+                    crate::theme::led(ui, if *ok { pal.ok } else { pal.note }, text);
+                    ui.label(egui::RichText::new(text).size(size * 0.6));
+                }
             } else if !p.last_sent.is_empty() {
                 ui.separator();
                 ui.label(
@@ -321,15 +350,12 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                             .size(size * 1.6)
                             .strong(),
                     );
+                    ui.add_space(8.0);
                     if let Some(k) = cur["key"].as_str() {
-                        ui.label(
-                            egui::RichText::new(tr!("Key {key}", key = k))
-                                .size(size)
-                                .color(ui.visuals().hyperlink_color),
-                        );
+                        crate::theme::readout(ui, tr!("Key"), k, size * 0.8);
                     }
                     if let Some(t) = cur["tempo_bpm"].as_f64() {
-                        ui.label(egui::RichText::new(format!("{t:.0} BPM")).size(size * 0.8));
+                        crate::theme::readout(ui, "BPM", &format!("{t:.0}"), size * 0.8);
                     }
                 });
                 let parts: Vec<String> = cur["part_names"]

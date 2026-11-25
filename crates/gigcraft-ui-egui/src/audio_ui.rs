@@ -361,10 +361,12 @@ pub(crate) fn transport(app: &mut GigCraftApp, ui: &mut egui::Ui, song: Option<S
     } else {
         tr!("Start the backing tracks and click")
     };
-    if ui
-        .button(egui::RichText::new(label).strong())
-        .on_hover_text(tip)
-        .clicked()
+    let button = if playing {
+        egui::Button::new(egui::RichText::new(label).strong())
+    } else {
+        crate::theme::primary(label)
+    };
+    if ui.add(button).on_hover_text(tip).clicked()
         && let Some(c) = app.hooks.audio.as_mut().and_then(|h| h.controller())
     {
         let _ = if playing {
@@ -385,13 +387,13 @@ pub(crate) fn transport(app: &mut GigCraftApp, ui: &mut egui::Ui, song: Option<S
         } else {
             clock(st.position_secs)
         };
-        ui.label(egui::RichText::new(text).monospace());
+        crate::theme::readout(ui, tr!("Track"), &text, 15.0);
     }
 }
 
 /// The audio part of the rig window.
 pub(crate) fn settings(app: &mut GigCraftApp, ui: &mut egui::Ui) {
-    ui.strong(tr!("Audio output (backing tracks and click)"));
+    crate::theme::section(ui, tr!("Audio output (backing tracks and click)"));
     if app.hooks.audio.is_none() {
         ui.label(tr!("No audio output on this platform."));
         return;

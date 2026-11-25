@@ -504,13 +504,13 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
             ui.separator();
             match &app.live.mode {
                 Mode::Off => {
-                    ui.strong(tr!("Lead the band"));
+                    crate::theme::section(ui, tr!("Lead the band"));
                     ui.label(tr!("Band members follow your setlist on their phones, tablets or computers – on the same Wi-Fi, no app needed."));
-                    if ui.button(egui::RichText::new(tr!("Start live session")).strong()).on_hover_text(tr!("Serve the band viewer on this network and show its address and QR code")).clicked() {
+                    if ui.add(crate::theme::primary(tr!("Start live session"))).on_hover_text(tr!("Serve the band viewer on this network and show its address and QR code")).clicked() {
                         action = Some("host");
                     }
                     ui.add_space(8.0);
-                    ui.strong(tr!("Follow a leader"));
+                    crate::theme::section(ui, tr!("Follow a leader"));
                     ui.horizontal(|ui| {
                         ui.add(
                             egui::TextEdit::singleline(&mut app.live.address)
@@ -556,8 +556,12 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                     for m in &members {
                         ui.horizontal(|ui| {
                             ui.label(member_label(m));
+                            let p = crate::theme::pal(ui);
                             if m.ready {
-                                ui.colored_label(egui::Color32::from_rgb(60, 207, 110), tr!("ready"));
+                                crate::theme::led(ui, p.ok, tr!("ready"));
+                                ui.colored_label(p.ok, tr!("ready"));
+                            } else {
+                                crate::theme::led(ui, p.dim, tr!("not ready"));
                             }
                         });
                     }
@@ -578,7 +582,7 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
             }
             if !matches!(app.live.mode, Mode::Off) {
                 ui.separator();
-                ui.strong(tr!("Cues"));
+                crate::theme::section(ui, tr!("Cues"));
                 cue_buttons(app, ui, time);
             }
             egui::CollapsingHeader::new(tr!("Log")).show(ui, |ui| {
@@ -651,16 +655,16 @@ pub(crate) fn follow_view(app: &mut GigCraftApp, ui: &mut egui::Ui) {
     let mut toggle_ready = false;
     egui::Panel::top("follow-top").show(ui, |ui| {
         ui.horizontal(|ui| {
-            let dot = if connected {
-                egui::Color32::from_rgb(60, 207, 110)
-            } else {
-                ui.visuals().error_fg_color
-            };
-            ui.colored_label(dot, "●")
-                .widget_info(|| egui::WidgetInfo::labeled(egui::Role::Label, true, status.clone()));
+            let p = crate::theme::pal(ui);
+            crate::theme::led(ui, if connected { p.ok } else { p.bad }, &status);
             if let Some(s) = &snap {
                 ui.label(egui::RichText::new(&s.setlist_name).strong());
-                ui.label(format!("{} / {}", s.index + 1, s.count));
+                crate::theme::readout(
+                    ui,
+                    tr!("Song"),
+                    &format!("{}/{}", s.index + 1, s.count),
+                    15.0,
+                );
             }
             if !leader.is_empty() {
                 ui.label(tr!("Leader: {name}", name = leader));
@@ -682,13 +686,23 @@ pub(crate) fn follow_view(app: &mut GigCraftApp, ui: &mut egui::Ui) {
     egui::Panel::bottom("follow-bottom").show(ui, |ui| {
         ui.add_space(6.0);
         ui.horizontal(|ui| {
-            let label = tr!("Ready");
-            if ui
-                .add(
-                    egui::Button::new(egui::RichText::new(label).size(size))
-                        .selected(ready)
-                        .min_size(egui::vec2(160.0, size * 2.0)),
+            let pal = crate::theme::palette(true);
+            let button = if ready {
+                egui::Button::new(egui::RichText::new(tr!("Ready")).size(size))
+                    .stroke(egui::Stroke::new(2.0, pal.ok))
+            } else {
+                egui::Button::new(
+                    egui::RichText::new(tr!("Ready"))
+                        .size(size)
+                        .color(pal.on_accent),
                 )
+                .fill(pal.accent)
+            };
+            if ready {
+                crate::theme::led(ui, pal.ok, tr!("ready"));
+            }
+            if ui
+                .add(button.min_size(egui::vec2(160.0, size * 2.0)))
                 .on_hover_text(tr!("Tell the band you are ready for this song"))
                 .clicked()
             {
@@ -733,15 +747,12 @@ pub(crate) fn follow_view(app: &mut GigCraftApp, ui: &mut egui::Ui) {
             Some(Slot::Song(song)) => {
                 ui.horizontal(|ui| {
                     ui.label(egui::RichText::new(&song.title).size(size * 1.6).strong());
+                    ui.add_space(8.0);
                     if let Some(k) = &song.key {
-                        ui.label(
-                            egui::RichText::new(tr!("Key {key}", key = k))
-                                .size(size)
-                                .color(ui.visuals().hyperlink_color),
-                        );
+                        crate::theme::readout(ui, tr!("Key"), k, size * 0.8);
                     }
                     if let Some(t) = song.tempo_bpm {
-                        ui.label(egui::RichText::new(format!("{t:.0} BPM")).size(size * 0.8));
+                        crate::theme::readout(ui, "BPM", &format!("{t:.0}"), size * 0.8);
                     }
                 });
                 if song.part_names.len() > 1 {

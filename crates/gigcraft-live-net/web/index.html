@@ -6,34 +6,41 @@
 <meta name="theme-color" content="#111111">
 <title>GigCraft Live</title>
 <style>
+  /* GigCraft palette: charcoal surfaces, amber LED accent, cool chords. */
   :root {
-    --bg: #111; --fg: #f2f2f2; --dim: #9a9a9a; --line: #2a2a2a; --chord: #5fb4ff;
-    --accent: #ffb547; --ok: #3ccf6e; --bad: #ff5a5a; --panel: #1c1c1c;
+    --bg: #131417; --fg: #ececee; --dim: #9c9fa7; --line: #34373e; --chord: #6cc8ff;
+    --accent: #ffb03a; --on-accent: #1a1202; --note: #ffa05c; --ok: #3dd67a; --bad: #ff5f57;
+    --panel: #1a1c20; --raised: #26282e; --screen: #0b0c0e; --screen-text: #ffc25e; --screen-label: #8a8d94;
     --size: 22px;
   }
   @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) { --bg: #fafafa; --fg: #111; --dim: #666; --line: #ddd; --chord: #0b62c4; --accent: #b35c00; --panel: #fff; }
+    :root:not([data-theme="dark"]) { --bg: #eeedea; --fg: #17181b; --dim: #5e6168; --line: #d3d1cb; --chord: #005fb8; --note: #b44d00; --panel: #f6f5f2; --raised: #fff; --screen: #1c1d21; }
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   body { min-height: 100vh; display: flex; flex-direction: column; padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
   button, input { font: inherit; color: inherit; }
-  button { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-height: 44px; cursor: pointer; }
-  button.on { background: var(--ok); color: #000; border-color: var(--ok); font-weight: 600; }
+  button { background: var(--raised); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-height: 44px; cursor: pointer; }
+  button:active { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
+  button.on { background: var(--raised); color: var(--fg); border-color: var(--ok); font-weight: 600; box-shadow: inset 0 0 0 1px var(--ok); }
+  .readout { display: inline-flex; flex-direction: column; background: var(--screen); border: 1px solid rgba(255,255,255,.12); border-radius: 6px; padding: 2px 8px; vertical-align: middle; line-height: 1.1; }
+  .readout small { font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: var(--screen-label); }
+  .readout b { font: 600 calc(var(--size) * .8)/1.1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--screen-text); }
+  .led { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); display: inline-block; box-shadow: 0 0 0 3px color-mix(in srgb, var(--bad) 25%, transparent); }
+  .led.ok { background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 25%, transparent); }
   input { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; width: 100%; }
   header { display: flex; gap: 10px; align-items: center; padding: 8px 14px; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--dim); flex-wrap: wrap; }
   header strong { color: var(--fg); }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--bad); display: inline-block; }
-  .dot.ok { background: var(--ok); }
+
   .grow { flex: 1; }
   main { flex: 1; padding: 12px 16px 24px; overflow-x: hidden; }
   h1 { font-size: calc(var(--size) * 1.5); margin: 0 0 4px; line-height: 1.15; }
-  .facts { color: var(--dim); font-size: calc(var(--size) * 0.8); }
-  .facts .key { color: var(--chord); font-weight: 600; }
-  .note { color: var(--accent); font-size: var(--size); margin: 8px 0; }
+  .facts { color: var(--dim); font-size: calc(var(--size) * 0.7); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+  .note { color: var(--note); font-size: var(--size); margin: 8px 0; }
   .parts { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
   .parts span { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: calc(var(--size) * 0.65); color: var(--dim); }
-  .parts span.now { background: var(--chord); color: #000; border-color: var(--chord); font-weight: 600; }
+  .parts span.now { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
   .chart { font-size: var(--size); margin-top: 12px; }
   .block { margin: 0 0 calc(var(--size) * 0.7); }
   .block.chorus { padding-left: calc(var(--size) * 0.9); border-left: 3px solid var(--line); }
@@ -52,12 +59,14 @@
   .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .next { color: var(--dim); }
   .cues button { padding: 8px 12px; min-height: 40px; }
-  #toast { position: fixed; left: 12px; right: 12px; top: 12px; padding: 16px 18px; border-radius: 14px; background: var(--accent); color: #000; font-size: calc(var(--size) * 1.1); font-weight: 700; box-shadow: 0 8px 30px rgba(0,0,0,.4); display: none; z-index: 10; }
+  #toast { position: fixed; left: 12px; right: 12px; top: 12px; padding: 16px 18px; border-radius: 14px; background: var(--accent); color: var(--on-accent); font-size: calc(var(--size) * 1.1); font-weight: 700; box-shadow: 0 8px 30px rgba(0,0,0,.4); display: none; z-index: 10; }
   #join { max-width: 420px; margin: 12vh auto 0; padding: 0 20px; display: flex; flex-direction: column; gap: 12px; }
   #join h1 { font-size: 28px; }
   .muted { color: var(--dim); font-size: 14px; }
   .roster { color: var(--dim); font-size: 13px; }
   .roster b.r { color: var(--ok); }
+  header button { min-height: 34px; padding: 4px 10px; }
+  @media (max-width: 480px) { #leader { display: none; } header { gap: 8px; } }
   .hidden { display: none !important; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 </style>
@@ -72,13 +81,13 @@
   <input id="name" autocomplete="name" maxlength="40">
   <label for="instrument" data-t="instrument">Instrument</label>
   <input id="instrument" maxlength="40" placeholder="Bass, Drums, Vocals…">
-  <button id="go" class="on" data-t="join">Join</button>
+  <button id="go" class="primary" data-t="join">Join</button>
   <p id="joinError" class="muted" role="status"></p>
 </section>
 
 <div id="live" class="hidden" style="display:contents">
   <header>
-    <span class="dot" id="dot" aria-hidden="true"></span>
+    <span class="led" id="dot" aria-hidden="true"></span>
     <span id="status" class="sr"></span>
     <strong id="setlist"></strong><span id="pos"></span>
     <span class="grow"></span>
@@ -88,7 +97,7 @@
   </header>
   <main id="main" aria-live="polite"></main>
   <footer>
-    <div class="row"><span class="next grow" id="next"></span><button id="cueToggle" aria-expanded="false" aria-controls="cuePanel" data-t="cue">Cue…</button><button id="ready" aria-pressed="false" data-t="ready" title="Tell the band you are ready for this song">Ready</button></div>
+    <div class="row"><span class="next grow" id="next"></span><button id="cueToggle" aria-expanded="false" aria-controls="cuePanel" data-t="cue">Cue…</button><button id="ready" class="primary" aria-pressed="false" data-t="ready" title="Tell the band you are ready for this song">Ready</button></div>
     <div id="cuePanel" class="hidden">
       <div class="row cues" id="cues"></div>
       <div class="row" style="margin-top:8px"><input id="cueText" maxlength="200" aria-label="Cue to the band" placeholder="Cue to the band…" style="flex:1;width:auto"><button id="send" data-t="send">Send</button></div>
@@ -102,14 +111,14 @@
 const de = (navigator.language || "").toLowerCase().startsWith("de");
 const T = de ? {
   intro: "Folge der Setliste und dem Chart des Bandleaders auf diesem Gerät.", name: "Dein Name", instrument: "Instrument",
-  join: "Beitreten", ready: "Bereit", send: "Senden", cue: "Cue…", key: "Tonart", next: "Als Nächstes", last: "Letzter Song",
+  join: "Beitreten", ready: "Bereit", send: "Senden", cue: "Cue…", key: "Tonart", song: "Song", time: "Takt", next: "Als Nächstes", last: "Letzter Song",
   brk: "Pause", missing: "Song fehlt in der Bibliothek des Leaders", waiting: "Warte auf den Start der Show…",
   connecting: "Verbinde…", offline: "Getrennt – verbinde neu…", ended: "Sitzung beendet", noChart: "Kein Chart.",
   cues: ["Letzter Refrain", "Refrain nochmal", "Solo verlängern", "Langsamer", "Schneller", "Stopp nach dem Takt"],
   ph: "Nachricht an die Band…", connected: "verbunden", disconnected: "getrennt", of: "von"
 } : {
   intro: "Follow the band leader's setlist and chart on this device.", name: "Your name", instrument: "Instrument",
-  join: "Join", ready: "Ready", send: "Send", cue: "Cue…", key: "Key", next: "Up next", last: "Last song",
+  join: "Join", ready: "Ready", send: "Send", cue: "Cue…", key: "Key", song: "Song", time: "Time", next: "Up next", last: "Last song",
   brk: "Break", missing: "Song missing from the leader's library", waiting: "Waiting for the show to start…",
   connecting: "Connecting…", offline: "Disconnected – reconnecting…", ended: "Session ended", noChart: "No chart.",
   cues: ["Last chorus", "Chorus again", "Extend solo", "Slower", "Faster", "Stop after this bar"],
@@ -213,6 +222,7 @@ $("toast").onclick = () => { $("toast").style.display = "none"; };
 function renderReady() {
   const b = $("ready");
   b.classList.toggle("on", ready);
+  b.classList.toggle("primary", !ready);
   b.setAttribute("aria-pressed", String(ready));
   b.textContent = (ready ? "✓ " : "") + T.ready;
 }
@@ -227,7 +237,8 @@ function render() {
     return;
   }
   $("setlist").textContent = snapshot.setlist_name;
-  $("pos").textContent = " " + (snapshot.index + 1) + " / " + snapshot.count;
+  $("pos").textContent = "";
+  $("pos").append(readout(T.song, (snapshot.index + 1) + "/" + snapshot.count));
   $("pos").setAttribute("aria-label", (snapshot.index + 1) + " " + T.of + " " + snapshot.count);
   const n = snapshot.next;
   $("next").textContent = !n ? T.last
@@ -248,9 +259,10 @@ function render() {
   if (c.type !== "song") { main.append(el("p", "note", T.missing)); return; }
   main.append(el("h1", "", c.title));
   const facts = el("div", "facts");
-  if (c.key) { const k = el("span", "key", T.key + " " + c.key); facts.append(k, "  "); }
-  const bits = [c.tempo_bpm ? Math.round(c.tempo_bpm) + " BPM" : "", c.time_signature || "", c.artist || ""].filter(Boolean);
-  facts.append(bits.join(" · "));
+  if (c.key) facts.append(readout(T.key, c.key));
+  if (c.tempo_bpm) facts.append(readout("BPM", String(Math.round(c.tempo_bpm))));
+  if (c.time_signature) facts.append(readout(T.time, c.time_signature));
+  if (c.artist) facts.append(el("span", "", c.artist));
   main.append(facts);
   if (c.gig_notes) main.append(el("div", "note", c.gig_notes));
   if (c.part_names && c.part_names.length > 1) {
@@ -263,6 +275,13 @@ function render() {
     main.append(parts);
   }
   main.append(chart(c.chart));
+}
+
+function readout(label, value) {
+  const r = el("span", "readout");
+  r.append(el("small", "", label), el("b", "", value));
+  r.setAttribute("aria-label", label + " " + value);
+  return r;
 }
 
 function chart(ch) {

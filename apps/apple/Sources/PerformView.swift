@@ -59,6 +59,7 @@ struct PerformView: View {
             if type == "break", let m = cur["minutes"] as? Int { breakEnds = Date().addingTimeInterval(Double(m) * 60) } else { breakEnds = nil }
         }
         .statusBarHidden()
+        .preferredColorScheme(.dark)
     }
 
     private func header(_ st: [String: Any]) -> some View {
@@ -66,11 +67,11 @@ struct PerformView: View {
             Text(st["name"] as? String ?? "").bold()
             let position = ((st["index"] as? Int) ?? 0) + 1
             let count = st["count"] as? Int ?? 0
-            Text(verbatim: "\(position) / \(count)").foregroundStyle(.secondary)
+            Readout(label: "Song", value: "\(position)/\(count)", size: 15)
                 .accessibilityLabel("Item \(position) of \(count)")
             TimelineView(.periodic(from: .now, by: 1)) { ctx in
                 let s = Int(ctx.date.timeIntervalSince(startedAt))
-                Text("on stage \(String(format: "%d:%02d", s / 60, s % 60))").foregroundStyle(.secondary).monospacedDigit()
+                Readout(label: "On stage", value: String(format: "%d:%02d", s / 60, s % 60), size: 15)
             }
             Spacer()
             Button("Panic", role: .destructive) { model.perform("panic") }
@@ -89,11 +90,11 @@ struct PerformView: View {
         let index = st["index"] as? Int ?? 0
         return ScrollView {
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline, spacing: 16) {
+                HStack(alignment: .center, spacing: 12) {
                     Text(cur["title"] as? String ?? "").font(.system(size: scaled(size * 1.6), weight: .bold))
                         .accessibilityAddTraits(.isHeader)
-                    if let k = gigKey { Text("Key \(k)").font(.system(size: size)).foregroundStyle(.tint) }
-                    if let t = cur["tempo_bpm"] as? Double { Text(verbatim: "\(Int(t)) BPM").font(.system(size: size * 0.8)).foregroundStyle(.secondary) }
+                    if let k = gigKey { Readout(label: "Key", value: k, size: size * 0.8) }
+                    if let t = cur["tempo_bpm"] as? Double { Readout(label: "BPM", value: "\(Int(t))", size: size * 0.8) }
                 }
                 if parts.count > 1 {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -151,10 +152,10 @@ struct PerformView: View {
             }
         }()
         return HStack(spacing: 16) {
-            Button { model.perform("previous") } label: { Label("Previous", systemImage: "chevron.left").frame(minWidth: 140, minHeight: 44) }
-                .buttonStyle(.bordered)
-            Button { model.perform("next") } label: { Label("Next", systemImage: "chevron.right").frame(minWidth: 140, minHeight: 44) }
-                .buttonStyle(.borderedProminent)
+            Button { model.perform("previous") } label: { Label("Previous", systemImage: "chevron.left").frame(minWidth: 120, minHeight: 34) }
+                .buttonStyle(StageButtonStyle())
+            Button { model.perform("next") } label: { Label("Next", systemImage: "chevron.right").frame(minWidth: 120, minHeight: 34) }
+                .buttonStyle(StageButtonStyle(prominent: true))
             Text(nextText).font(.system(size: size * 0.8)).lineLimit(1)
             Spacer()
             if !model.rig.status.isEmpty {

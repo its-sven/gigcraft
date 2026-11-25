@@ -53,7 +53,12 @@ fn main() -> eframe::Result {
         viewport: eframe::egui::ViewportBuilder::default()
             .with_title("GigCraft")
             .with_inner_size([1100.0, 760.0])
-            .with_min_inner_size([640.0, 420.0]),
+            .with_min_inner_size([640.0, 420.0])
+            .with_icon(eframe::egui::IconData {
+                rgba: include_bytes!("../assets/icon-256.rgba").to_vec(),
+                width: 256,
+                height: 256,
+            }),
         ..Default::default()
     };
     eframe::run_native(

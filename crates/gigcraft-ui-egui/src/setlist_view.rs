@@ -78,7 +78,7 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
         }
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui
-                .button(egui::RichText::new(tr!("Perform")).strong())
+                .add(crate::theme::primary(tr!("Perform")))
                 .on_hover_text(tr!("Stage view for this setlist"))
                 .clicked()
             {
@@ -261,7 +261,7 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                 }
             });
             ui.add_space(8.0);
-            ui.strong(tr!("Add songs"));
+            crate::theme::section(ui, tr!("Add songs"));
             ui.add(egui::TextEdit::singleline(&mut app.setlist_ui.add_query).hint_text(tr!("Search the library")));
             if let Some(engine) = &app.engine {
                 for song in engine.library().search(&app.setlist_ui.add_query).into_iter().take(12) {

@@ -85,6 +85,7 @@ struct FollowView: View {
         .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
         .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
         .statusBarHidden()
+        .preferredColorScheme(.dark)
         .alert("Cue to the band", isPresented: $askingCue) {
             TextField("Cue to the band", text: $customCue)
             Button("Send") { live.sendCue(customCue); customCue = "" }
@@ -94,11 +95,11 @@ struct FollowView: View {
 
     private func header(_ live: LiveFollower) -> some View {
         HStack {
-            Circle().fill(live.connected ? .green : .red).frame(width: 10, height: 10)
+            LED(color: live.connected ? .ledGreen : .red)
                 .accessibilityLabel(live.connected ? Text("connected") : Text(verbatim: live.status))
             if let s = live.snapshot {
                 Text(s.setlistName).bold()
-                Text(verbatim: "\(s.index + 1) / \(s.count)").foregroundStyle(.secondary)
+                Readout(label: "Song", value: "\(s.index + 1)/\(s.count)", size: 15)
                     .accessibilityLabel("Item \(s.index + 1) of \(s.count)")
             }
             if !live.leader.isEmpty { Text("Leader: \(live.leader)").foregroundStyle(.secondary) }
@@ -143,10 +144,10 @@ struct FollowView: View {
         let parts = cur.partNames ?? []
         return ScrollView {
             VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .firstTextBaseline, spacing: 16) {
+                HStack(alignment: .center, spacing: 12) {
                     Text(cur.title ?? "").font(.system(size: scaled(size * 1.6), weight: .bold)).accessibilityAddTraits(.isHeader)
-                    if let k = cur.key { Text("Key \(k)").font(.system(size: size)).foregroundStyle(.tint) }
-                    if let t = cur.tempoBpm { Text(verbatim: "\(Int(t)) BPM").font(.system(size: size * 0.8)).foregroundStyle(.secondary) }
+                    if let k = cur.key { Readout(label: "Key", value: k, size: size * 0.8) }
+                    if let t = cur.tempoBpm { Readout(label: "BPM", value: "\(Int(t))", size: size * 0.8) }
                 }
                 if parts.count > 1 {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -193,15 +194,15 @@ struct FollowView: View {
                 Divider()
                 Button("Other…") { askingCue = true }
             } label: {
-                Label("Cue", systemImage: "megaphone").frame(minHeight: 44)
+                Label("Cue", systemImage: "megaphone").frame(minHeight: 34)
             }
-            .buttonStyle(.bordered)
+            .buttonStyle(StageButtonStyle())
             .accessibilityHint("Show a short message on every band member's screen")
             Button { live.toggleReady() } label: {
-                Label("Ready", systemImage: live.ready ? "checkmark.circle.fill" : "circle").frame(minWidth: 120, minHeight: 44)
+                Label("Ready", systemImage: live.ready ? "checkmark.circle.fill" : "circle").frame(minWidth: 110, minHeight: 34)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(live.ready ? .green : .accentColor)
+            .buttonStyle(StageButtonStyle(prominent: !live.ready))
+            .overlay(alignment: .topTrailing) { if live.ready { LED(color: .ledGreen).offset(x: 4, y: -4) } }
             .accessibilityValue(live.ready ? Text("ready") : Text("not ready"))
             .accessibilityHint("Tell the band you are ready for this song")
         }

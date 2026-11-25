@@ -331,6 +331,16 @@
         }
       }
     },
+    "BPM": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "BPM"
+          }
+        }
+      }
+    },
     "Bass, Drums, Vocals…": {
       "localizations": {
         "de": {
@@ -887,6 +897,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Verlassen"
+          }
+        }
+      }
+    },
+    "Length": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Länge"
           }
         }
       }
@@ -1996,6 +2016,7 @@
       }
     },
     "on stage %@": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {

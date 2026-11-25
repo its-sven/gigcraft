@@ -218,23 +218,25 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
         });
     });
     ui.horizontal(|ui| {
-        let mut facts = Vec::new();
+        let mut facts: Vec<(&str, String)> = Vec::new();
         if let Some(k) = chart.chart.key.clone().or_else(|| song.key.clone()) {
-            facts.push(tr!("Key {key}", key = k));
+            facts.push((tr!("Key"), k));
         }
         if let Some(t) = song.tempo_bpm {
-            facts.push(format!("{t:.0} BPM"));
+            facts.push(("BPM", format!("{t:.0}")));
         }
         if let Some(ts) = &song.time_signature {
-            facts.push(ts.clone());
+            facts.push((tr!("Time"), ts.clone()));
         }
         if let Some(c) = song.capo.filter(|c| *c > 0) {
-            facts.push(tr!("Capo {fret}", fret = c));
+            facts.push((tr!("Capo"), c.to_string()));
         }
         if let Some(d) = song.duration_secs {
-            facts.push(format_duration(d));
+            facts.push((tr!("Length"), format_duration(d)));
         }
-        ui.label(facts.join("  ·  "));
+        for (label, value) in &facts {
+            crate::theme::readout(ui, label, value, 15.0);
+        }
         ui.separator();
         if crate::named(ui.button("−"), tr!("Transpose down"))
             .on_hover_text(tr!("Transpose down"))
@@ -246,7 +248,16 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
                 app.transpose - 1
             };
         }
-        ui.label(format!("{:+}", app.transpose));
+        crate::theme::readout(
+            ui,
+            tr!("Transpose"),
+            &if app.transpose == 0 {
+                "±0".to_string()
+            } else {
+                format!("{:+}", app.transpose)
+            },
+            15.0,
+        );
         if crate::named(ui.button("+"), tr!("Transpose up"))
             .on_hover_text(tr!("Transpose up"))
             .clicked()
@@ -380,7 +391,7 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
                 .on_hover_text(tr!("Discard the changes"))
                 .clicked();
             save = ui
-                .button(egui::RichText::new(tr!("Save")).strong())
+                .add(crate::theme::primary(tr!("Save")))
                 .on_hover_text(tr!("Save the changes (Cmd+S or Ctrl+S)"))
                 .clicked();
         });
@@ -410,7 +421,7 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
 
         ui.add_space(8.0);
         ui.horizontal(|ui| {
-            ui.strong(tr!("Parts and presets"));
+            crate::theme::section(ui, tr!("Parts and presets"));
             if ui.small_button(tr!("Add part")).on_hover_text(tr!("A part (intro, verse, solo…) can switch presets when it starts")).clicked() {
                 let name = tr!("Part {number}", number = draft.parts.len() + 1);
                 draft.parts.push(PartDraft { name, ..Default::default() });
@@ -420,7 +431,7 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
         let mut remove_part = None;
         let mut move_up = None;
         for (pi, part) in draft.parts.iter_mut().enumerate() {
-            ui.group(|ui| {
+            crate::theme::card(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.add(egui::TextEdit::singleline(&mut part.name).desired_width(140.0).hint_text(tr!("Part name")));
                     ui.add(egui::TextEdit::singleline(&mut part.notes).desired_width(220.0).hint_text(tr!("Notes")));
@@ -472,7 +483,7 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
         tracks_editor(ui, &mut draft);
 
         ui.add_space(8.0);
-        ui.strong(tr!("Chart (ChordPro)"));
+        crate::theme::section(ui, tr!("Chart (ChordPro)"));
         ui.small(tr!("Chords in [brackets] before the syllable; sections with {start_of_chorus} … {end_of_chorus}; {comment: …}."));
         ui.columns(2, |cols| {
             cols[0].add(
@@ -574,7 +585,7 @@ fn role_label(role: TrackRole) -> &'static str {
 /// Backing tracks and the click.
 fn tracks_editor(ui: &mut egui::Ui, draft: &mut Draft) {
     ui.horizontal(|ui| {
-        ui.strong(tr!("Backing tracks and click"));
+        crate::theme::section(ui, tr!("Backing tracks and click"));
         let unused: Vec<String> = draft
             .audio_files
             .iter()
@@ -602,7 +613,7 @@ fn tracks_editor(ui: &mut egui::Ui, draft: &mut Draft) {
     ui.small(tr!("In perform mode, Play starts the tracks and the click together; the next song's files are loaded in the background."));
     let mut remove = None;
     for (i, t) in draft.tracks.iter_mut().enumerate() {
-        ui.group(|ui| {
+        crate::theme::card(ui, |ui| {
             ui.horizontal_wrapped(|ui| {
                 ui.label(egui::RichText::new(&t.file).strong());
                 egui::ComboBox::from_id_salt(("track-role", i))

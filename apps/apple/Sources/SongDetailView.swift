@@ -16,7 +16,12 @@ struct SongDetailView: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(song.title).font(.system(size: scaled(model.fontSize * 1.5), weight: .semibold))
                             .accessibilityAddTraits(.isHeader)
-                        Text(facts(song, chart: chart)).font(.subheadline).foregroundStyle(.secondary)
+                        if !song.artist.isEmpty { Text(song.artist).font(.title3).foregroundStyle(.secondary) }
+                        HStack(spacing: 8) {
+                            if let k = chart?.key ?? song.key { Readout(label: "Key", value: k, size: 15) }
+                            if let t = song.tempoBpm { Readout(label: "BPM", value: "\(Int(t))", size: 15) }
+                            if let d = song.duration { Readout(label: "Length", value: d, size: 15) }
+                        }
                     }
                 }
                 AttachmentBar(songId: songId, showing: $showingAttachment)
@@ -55,15 +60,6 @@ struct SongDetailView: View {
     private func step(_ d: Int8) {
         let n = transpose + d
         transpose = (n > 11 || n < -11) ? 0 : n
-    }
-
-    private func facts(_ s: SongSummary, chart: Chart?) -> String {
-        var parts: [String] = []
-        if !s.artist.isEmpty { parts.append(s.artist) }
-        if let k = chart?.key ?? s.key { parts.append(String(localized: "Key \(k)")) }
-        if let t = s.tempoBpm { parts.append("\(Int(t)) BPM") }
-        if let d = s.duration { parts.append(d) }
-        return parts.joined(separator: " · ")
     }
 }
 
@@ -115,7 +111,7 @@ struct ChartView: View {
                         if hasChords {
                             Text((seg.chord ?? " ") + " ")
                                 .font(.system(size: fontSize, weight: .bold))
-                                .foregroundStyle(.tint)
+                                .foregroundStyle(Color.chord)
                         }
                         Text(seg.text.isEmpty ? " " : seg.text).font(.system(size: fontSize))
                     }
