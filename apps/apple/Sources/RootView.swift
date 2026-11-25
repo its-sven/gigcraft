@@ -14,7 +14,7 @@ struct RootView: View {
         NavigationSplitView {
             VStack(spacing: 0) {
                 Picker("Section", selection: $model.section) {
-                    ForEach(LibraryModel.Section.allCases) { Text($0.rawValue).tag($0) }
+                    ForEach(LibraryModel.Section.allCases) { Text($0.title).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
@@ -24,7 +24,7 @@ struct RootView: View {
                     List(model.songs, id: \.id, selection: $model.selectedSong) { song in
                         VStack(alignment: .leading, spacing: 2) {
                             Text(song.title).font(.headline)
-                            Text([song.artist, song.key.map { "Key \($0)" } ?? "", song.duration ?? ""]
+                            Text([song.artist, song.key.map { String(localized: "Key \($0)") } ?? "", song.duration ?? ""]
                                 .filter { !$0.isEmpty }.joined(separator: " · "))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
@@ -164,13 +164,19 @@ struct RigSection: View {
     var body: some View {
         let rig = model.rig
         VStack(alignment: .leading, spacing: 8) {
-            Text("Rig").font(.headline)
+            Text("Rig").font(.headline).accessibilityAddTraits(.isHeader)
             ForEach(rig.status, id: \.self) { Text($0).font(.callout) }
             Toggle("Simulated Play Acoustic (no hardware)", isOn: Binding(get: { rig.usesSimulatedPedal }, set: { rig.setSimulated($0) }))
             HStack {
                 ForEach(["next", "previous", "next_song", "previous_song"], id: \.self) { action in
-                    Button(rig.learningFor == action ? "Press the switch…" : "Learn \(action.replacingOccurrences(of: "_", with: " "))") {
+                    Button {
                         rig.learn(rig.learningFor == action ? nil : action)
+                    } label: {
+                        if rig.learningFor == action {
+                            Text("Press the switch…")
+                        } else {
+                            Text("Learn: \(RigBridge.actionName(action))")
+                        }
                     }
                     .buttonStyle(.bordered)
                     .font(.caption)

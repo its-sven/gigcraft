@@ -2,7 +2,7 @@
 
 **An open-source app for gigging musicians and bands:** setlists, chord charts and PDFs, backing tracks and click, MIDI preset control for your rig, band sync on stage, and gig organisation. On iPad, iPhone, Mac, Windows, Linux and in the browser. Offline, no account, your data in readable files.
 
-> Status: **Phase 1 (solo on stage) – first complete version, not yet tested on a real gig.** Library, editors, setlists, perform mode with page turners and MIDI footswitches, pedal presets (TC-Helicon Play Acoustic, any MIDI device), PDF charts, import/export and folder sync work on the desktop and on iPad/iPhone. See the [roadmap](docs/plan/roadmap.md).
+> Status: **Phase 1 (solo on stage) – first complete version, not yet tested on a real gig.** Library, editors, setlists, perform mode with page turners and MIDI footswitches, pedal presets (TC-Helicon Play Acoustic, any MIDI device), PDF charts, import/export and folder sync work on the desktop and on iPad/iPhone, in English and German. See the [roadmap](docs/plan/roadmap.md).
 
 ## Screenshots
 
@@ -20,6 +20,16 @@
 |---|---|
 | <img src="docs/img/desktop-setlist-editor.png" alt="Desktop setlist editor: sets, breaks, key and note per gig, optional songs, add songs" width="480"> | <img src="docs/img/ipad-song-editor.png" alt="iPad song editor sheet: title, artist, key, tempo, parts and presets" width="400"> |
 
+| Rig: MIDI devices, pedal status, MIDI Learn | |
+|---|---|
+| <img src="docs/img/desktop-rig.png" alt="Desktop rig window: simulated Play Acoustic with its current preset, test buttons, MIDI Learn buttons for every stage action" width="480"> | |
+
+**Deutsch** – the interface follows the system language, or pick one in the app:
+
+| Auftritt auf dem iPad | Setliste bearbeiten (Desktop) |
+|---|---|
+| <img src="docs/img/ipad-perform-de.png" alt="Perform mode on iPad in German: Tonart G, auf der Bühne, Zurück/Weiter, Als Nächstes" width="400"> | <img src="docs/img/desktop-setlist-editor-de.png" alt="Desktop setlist editor in German: Hoch, Runter, Ins nächste Set, Notiz für diesen Gig" width="480"> |
+
 ## What works today
 
 - **Library** of songs (key, tempo, time, duration, capo, tags, notes, custom fields, links, attachments) as plain files; search with phrases and exclusions.
@@ -29,6 +39,7 @@
 - **Rig**: song parts send presets to MIDI devices; the TC-Helicon Play Acoustic/Electric is driven by stepping with its own buttons when it ignores Program Change (read-only, never writes settings); a simulated pedal for rehearsing without hardware.
 - **Import/export**: ChordPro, OnSong, OpenSong, chords-over-lyrics text, BandHelper TSV, CSV, Cuebook libraries, Ultimate Guitar links and playlists; ChordPro, TSV and setlist text out.
 - **Sync** through any shared folder (iCloud Drive, Nextcloud, Syncthing): changes from other devices appear within seconds; conflicting saves are caught instead of overwriting.
+- **Languages and accessibility**: English and German (more languages are one catalog file each); screen readers on the desktop (AccessKit: VoiceOver, Narrator, Orca) and VoiceOver on iOS, where a chart line is read as one sentence with its chords after it; larger text sizes scale the charts.
 - **Automation**: every action is a command – from the CLI, as MCP tools for AI agents, or from the apps. Undo/redo for everything; deleting moves to the library's trash.
 
 GigCraft is an independent project. It follows the principles of the [ArtCraft](https://getartcraft.com/) Craft apps (Rust, local-first, every action scriptable from a CLI or an AI agent) and uses their open-source [craft-libs](https://github.com/storytold/craft-libs), but it is not an official ArtCraft app. It is not affiliated with BandHelper, Stage Traxx, OnSong or any other product named in the research notes.
@@ -49,6 +60,7 @@ cargo run -p gigcraft-cli -- commands
 cargo run -p gigcraft-desktop -- ~/GigCraft-Demo --song "Harbour Lights"
 cargo run -p gigcraft-desktop -- ~/GigCraft-Demo --setlist "Demo Gig" --perform   # stage view
 cargo run -p gigcraft-desktop -- ~/GigCraft-Demo --rig                            # MIDI devices
+cargo run -p gigcraft-desktop -- ~/GigCraft-Demo --lang de                        # in German
 
 # MCP server for AI agents (stdio)
 cargo run -p gigcraft-cli -- mcp -l ~/GigCraft-Demo

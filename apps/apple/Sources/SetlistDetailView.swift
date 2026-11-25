@@ -21,8 +21,8 @@ struct SetlistDetailView: View {
             List {
                 Section {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(list.name).font(.title.weight(.semibold))
-                        Text([list.date ?? "", "\(list.total) total"].filter { !$0.isEmpty }.joined(separator: " · "))
+                        Text(list.name).font(.title.weight(.semibold)).accessibilityAddTraits(.isHeader)
+                        Text([list.date ?? "", String(localized: "\(list.total) total")].filter { !$0.isEmpty }.joined(separator: " · "))
                             .foregroundStyle(.secondary)
                         if !list.notes.isEmpty { Text(list.notes).italic() }
                     }
@@ -46,7 +46,7 @@ struct SetlistDetailView: View {
                             Button("Add break") { model.setlistCommand("setlist.add_break", ["id": setlistId, "set": set.id, "minutes": 15]) }
                         }
                     } header: {
-                        Text("\(set.name) (\(set.duration))")
+                        Text(verbatim: "\(set.name) (\(set.duration))")
                     }
                 }
                 if editMode.isEditing {
@@ -110,10 +110,13 @@ struct SetlistDetailView: View {
             } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     HStack {
-                        Text("\(number ?? 0). \(e.title)").font(.system(size: model.fontSize)).strikethrough(e.missing)
+                        Text(verbatim: "\(number ?? 0). \(e.title)").font(.system(size: model.fontSize)).strikethrough(e.missing)
                         Spacer()
                         if e.optional { Text("optional").font(.caption).foregroundStyle(.secondary) }
-                        if let k = e.key { Text(k).font(.headline.monospaced()).foregroundStyle(.tint) }
+                        if let k = e.key {
+                            Text(k).font(.headline.monospaced()).foregroundStyle(.tint)
+                                .accessibilityLabel("Key \(k)")
+                        }
                     }
                     if !e.notes.isEmpty { Text(e.notes).font(.caption).italic().foregroundStyle(.secondary) }
                 }
@@ -206,8 +209,12 @@ struct AddSongsSheet: View {
                         }
                         Spacer()
                         let n = added.filter { $0 == song.id }.count
-                        if n > 0 { Text(n == 1 ? "added" : "added ×\(n)").font(.caption).foregroundStyle(.tint) }
-                        Image(systemName: "plus.circle")
+                        if n == 1 {
+                            Text("added").font(.caption).foregroundStyle(.tint)
+                        } else if n > 1 {
+                            Text("added ×\(n)").font(.caption).foregroundStyle(.tint)
+                        }
+                        Image(systemName: "plus.circle").accessibilityLabel("Add")
                     }
                 }
             }
@@ -228,9 +235,9 @@ extension SetlistDetail {
             for e in set.entries {
                 if e.isBreak { out += "   — \(e.title) \(e.minutes) min —\n"; continue }
                 n += 1
-                out += "\(n). \(e.title)" + (e.key.map { "  [\($0)]" } ?? "") + (e.optional ? "  (optional)" : "") + (e.notes.isEmpty ? "" : "  – \(e.notes)") + "\n"
+                out += "\(n). \(e.title)" + (e.key.map { "  [\($0)]" } ?? "") + (e.optional ? "  " + String(localized: "(optional)") : "") + (e.notes.isEmpty ? "" : "  – \(e.notes)") + "\n"
             }
         }
-        return out + "\nTotal \(total)\n"
+        return out + "\n" + String(localized: "Total \(total)") + "\n"
     }
 }

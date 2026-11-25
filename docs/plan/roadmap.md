@@ -67,10 +67,10 @@ Original plan:
 | 6 MIDI out, Play Acoustic profile and driver, simulated pedal | done (`gigcraft-midi`, `gigcraft-rig`, midir, CoreMIDI); untested with hardware |
 | 7 Import/export | done (`gigcraft-formats`); lossless zip export later (the library folder itself is lossless) |
 | 8 Folder sync with conflict detection | done; iOS folder choice with bookmark |
-| 9 Accessibility, DE/EN | open |
+| 9 Accessibility, DE/EN | done: German and English on desktop (craft-i18n catalog, checked by a test) and iOS (string catalog); screen readers via AccessKit (desktop) and VoiceOver labels, headings, chart lines read as sentences, Dynamic Type (iOS); a native-speaker review of the German and a VoiceOver session on a device are still open |
 | 10 Beta (TestFlight/SideStore, real gigs) | open – next |
 
-Open points found on the way: open-acoustic has no licence file (GigCraft uses only its documented protocol facts); whether the Play Acoustic numbers presets from 0 or 1 in Program Change must be checked on the hardware (the driver learns the offset at run time; the Cuebook importer assumes 1); desktop screenshots in the README are from before the rig status line.
+Open points found on the way: open-acoustic has no licence file (GigCraft uses only its documented protocol facts); whether the Play Acoustic numbers presets from 0 or 1 in Program Change must be checked on the hardware (the driver learns the offset at run time; the Cuebook importer assumes 1); text from the core (error messages, most rig notices) is still English.
 
 Original plan:
 

@@ -14,7 +14,8 @@ struct SongDetailView: View {
             VStack(alignment: .leading, spacing: 12) {
                 if let song {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(song.title).font(.system(size: model.fontSize * 1.5, weight: .semibold))
+                        Text(song.title).font(.system(size: scaled(model.fontSize * 1.5), weight: .semibold))
+                            .accessibilityAddTraits(.isHeader)
                         Text(facts(song, chart: chart)).font(.subheadline).foregroundStyle(.secondary)
                     }
                 }
@@ -41,7 +42,9 @@ struct SongDetailView: View {
                     .accessibilityLabel("Move to trash")
                 Button { step(-1) } label: { Image(systemName: "minus") }
                     .accessibilityLabel("Transpose down")
-                Text(transpose == 0 ? "±0" : String(format: "%+d", transpose)).monospacedDigit()
+                Text(verbatim: transpose == 0 ? "±0" : String(format: "%+d", transpose)).monospacedDigit()
+                    .accessibilityLabel("Transposition")
+                    .accessibilityValue(transpose == 0 ? String(localized: "original key") : String(localized: "\(Int(transpose)) semitones"))
                 Button { step(1) } label: { Image(systemName: "plus") }
                     .accessibilityLabel("Transpose up")
             }
@@ -57,7 +60,7 @@ struct SongDetailView: View {
     private func facts(_ s: SongSummary, chart: Chart?) -> String {
         var parts: [String] = []
         if !s.artist.isEmpty { parts.append(s.artist) }
-        if let k = chart?.key ?? s.key { parts.append("Key \(k)") }
+        if let k = chart?.key ?? s.key { parts.append(String(localized: "Key \(k)")) }
         if let t = s.tempoBpm { parts.append("\(Int(t)) BPM") }
         if let d = s.duration { parts.append(d) }
         return parts.joined(separator: " · ")
@@ -67,7 +70,15 @@ struct SongDetailView: View {
 /// Chords above lyrics; sections with headings; the chorus indented.
 struct ChartView: View {
     let chart: Chart
-    let fontSize: Double
+    /// The size the user picked; larger accessibility text sizes scale it up.
+    let baseSize: Double
+
+    init(chart: Chart, fontSize: Double) {
+        self.chart = chart
+        self.baseSize = fontSize
+    }
+
+    private var fontSize: Double { scaled(baseSize) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: fontSize * 0.3) {
@@ -77,6 +88,7 @@ struct ChartView: View {
                         .font(.system(size: fontSize * 0.8, weight: .bold))
                         .italic(block.kind == "chorus_recall")
                         .padding(.top, fontSize * 0.4)
+                        .accessibilityAddTraits(.isHeader)
                 }
                 VStack(alignment: .leading, spacing: fontSize * 0.25) {
                     ForEach(Array(block.lines.enumerated()), id: \.offset) { _, line in
@@ -92,7 +104,7 @@ struct ChartView: View {
     private func lineView(_ line: ChartLine) -> some View {
         switch line {
         case .empty:
-            Spacer().frame(height: fontSize * 0.4)
+            Spacer().frame(height: fontSize * 0.4).accessibilityHidden(true)
         case .comment(let text):
             Text(text).font(.system(size: fontSize * 0.85)).italic().foregroundStyle(.secondary)
         case .lyrics(let segments):
@@ -109,8 +121,17 @@ struct ChartView: View {
                     }
                 }
             }
+            // VoiceOver reads the line as one sentence, the chords after it.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(segments.map(\.text).joined())
+            .accessibilityValue(hasChords ? String(localized: "Chords: \(segments.compactMap(\.chord).joined(separator: ", "))") : "")
         }
     }
+}
+
+/// `size` scaled for the user's text size setting (unchanged at the default size).
+func scaled(_ size: Double) -> Double {
+    Double(UIFontMetrics(forTextStyle: .body).scaledValue(for: CGFloat(size)))
 }
 
 /// Lays out children left to right and wraps to the next row when full.

@@ -43,6 +43,12 @@ final class LibraryModel {
         case songs = "Songs"
         case setlists = "Setlists"
         var id: String { rawValue }
+        var title: LocalizedStringResource {
+            switch self {
+            case .songs: "Songs"
+            case .setlists: "Setlists"
+            }
+        }
     }
 
     private(set) var core: Core?
@@ -115,7 +121,7 @@ final class LibraryModel {
     func useFolder(_ url: URL) {
         scopedURL?.stopAccessingSecurityScopedResource()
         guard url.startAccessingSecurityScopedResource() else {
-            errorMessage = "No access to that folder."
+            errorMessage = String(localized: "No access to that folder.")
             return
         }
         scopedURL = url
@@ -170,7 +176,7 @@ final class LibraryModel {
                 SetlistEntry(
                     id: ei,
                     isBreak: (e["type"] as? String) == "break",
-                    title: (e["title"] as? String) ?? ((e["label"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "Break"),
+                    title: (e["title"] as? String) ?? ((e["label"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "Break")),
                     songId: e["song"] as? String,
                     key: e["key"] as? String,
                     notes: e["notes"] as? String ?? "",
@@ -225,7 +231,9 @@ final class LibraryModel {
     }
 
     func createSong() -> String? {
-        guard let out = run("song.create", ["title": "New song", "chart": "{title: New song}\n\n[C]Lyrics with [G]chords\n"]),
+        let title = String(localized: "New song")
+        let chart = "{title: \(title)}\n\n" + String(localized: "[C]Lyrics with [G]chords") + "\n"
+        guard let out = run("song.create", ["title": title, "chart": chart]),
               let id = (out["result"] as? [String: Any])?["id"] as? String else { return nil }
         refreshSongs()
         return id
@@ -244,7 +252,7 @@ final class LibraryModel {
             guard let out = run("import.ultimate_guitar", ["links": text]), let r = out["result"] as? [String: Any] else { return nil }
             refreshSongs(); bump()
             let n = (r["created"] as? [Any])?.count ?? 0
-            return "\(n) song(s) added with their Ultimate Guitar link."
+            return String(localized: "\(n) songs added with their Ultimate Guitar links.")
         }
         return importResult(run("import.text", ["text": text]))
     }
@@ -254,7 +262,12 @@ final class LibraryModel {
         refreshSongs(); refreshSetlists(); bump()
         if let first = r["first_song"] as? String { selectedSong = first; section = .songs }
         let warnings = (r["warnings"] as? [Any])?.count ?? 0
-        return "Imported \(r["songs_created"] ?? 0) new, \(r["songs_updated"] ?? 0) updated song(s), \(r["setlists"] ?? 0) setlist(s)" + (warnings > 0 ? ", \(warnings) warning(s)." : ".")
+        let created = r["songs_created"] as? Int ?? 0
+        let updated = r["songs_updated"] as? Int ?? 0
+        let setlists = r["setlists"] as? Int ?? 0
+        var text = String(localized: "Imported: \(created) new, \(updated) updated songs, \(setlists) setlists.")
+        if warnings > 0 { text += " " + String(localized: "\(warnings) warnings – see the songs' notes.") }
+        return text
     }
 
     func trashSong(_ id: String) {
@@ -266,7 +279,7 @@ final class LibraryModel {
     }
 
     func createSetlist() -> String? {
-        guard let out = run("setlist.create", ["name": "New setlist"]),
+        guard let out = run("setlist.create", ["name": String(localized: "New setlist")]),
               let id = (out["result"] as? [String: Any])?["id"] as? String else { return nil }
         refreshSetlists()
         return id

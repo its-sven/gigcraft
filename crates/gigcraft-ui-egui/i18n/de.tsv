@@ -4,6 +4,7 @@
 @id	language.name	Deutsch
 
 # Bibliothek und Leiste
+	Library	Bibliothek
 	Open library…	Bibliothek öffnen…
 	New demo library…	Neue Demo-Bibliothek…
 	Creates a folder “GigCraft Demo” in the folder you pick	Legt im gewählten Ordner einen Ordner „GigCraft Demo“ an

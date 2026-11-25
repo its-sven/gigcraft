@@ -71,6 +71,8 @@ pub struct Start {
     pub perform: bool,
     /// Open the rig window.
     pub rig: bool,
+    /// Interface language for this run (`en`, `de`, `auto`); otherwise the saved setting.
+    pub language: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -169,6 +171,10 @@ impl GigCraftApp {
                 app.open(path);
             }
         }
+        if let Some(code) = &start.language {
+            app.language = i18n::Setting::parse(code);
+        }
+        i18n::set(app.language.lang());
         if let Some(path) = start.library.clone() {
             app.open(path);
         }
@@ -319,28 +325,34 @@ impl GigCraftApp {
         ui.horizontal(|ui| {
             ui.heading("GigCraft");
             ui.separator();
-            let mut open = None;
-            let mut demo = None;
-            if let Some(pick) = &self.hooks.pick_folder {
-                if ui.button(tr!("Open library…")).clicked() {
-                    open = pick();
-                }
-                if ui
-                    .button(tr!("New demo library…"))
-                    .on_hover_text(tr!(
-                        "Creates a folder “GigCraft Demo” in the folder you pick"
-                    ))
-                    .clicked()
-                {
-                    demo = pick();
-                }
+            let mut want_demo = None;
+            if self.hooks.pick_folder.is_some() {
+                ui.menu_button(tr!("Library"), |ui| {
+                    if ui.button(tr!("Open library…")).clicked() {
+                        want_demo = Some(false);
+                        ui.close();
+                    }
+                    if ui
+                        .button(tr!("New demo library…"))
+                        .on_hover_text(tr!(
+                            "Creates a folder “GigCraft Demo” in the folder you pick"
+                        ))
+                        .clicked()
+                    {
+                        want_demo = Some(true);
+                        ui.close();
+                    }
+                });
                 ui.separator();
             }
-            if let Some(p) = open {
-                self.open(p);
-            }
-            if let Some(p) = demo {
-                self.create_demo(p);
+            if let Some(demo) = want_demo
+                && let Some(path) = self.hooks.pick_folder.as_ref().and_then(|pick| pick())
+            {
+                if demo {
+                    self.create_demo(path);
+                } else {
+                    self.open(path);
+                }
             }
             let (undo, redo) = self.engine.as_ref().map_or((None, None), |e| {
                 (

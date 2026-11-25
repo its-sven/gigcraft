@@ -65,7 +65,7 @@ struct SongEditorView: View {
                             }
                         }
                         if !part.other.isEmpty {
-                            Text("+ \(part.other.count) other MIDI message(s), kept as they are").font(.caption).foregroundStyle(.secondary)
+                            Text("+ \(part.other.count) other MIDI messages, kept as they are").font(.caption).foregroundStyle(.secondary)
                         }
                         Button("Add program change") { part.presets.append(PresetDraft(device: part.presets.last?.device ?? "Play Acoustic")) }
                             .font(.caption)
@@ -73,7 +73,7 @@ struct SongEditorView: View {
                 }
                 .onDelete { parts.remove(atOffsets: $0) }
                 .onMove { parts.move(fromOffsets: $0, toOffset: $1) }
-                Button("Add part") { parts.append(PartDraft(name: "Part \(parts.count + 1)")) }
+                Button("Add part") { parts.append(PartDraft(name: String(localized: "Part \(parts.count + 1)"))) }
             } header: {
                 Text("Parts and presets")
             } footer: {
@@ -102,7 +102,7 @@ struct SongEditorView: View {
         .onDisappear { model.isEditing = false }
     }
 
-    private func field(_ label: String, _ text: Binding<String>, keyboard: UIKeyboardType = .default, prompt: String? = nil) -> some View {
+    private func field(_ label: LocalizedStringKey, _ text: Binding<String>, keyboard: UIKeyboardType = .default, prompt: LocalizedStringKey? = nil) -> some View {
         LabeledContent(label) {
             TextField(prompt ?? label, text: text)
                 .keyboardType(keyboard)
@@ -146,19 +146,19 @@ struct SongEditorView: View {
             "tags": tags.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty },
         ]
         let t = tempo.replacingOccurrences(of: ",", with: ".").trimmingCharacters(in: .whitespaces)
-        if t.isEmpty { fields["tempo_bpm"] = NSNull() } else if let v = Double(t) { fields["tempo_bpm"] = v } else { issues = ["Tempo is not a number"]; return }
+        if t.isEmpty { fields["tempo_bpm"] = NSNull() } else if let v = Double(t) { fields["tempo_bpm"] = v } else { issues = [String(localized: "Tempo is not a number")]; return }
         let c = capo.trimmingCharacters(in: .whitespaces)
-        if c.isEmpty { fields["capo"] = NSNull() } else if let v = Int(c) { fields["capo"] = v } else { issues = ["Capo is not a number"]; return }
+        if c.isEmpty { fields["capo"] = NSNull() } else if let v = Int(c) { fields["capo"] = v } else { issues = [String(localized: "Capo is not a number")]; return }
         fields["parts"] = parts.map { p -> [String: Any] in
             let actions: [[String: Any]] = p.presets.map { ["device": $0.device, "type": "program_change", "channel": $0.channel, "program": $0.program] } + p.other.map { $0 as [String: Any] }
             return ["name": p.name, "notes": p.notes, "actions": actions]
         }
         guard let result = model.updateSong(songId, fields: fields, chart: chart) else {
-            let message = model.errorMessage ?? "Could not save"
+            let message = model.errorMessage ?? String(localized: "Could not save")
             if message.contains("changed by another device") {
                 // Load the other version; ours stays in the editor and wins on the next save.
                 model.reload()
-                issues = ["This song was changed on another device. The library has been reloaded; save again to replace that version with yours, or cancel to keep it."]
+                issues = [String(localized: "This song was changed on another device. The library has been reloaded; save again to replace that version with yours, or cancel to keep it.")]
             } else {
                 issues = [message]
             }

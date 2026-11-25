@@ -88,7 +88,7 @@ final class RigBridge {
                       let id = ports.first(where: { $0.type == .output && $0.name == port })?.id else { continue }
                 midi.send(bytes.map { UInt8(truncatingIfNeeded: $0) }, to: id)
             case "notice":
-                append("\(o["device"] as? String ?? ""): \(o["text"] as? String ?? "")")
+                append("\(o["device"] as? String ?? ""): \(Self.localized(o["text"] as? String ?? ""))")
             case "action":
                 if let a = o["action"] as? String { onAction?(a) }
             case "learned":
@@ -96,7 +96,7 @@ final class RigBridge {
                    let data = try? JSONSerialization.data(withJSONObject: trigger),
                    let more = try? rig.addMapping(triggerJson: String(decoding: data, as: UTF8.self), action: action) {
                     learningFor = nil
-                    append("Learned \(action)")
+                    append(String(localized: "Learned: \(Self.actionName(action))"))
                     handle(more)
                 }
             case "config_changed":
@@ -117,8 +117,33 @@ final class RigBridge {
     private func refreshStatus() {
         let list = (try? JSONSerialization.jsonObject(with: Data(rig.statusJson().utf8))) as? [[String: Any]] ?? []
         status = list.map { d in
-            let what = (d["current"] as? String).map { "preset \($0)" } ?? (d["state"] as? String ?? "")
+            let what = (d["current"] as? String).map { String(localized: "preset \($0)") } ?? Self.state(d["state"] as? String ?? "")
             return "\(d["name"] as? String ?? ""): \(what)" + ((d["busy"] as? Bool) == true ? " …" : "")
+        }
+    }
+
+    /// Text from the core in the user's language, if the string catalog has it.
+    static func localized(_ text: String) -> String {
+        Bundle.main.localizedString(forKey: text, value: text, table: nil)
+    }
+
+    /// A device state from the core ("not connected", "Play Acoustic ready"…).
+    static func state(_ text: String) -> String {
+        if text.hasSuffix(" ready") {
+            let model = String(text.dropLast(" ready".count))
+            return String(localized: "\(model) ready")
+        }
+        return localized(text)
+    }
+
+    /// A perform action's name ("next_song" → "Next song").
+    static func actionName(_ action: String) -> String {
+        switch action {
+        case "next": String(localized: "Next")
+        case "previous": String(localized: "Previous")
+        case "next_song": String(localized: "Next song")
+        case "previous_song": String(localized: "Previous song")
+        default: action.replacingOccurrences(of: "_", with: " ")
         }
     }
 

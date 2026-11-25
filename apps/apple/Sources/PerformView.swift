@@ -26,6 +26,10 @@ struct PerformView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .contentShape(Rectangle())
+            .accessibilityAction(named: Text("Next")) { model.perform("next") }
+            .accessibilityAction(named: Text("Previous")) { model.perform("previous") }
+            .accessibilityAction(named: Text("Next song")) { model.perform("next_song") }
+            .accessibilityAction(named: Text("Previous song")) { model.perform("previous_song") }
             .gesture(SpatialTapGesture().onEnded { tap in
                 // Tap on the right third: next; on the left third: previous.
                 let width = UIScreen.main.bounds.width
@@ -60,10 +64,13 @@ struct PerformView: View {
     private func header(_ st: [String: Any]) -> some View {
         HStack {
             Text(st["name"] as? String ?? "").bold()
-            Text("\(((st["index"] as? Int) ?? 0) + 1) / \(st["count"] as? Int ?? 0)").foregroundStyle(.secondary)
+            let position = ((st["index"] as? Int) ?? 0) + 1
+            let count = st["count"] as? Int ?? 0
+            Text(verbatim: "\(position) / \(count)").foregroundStyle(.secondary)
+                .accessibilityLabel("Item \(position) of \(count)")
             TimelineView(.periodic(from: .now, by: 1)) { ctx in
                 let s = Int(ctx.date.timeIntervalSince(startedAt))
-                Text(String(format: "on stage %d:%02d", s / 60, s % 60)).foregroundStyle(.secondary).monospacedDigit()
+                Text("on stage \(String(format: "%d:%02d", s / 60, s % 60))").foregroundStyle(.secondary).monospacedDigit()
             }
             Spacer()
             Button("Panic", role: .destructive) { model.perform("panic") }
@@ -83,9 +90,10 @@ struct PerformView: View {
         return ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .firstTextBaseline, spacing: 16) {
-                    Text(cur["title"] as? String ?? "").font(.system(size: size * 1.6, weight: .bold))
+                    Text(cur["title"] as? String ?? "").font(.system(size: scaled(size * 1.6), weight: .bold))
+                        .accessibilityAddTraits(.isHeader)
                     if let k = gigKey { Text("Key \(k)").font(.system(size: size)).foregroundStyle(.tint) }
-                    if let t = cur["tempo_bpm"] as? Double { Text("\(Int(t)) BPM").font(.system(size: size * 0.8)).foregroundStyle(.secondary) }
+                    if let t = cur["tempo_bpm"] as? Double { Text(verbatim: "\(Int(t)) BPM").font(.system(size: size * 0.8)).foregroundStyle(.secondary) }
                 }
                 if parts.count > 1 {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -95,6 +103,7 @@ struct PerformView: View {
                                     .buttonStyle(.bordered)
                                     .tint(i == part ? .accentColor : .secondary)
                                     .font(.system(size: size * 0.7, weight: i == part ? .bold : .regular))
+                                    .accessibilityAddTraits(i == part ? .isSelected : [])
                             }
                         }
                     }
@@ -115,12 +124,13 @@ struct PerformView: View {
     private func breakView(_ cur: [String: Any], size: Double) -> some View {
         VStack(spacing: 20) {
             Spacer()
-            let label = (cur["label"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? "Break"
+            let label = (cur["label"] as? String).flatMap { $0.isEmpty ? nil : $0 } ?? String(localized: "Break")
             Text(label).font(.system(size: size * 2, weight: .bold))
             if let ends = breakEnds {
                 TimelineView(.periodic(from: .now, by: 1)) { ctx in
                     let left = max(0, Int(ends.timeIntervalSince(ctx.date)))
-                    Text(String(format: "%d:%02d", left / 60, left % 60)).font(.system(size: size * 3).monospacedDigit())
+                    Text(verbatim: String(format: "%d:%02d", left / 60, left % 60)).font(.system(size: size * 3).monospacedDigit())
+                        .accessibilityLabel("Break ends in \(String(format: "%d:%02d", left / 60, left % 60))")
                 }
             }
             Spacer()
@@ -131,11 +141,13 @@ struct PerformView: View {
     private func footer(_ st: [String: Any], size: Double) -> some View {
         let next = st["next"] as? [String: Any]
         let nextText: String = {
-            guard let next else { return "Last song" }
+            guard let next else { return String(localized: "Last song") }
             switch next["type"] as? String {
-            case "song": return "Up next: \(next["title"] as? String ?? "")" + ((next["key"] as? String).map { "  [\($0)]" } ?? "")
-            case "break": return "Up next: break \(next["minutes"] as? Int ?? 0) min"
-            default: return "Up next: (missing song)"
+            case "song":
+                let title = (next["title"] as? String ?? "") + ((next["key"] as? String).map { "  [\($0)]" } ?? "")
+                return String(localized: "Up next: \(title)")
+            case "break": return String(localized: "Up next: break \(next["minutes"] as? Int ?? 0) min")
+            default: return String(localized: "Up next: (missing song)")
             }
         }()
         return HStack(spacing: 16) {
@@ -148,7 +160,7 @@ struct PerformView: View {
             if !model.rig.status.isEmpty {
                 Text(model.rig.status.joined(separator: "   ")).font(.caption).foregroundStyle(.secondary).lineLimit(1)
             } else if !model.lastSent.isEmpty {
-                Text("Presets: " + model.lastSent.joined(separator: "; ")).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                Text("Presets: \(model.lastSent.joined(separator: "; "))").font(.caption).foregroundStyle(.secondary).lineLimit(1)
             }
         }
         .padding()

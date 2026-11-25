@@ -214,7 +214,7 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                             .buffers
                             .entry((si, ei, "notes"))
                             .or_insert_with(|| e["notes"].as_str().unwrap_or_default().to_string());
-                        let r = ui.add(egui::TextEdit::singleline(notes).hint_text(tr!("Note for this gig")).desired_width(200.0));
+                        let r = ui.add(egui::TextEdit::singleline(notes).hint_text(tr!("Note for this gig")).desired_width((ui.available_width() - 110.0).clamp(80.0, 240.0)));
                         if r.lost_focus() && notes.as_str() != e["notes"].as_str().unwrap_or_default() {
                             cmds.push(("setlist.update_entry", json!({"id": sid, "set": si, "index": ei, "fields": {"notes": notes.clone()}})));
                         }

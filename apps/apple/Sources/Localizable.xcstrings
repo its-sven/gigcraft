@@ -1,0 +1,1396 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@ ready": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ bereit"
+          }
+        }
+      }
+    },
+    "%@ total": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ gesamt"
+          }
+        }
+      }
+    },
+    "%lld min": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "%lld semitones": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld semitone"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld semitones"
+                }
+              }
+            }
+          }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Halbton"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Halbtöne"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld songs added with their Ultimate Guitar links.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld song added with its Ultimate Guitar link."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld songs added with their Ultimate Guitar links."
+                }
+              }
+            }
+          }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Song mit Ultimate-Guitar-Link hinzugefügt."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Songs mit Ultimate-Guitar-Links hinzugefügt."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld warnings – see the songs' notes.": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld warning – see the songs' notes."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld warnings – see the songs' notes."
+                }
+              }
+            }
+          }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Warnung – siehe Notizen der Songs."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Warnungen – siehe Notizen der Songs."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "(optional)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "(optional)"
+          }
+        }
+      }
+    },
+    "+ %lld other MIDI messages, kept as they are": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "+ %lld other MIDI message, kept as it is"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "+ %lld other MIDI messages, kept as they are"
+                }
+              }
+            }
+          }
+        },
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "+ %lld weitere MIDI-Nachricht, bleibt unverändert"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "+ %lld weitere MIDI-Nachrichten, bleiben unverändert"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Add": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinzufügen"
+          }
+        }
+      }
+    },
+    "Add break": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause hinzufügen"
+          }
+        }
+      }
+    },
+    "Add part": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teil hinzufügen"
+          }
+        }
+      }
+    },
+    "Add program change": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Program Change hinzufügen"
+          }
+        }
+      }
+    },
+    "Add set": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Set hinzufügen"
+          }
+        }
+      }
+    },
+    "Add songs": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Songs hinzufügen"
+          }
+        }
+      }
+    },
+    "Add songs…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Songs hinzufügen…"
+          }
+        }
+      }
+    },
+    "Artist": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Interpret"
+          }
+        }
+      }
+    },
+    "Attach": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anhängen"
+          }
+        }
+      }
+    },
+    "Break": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause"
+          }
+        }
+      }
+    },
+    "Break ends in %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pause endet in %@"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
+          }
+        }
+      }
+    },
+    "Capo": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kapo"
+          }
+        }
+      }
+    },
+    "Capo is not a number": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kapo ist keine Zahl"
+          }
+        }
+      }
+    },
+    "Ch %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kanal %lld"
+          }
+        }
+      }
+    },
+    "Chart (ChordPro)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chart (ChordPro)"
+          }
+        }
+      }
+    },
+    "Choose a folder…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordner wählen…"
+          }
+        }
+      }
+    },
+    "Chords: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Akkorde: %@"
+          }
+        }
+      }
+    },
+    "Could not save": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichern fehlgeschlagen"
+          }
+        }
+      }
+    },
+    "Device": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gerät"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fertig"
+          }
+        }
+      }
+    },
+    "Duration (m:ss)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dauer (m:ss)"
+          }
+        }
+      }
+    },
+    "Each part sends its presets when it starts. Program numbers are MIDI values 0–127.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeder Teil sendet beim Start seine Presets. Programmnummern sind MIDI-Werte 0–127."
+          }
+        }
+      }
+    },
+    "Edit": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bearbeiten"
+          }
+        }
+      }
+    },
+    "Edit song": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Song bearbeiten"
+          }
+        }
+      }
+    },
+    "Entry": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eintrag"
+          }
+        }
+      }
+    },
+    "Exit": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beenden"
+          }
+        }
+      }
+    },
+    "Import": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importieren"
+          }
+        }
+      }
+    },
+    "Import file…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datei importieren…"
+          }
+        }
+      }
+    },
+    "Imported: %lld new, %lld updated songs, %lld setlists.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importiert: %lld neue, %lld geänderte Songs, %lld Setlisten."
+          }
+        }
+      }
+    },
+    "Item %lld of %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eintrag %lld von %lld"
+          }
+        }
+      }
+    },
+    "Key": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonart"
+          }
+        }
+      }
+    },
+    "Key %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonart %@"
+          }
+        }
+      }
+    },
+    "Key for this gig": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonart für diesen Gig"
+          }
+        }
+      }
+    },
+    "Last song": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzter Song"
+          }
+        }
+      }
+    },
+    "Learn: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lernen: %@"
+          }
+        }
+      }
+    },
+    "Learned: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gelernt: %@"
+          }
+        }
+      }
+    },
+    "Library": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bibliothek"
+          }
+        }
+      }
+    },
+    "Move to trash": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In den Papierkorb"
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "New": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neu"
+          }
+        }
+      }
+    },
+    "New setlist": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Setliste"
+          }
+        }
+      }
+    },
+    "New song": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neuer Song"
+          }
+        }
+      }
+    },
+    "Next": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weiter"
+          }
+        }
+      }
+    },
+    "Next song": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nächster Song"
+          }
+        }
+      }
+    },
+    "No access to that folder.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Zugriff auf diesen Ordner."
+          }
+        }
+      }
+    },
+    "No chart. Edit the song to add one, or attach a PDF.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Chart. Bearbeite den Song, um einen anzulegen, oder hänge ein PDF an."
+          }
+        }
+      }
+    },
+    "Note for this gig": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notiz für diesen Gig"
+          }
+        }
+      }
+    },
+    "Notes": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notizen"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "Optional": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optional"
+          }
+        }
+      }
+    },
+    "Panic": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Panik"
+          }
+        }
+      }
+    },
+    "Part %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teil %lld"
+          }
+        }
+      }
+    },
+    "Part name": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name des Teils"
+          }
+        }
+      }
+    },
+    "Parts and presets": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teile und Presets"
+          }
+        }
+      }
+    },
+    "Paste a song or links": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Song oder Links einfügen"
+          }
+        }
+      }
+    },
+    "Paste song or links…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Song oder Links einfügen…"
+          }
+        }
+      }
+    },
+    "Perform": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auftritt"
+          }
+        }
+      }
+    },
+    "Perform from here": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ab hier auftreten"
+          }
+        }
+      }
+    },
+    "Pick a setlist": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setliste wählen"
+          }
+        }
+      }
+    },
+    "Pick a song": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Song wählen"
+          }
+        }
+      }
+    },
+    "Presets: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presets: %@"
+          }
+        }
+      }
+    },
+    "Press the switch…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schalter drücken…"
+          }
+        }
+      }
+    },
+    "Preview": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorschau"
+          }
+        }
+      }
+    },
+    "Previous": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zurück"
+          }
+        }
+      }
+    },
+    "Previous song": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorheriger Song"
+          }
+        }
+      }
+    },
+    "Program %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Programm %lld"
+          }
+        }
+      }
+    },
+    "Remove attachment": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anhang entfernen"
+          }
+        }
+      }
+    },
+    "Rename setlist": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setliste umbenennen"
+          }
+        }
+      }
+    },
+    "Rename…": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Umbenennen…"
+          }
+        }
+      }
+    },
+    "Rig": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rig"
+          }
+        }
+      }
+    },
+    "Save": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichern"
+          }
+        }
+      }
+    },
+    "Search songs": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Songs suchen"
+          }
+        }
+      }
+    },
+    "Section": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bereich"
+          }
+        }
+      }
+    },
+    "Setlist not found": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setliste nicht gefunden"
+          }
+        }
+      }
+    },
+    "Setlists": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setlisten"
+          }
+        }
+      }
+    },
+    "Share": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilen"
+          }
+        }
+      }
+    },
+    "Simulated Play Acoustic (no hardware)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Simuliertes Play Acoustic (ohne Hardware)"
+          }
+        }
+      }
+    },
+    "Song": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Song"
+          }
+        }
+      }
+    },
+    "Songs": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Songs"
+          }
+        }
+      }
+    },
+    "Tags": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tags"
+          }
+        }
+      }
+    },
+    "Tempo (BPM)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo (BPM)"
+          }
+        }
+      }
+    },
+    "Tempo is not a number": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo ist keine Zahl"
+          }
+        }
+      }
+    },
+    "This setlist is empty.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diese Setliste ist leer."
+          }
+        }
+      }
+    },
+    "This song is no longer in the library.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Song ist nicht mehr in der Bibliothek."
+          }
+        }
+      }
+    },
+    "This song was changed on another device. The library has been reloaded; save again to replace that version with yours, or cancel to keep it.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieser Song wurde auf einem anderen Gerät geändert. Die Bibliothek ist neu geladen; speichere erneut, um jene Fassung durch deine zu ersetzen, oder brich ab, um sie zu behalten."
+          }
+        }
+      }
+    },
+    "Time signature": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Taktart"
+          }
+        }
+      }
+    },
+    "Title": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Titel"
+          }
+        }
+      }
+    },
+    "To use the same songs on iPhone, iPad and computer, pick the same folder in iCloud Drive, Nextcloud or another Files provider on each device. An empty folder becomes a new library. Changes from other devices appear within a few seconds; if both change the same song, the second save asks first.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um dieselben Songs auf iPhone, iPad und Computer zu nutzen, wähle auf jedem Gerät denselben Ordner in iCloud Drive, Nextcloud oder einem anderen Dateien-Anbieter. Ein leerer Ordner wird zu einer neuen Bibliothek. Änderungen von anderen Geräten erscheinen nach wenigen Sekunden; ändern beide denselben Song, fragt das zweite Speichern nach."
+          }
+        }
+      }
+    },
+    "Total %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gesamt %@"
+          }
+        }
+      }
+    },
+    "Transpose down": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halbton tiefer"
+          }
+        }
+      }
+    },
+    "Transpose up": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Halbton höher"
+          }
+        }
+      }
+    },
+    "Transposition": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Transposition"
+          }
+        }
+      }
+    },
+    "Undo": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Widerrufen"
+          }
+        }
+      }
+    },
+    "Up next: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Nächstes: %@"
+          }
+        }
+      }
+    },
+    "Up next: (missing song)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Nächstes: (fehlender Song)"
+          }
+        }
+      }
+    },
+    "Up next: break %lld min": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Als Nächstes: Pause %lld min"
+          }
+        }
+      }
+    },
+    "Use the app's own folder": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eigenen Ordner der App verwenden"
+          }
+        }
+      }
+    },
+    "[C]Lyrics with [G]chords": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "[C]Text mit [G]Akkorden"
+          }
+        }
+      }
+    },
+    "added": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hinzugefügt"
+          }
+        }
+      }
+    },
+    "added ×%lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hinzugefügt ×%lld"
+          }
+        }
+      }
+    },
+    "comma separated": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "durch Komma getrennt"
+          }
+        }
+      }
+    },
+    "connecting": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "verbinde"
+          }
+        }
+      },
+      "comment": "Text from the GigCraft core (rig state or notice); looked up at run time.",
+      "extractionState": "manual"
+    },
+    "lost": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbindung verloren"
+          }
+        }
+      },
+      "comment": "Text from the GigCraft core (rig state or notice); looked up at run time.",
+      "extractionState": "manual"
+    },
+    "no MIDI port; preset not sent": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kein MIDI-Port; Preset nicht gesendet"
+          }
+        }
+      },
+      "comment": "Text from the GigCraft core (rig state or notice); looked up at run time.",
+      "extractionState": "manual"
+    },
+    "no device with this name in the rig settings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kein Gerät mit diesem Namen in den Rig-Einstellungen"
+          }
+        }
+      },
+      "comment": "Text from the GigCraft core (rig state or notice); looked up at run time.",
+      "extractionState": "manual"
+    },
+    "no port": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kein Port"
+          }
+        }
+      },
+      "comment": "Text from the GigCraft core (rig state or notice); looked up at run time.",
+      "extractionState": "manual"
+    },
+    "not a Play Acoustic": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kein Play Acoustic"
+          }
+        }
+      },
+      "comment": "Text from the GigCraft core (rig state or notice); looked up at run time.",
+      "extractionState": "manual"
+    },
+    "not connected": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "nicht verbunden"
+          }
+        }
+      },
+      "comment": "Text from the GigCraft core (rig state or notice); looked up at run time.",
+      "extractionState": "manual"
+    },
+    "on stage %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "auf der Bühne %@"
+          }
+        }
+      }
+    },
+    "only preset changes are supported for this device": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "für dieses Gerät werden nur Presetwechsel unterstützt"
+          }
+        }
+      },
+      "comment": "Text from the GigCraft core (rig state or notice); looked up at run time.",
+      "extractionState": "manual"
+    },
+    "optional": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "optional"
+          }
+        }
+      }
+    },
+    "original key": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Originaltonart"
+          }
+        }
+      }
+    },
+    "preset %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preset %@"
+          }
+        }
+      }
+    },
+    "ready": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "bereit"
+          }
+        }
+      },
+      "comment": "Text from the GigCraft core (rig state or notice); looked up at run time.",
+      "extractionState": "manual"
+    },
+    "simulated": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "simuliert"
+          }
+        }
+      },
+      "comment": "Text from the GigCraft core (rig state or notice); looked up at run time.",
+      "extractionState": "manual"
+    },
+    "— %@ %lld min —": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "— %@ %lld min —"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
