@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @Environment(LibraryModel.self) private var model
+    @State private var editingSong: String?
 
     var body: some View {
         @Bindable var model = model
@@ -37,12 +38,27 @@ struct RootView: View {
                 }
             }
             .navigationTitle(model.libraryName.isEmpty ? "GigCraft" : model.libraryName)
+            .toolbar {
+                ToolbarItem {
+                    Button {
+                        switch model.section {
+                        case .songs:
+                            if let id = model.createSong() { model.selectedSong = id; editingSong = id }
+                        case .setlists:
+                            if let id = model.createSetlist() { model.selectedSetlist = id }
+                        }
+                    } label: { Label("New", systemImage: "plus") }
+                }
+                ToolbarItem(placement: .bottomBar) {
+                    Button("Undo") { model.undo() }
+                }
+            }
         } detail: {
             NavigationStack {
                 switch model.section {
                 case .songs:
                     if let id = model.selectedSong {
-                        SongDetailView(songId: id).id(id)
+                        SongDetailView(songId: id, onEdit: { editingSong = id }).id("\(id)-\(model.revision)")
                     } else {
                         ContentUnavailableView("Pick a song", systemImage: "music.note.list")
                     }
@@ -55,6 +71,16 @@ struct RootView: View {
                 }
             }
         }
+        .sheet(item: Binding(get: { editingSong.map(EditTarget.init) }, set: { editingSong = $0?.id })) { target in
+            NavigationStack { SongEditorView(songId: target.id) }
+                .onDisappear { model.refreshSongs() }
+        }
+        .fullScreenCover(isPresented: Binding(get: { model.performState != nil }, set: { if !$0 { model.stopPerform() } })) {
+            PerformView().environment(model)
+        }
+        .onChange(of: model.editRequest) { _, id in
+            if let id { editingSong = id; model.editRequest = nil }
+        }
         .overlay(alignment: .bottom) {
             if let message = model.errorMessage {
                 Text(message).font(.footnote).padding(8).background(.red.opacity(0.85), in: .rect(cornerRadius: 8))
@@ -63,3 +89,5 @@ struct RootView: View {
         }
     }
 }
+
+struct EditTarget: Identifiable { let id: String }

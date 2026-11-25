@@ -158,6 +158,18 @@ impl Core {
     }
 }
 
+/// Parse a ChordPro text that is not saved yet (editor preview).
+#[uniffi::export]
+pub fn preview_chart(source: String) -> Chart {
+    convert(gigcraft_chordpro::parse(&source, 0))
+}
+
+/// Semitones to transpose a chart written in `from` so it sounds in `to` (e.g. "G" → "A" = 2).
+#[uniffi::export]
+pub fn semitones_between(from: String, to: String) -> Option<i8> {
+    gigcraft_chordpro::semitones_between(&from, &to)
+}
+
 fn convert(parsed: gigcraft_chordpro::Parsed) -> Chart {
     use gigcraft_chordpro::{BlockKind, ChartLine as L};
     let blocks = parsed

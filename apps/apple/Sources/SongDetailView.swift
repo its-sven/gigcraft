@@ -3,6 +3,7 @@ import SwiftUI
 struct SongDetailView: View {
     @Environment(LibraryModel.self) private var model
     let songId: String
+    var onEdit: () -> Void = {}
     @State private var transpose: Int8 = 0
 
     var body: some View {
@@ -27,6 +28,9 @@ struct SongDetailView: View {
         }
         .toolbar {
             ToolbarItemGroup {
+                Button("Edit", action: onEdit)
+                Button(role: .destructive) { model.trashSong(songId) } label: { Image(systemName: "trash") }
+                    .accessibilityLabel("Move to trash")
                 Button { step(-1) } label: { Image(systemName: "minus") }
                     .accessibilityLabel("Transpose down")
                 Text(transpose == 0 ? "±0" : String(format: "%+d", transpose)).monospacedDigit()
