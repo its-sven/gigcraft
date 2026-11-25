@@ -215,6 +215,9 @@ impl Params<'_> {
             "parts",
             "links",
             "custom",
+            "tracks",
+            "click",
+            "markers",
             "chart",
         ] {
             if let Some(v) = self.raw(key) {

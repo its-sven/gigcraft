@@ -5,12 +5,17 @@
 //! Every record carries a schema version and keeps fields it does not know
 //! (`extra`), so files written by a newer version survive a round trip.
 
+mod audio;
 mod id;
 mod midi;
 mod setlist;
 mod song;
 mod validate;
 
+pub use audio::{
+    ClickSettings, GAIN_DB_RANGE, MAX_BUS, MAX_COUNT_IN_BARS, Marker, Track, TrackRole,
+    beats_per_bar,
+};
 pub use id::{LibraryId, SetlistId, SongId};
 pub use midi::{MidiAction, MidiMessage};
 pub use setlist::{Entry, Set, Setlist, SetlistTiming, SongEntry};

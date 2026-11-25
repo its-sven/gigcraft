@@ -1,0 +1,16 @@
+[package]
+name = "gigcraft-audio-cpal"
+description = "GigCraft desktop audio host: runs the gigcraft-audio engine on an output device through cpal"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+
+[dependencies]
+gigcraft-audio.workspace = true
+cpal.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true
