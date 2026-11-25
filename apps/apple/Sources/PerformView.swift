@@ -102,8 +102,10 @@ struct PerformView: View {
                 if let n = cur["gig_notes"] as? String, !n.isEmpty {
                     Text(n).font(.system(size: size)).foregroundStyle(.orange)
                 }
-                if let chart = model.chart(songId, transpose: semis) {
+                if let chart = model.chart(songId, transpose: semis), !chart.blocks.isEmpty {
                     ChartView(chart: chart, fontSize: size)
+                } else if let pdf = model.attachments(songId).first(where: { $0.kind == "pdf" }) {
+                    PDFKitView(url: pdf.url).frame(minHeight: 900)
                 }
             }
             .padding()

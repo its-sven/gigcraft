@@ -270,3 +270,42 @@ fn perform_flow_and_entry_updates() {
     );
     assert!(e.undo_label().is_some(), "entry updates are undoable");
 }
+
+#[test]
+fn attach_and_detach() {
+    let (d, mut e) = engine();
+    let id = new_song(&mut e, "Sheet", "1:00");
+    let src = d.path().join("lead sheet.pdf");
+    std::fs::write(&src, b"%PDF-1.4").expect("write");
+    let out = run(
+        &mut e,
+        "song.attach",
+        json!({"id": id, "path": src.display().to_string()}),
+    );
+    assert_eq!(out.result["file"], "lead-sheet.pdf");
+    let got = run(&mut e, "song.get", json!({"id": id})).result;
+    assert_eq!(got["attachments"][0]["kind"], "pdf");
+    assert!(
+        got["attachments"][0]["path"]
+            .as_str()
+            .is_some_and(|p| std::path::Path::new(p).is_file())
+    );
+    run(
+        &mut e,
+        "song.detach",
+        json!({"id": id, "file": "lead-sheet.pdf"}),
+    );
+    let got = run(&mut e, "song.get", json!({"id": id})).result;
+    assert_eq!(got["attachments"].as_array().map(Vec::len), Some(0));
+    assert!(matches!(
+        e.run("song.detach", &json!({"id": id, "file": "x.pdf"})),
+        Err(CommandError::NotFound(_))
+    ));
+    assert!(
+        e.run(
+            "song.attach",
+            &json!({"id": id, "path": "/does/not/exist.pdf"})
+        )
+        .is_err()
+    );
+}

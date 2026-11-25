@@ -109,3 +109,25 @@ fn search_and_sorting() {
     assert_eq!(titles, ["Äpfel", "apple", "zebra"], "Ä sorts as A");
     assert_eq!(l.search("apf").len(), 1);
 }
+
+#[test]
+fn attachments_are_copied_with_safe_names() {
+    let (d, mut l) = lib();
+    let s = Song::new("Charted");
+    l.save_song(s.clone(), None).expect("save");
+    let src = d.path().join("My Chart (v2).PDF");
+    fs::write(&src, b"%PDF-1.4 test").expect("write");
+    let a = l.copy_into_song(s.id, &src).expect("copy");
+    let b = l.copy_into_song(s.id, &src).expect("copy again");
+    assert_eq!(a, "my-chart-v2.pdf");
+    assert_eq!(b, "my-chart-v2-2.pdf");
+    assert!(l.attachment_path(s.id, &a).is_some_and(|p| p.is_file()));
+    assert!(l.attachment_path(s.id, "../song.toml").is_none());
+    assert!(l.attachment_path(s.id, "song.toml").is_none());
+    l.trash_attachment(s.id, &a).expect("trash");
+    assert!(l.attachment_path(s.id, &a).is_some_and(|p| !p.exists()));
+    assert!(
+        l.copy_into_song(s.id, d.path()).is_err(),
+        "folders are refused"
+    );
+}

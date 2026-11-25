@@ -26,6 +26,8 @@ const KEYMAP_KEY: &str = "gigcraft.keymap";
 pub struct Hooks {
     /// Ask the user for a folder (open or create a library).
     pub pick_folder: Option<Box<dyn Fn() -> Option<PathBuf>>>,
+    /// Ask the user for a file (attachments, imports).
+    pub pick_file: Option<Box<dyn Fn() -> Option<PathBuf>>>,
 }
 
 impl std::fmt::Debug for Hooks {

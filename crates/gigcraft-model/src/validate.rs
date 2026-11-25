@@ -40,6 +40,14 @@ impl Validate for Song {
         {
             out.push(issue("capo", format!("capo {c} is above 12")));
         }
+        for (i, a) in self.attachments.iter().enumerate() {
+            if !crate::Attachment::is_safe_name(&a.file) {
+                out.push(issue(
+                    format!("attachments[{i}].file"),
+                    format!("{:?} is not a plain file name", a.file),
+                ));
+            }
+        }
         for (pi, part) in self.parts.iter().enumerate() {
             if part.name.trim().is_empty() {
                 out.push(issue(format!("parts[{pi}].name"), "part name is empty"));

@@ -14,7 +14,7 @@ mod validate;
 pub use id::{LibraryId, SetlistId, SongId};
 pub use midi::{MidiAction, MidiMessage};
 pub use setlist::{Entry, Set, Setlist, SetlistTiming, SongEntry};
-pub use song::{Link, LinkKind, Part, Song};
+pub use song::{Attachment, AttachmentKind, Link, LinkKind, Part, Song};
 pub use validate::{Issue, Validate};
 
 use serde::{Deserialize, Serialize};

@@ -242,6 +242,41 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
             }
         });
     }
+    let mut attach = false;
+    let mut detach = None;
+    let attachments: Vec<(String, std::path::PathBuf)> = song
+        .attachments
+        .iter()
+        .filter_map(|a| {
+            Some((
+                a.label.clone().unwrap_or_else(|| a.file.clone()),
+                lib.attachment_path(id, &a.file)?,
+            ))
+        })
+        .collect();
+    ui.horizontal_wrapped(|ui| {
+        for ((label, path), a) in attachments.iter().zip(&song.attachments) {
+            let r = ui.button(format!("{} {label}", kind_label(a.kind())));
+            if r.clicked() {
+                ui.ctx()
+                    .open_url(egui::OpenUrl::new_tab(format!("file://{}", path.display())));
+            }
+            r.context_menu(|ui| {
+                if ui.button("Remove attachment").clicked() {
+                    detach = Some(a.file.clone());
+                    ui.close();
+                }
+            });
+        }
+        if app.hooks.pick_file.is_some()
+            && ui
+                .small_button("Attach file…")
+                .on_hover_text("PDF chart, image, recording – copied into the library")
+                .clicked()
+        {
+            attach = true;
+        }
+    });
     ui.separator();
     for w in &chart.warnings {
         ui.colored_label(ui.visuals().warn_fg_color, w);
@@ -253,6 +288,20 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
         });
     if edit {
         app.song_draft = Draft::load(app, id);
+    }
+    if attach
+        && let Some(path) = app.hooks.pick_file.as_ref().and_then(|pick| pick())
+        && app
+            .run(
+                "song.attach",
+                json!({"id": id.to_string(), "path": path.display().to_string()}),
+            )
+            .is_some()
+    {
+        app.notify("File attached.");
+    }
+    if let Some(file) = detach {
+        app.run("song.detach", json!({"id": id.to_string(), "file": file}));
     }
     if trash
         && app
@@ -423,4 +472,16 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
         }
     }
     app.song_draft = Some(draft);
+}
+
+fn kind_label(kind: gigcraft_model::AttachmentKind) -> &'static str {
+    use gigcraft_model::AttachmentKind as K;
+    match kind {
+        K::Pdf => "PDF",
+        K::Image => "Image",
+        K::Audio => "Audio",
+        K::Midi => "MIDI",
+        K::Text => "Text",
+        K::Other => "File",
+    }
 }

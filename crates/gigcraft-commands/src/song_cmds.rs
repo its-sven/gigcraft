@@ -23,6 +23,12 @@ pub(crate) fn run(
                 "song": to_json(song)?,
                 "chart": e.lib.chart(sid).unwrap_or_default(),
                 "path": e.lib.song_path(sid).map(|pa| pa.display().to_string()),
+                "attachments": song.attachments.iter().map(|a| json!({
+                    "file": a.file,
+                    "label": a.label,
+                    "kind": a.kind(),
+                    "path": e.lib.attachment_path(sid, &a.file).map(|pa| pa.display().to_string()),
+                })).collect::<Vec<_>>(),
                 "issues": issues(song),
             }))
         }
@@ -58,6 +64,33 @@ pub(crate) fn run(
             find(e, sid)?;
             e.remove_song(tx, sid)?;
             Ok(json!({ "id": sid.to_string() }))
+        }
+        "song.attach" => {
+            let sid: SongId = p.id("id")?;
+            let mut song = find(e, sid)?.clone();
+            let path = std::path::PathBuf::from(p.str("path")?);
+            let file = e.lib.copy_into_song(sid, &path)?;
+            let label = p.opt_str("label")?.map(str::to_string);
+            song.attachments.push(gigcraft_model::Attachment {
+                file: file.clone(),
+                label,
+            });
+            e.put_song(tx, song, None)?;
+            Ok(json!({ "id": sid.to_string(), "file": file }))
+        }
+        "song.detach" => {
+            let sid: SongId = p.id("id")?;
+            let mut song = find(e, sid)?.clone();
+            let file = p.str("file")?;
+            let before = song.attachments.len();
+            song.attachments.retain(|a| a.file != file);
+            if song.attachments.len() == before {
+                return Err(CommandError::NotFound(format!("no attachment {file:?}")));
+            }
+            e.put_song(tx, song, None)?;
+            // The file goes to the trash too; undo restores the reference, the file stays in .trash/.
+            e.lib.trash_attachment(sid, file)?;
+            Ok(json!({ "id": sid.to_string(), "file": file }))
         }
         "song.chart" => {
             let sid: SongId = p.id("id")?;

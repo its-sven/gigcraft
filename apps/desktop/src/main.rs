@@ -53,6 +53,7 @@ fn main() -> eframe::Result {
         Box::new(move |cc| {
             let hooks = Hooks {
                 pick_folder: Some(Box::new(|| rfd::FileDialog::new().pick_folder())),
+                pick_file: Some(Box::new(|| rfd::FileDialog::new().pick_file())),
             };
             Ok(Box::new(GigCraftApp::new(cc, start, hooks)))
         }),

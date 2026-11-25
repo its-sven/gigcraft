@@ -34,6 +34,9 @@ pub struct Song {
     pub parts: Vec<Part>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub links: Vec<Link>,
+    /// Files in the song's folder (PDF charts, images, recordings).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub attachments: Vec<Attachment>,
     /// Free fields defined by the user ("Singer" = "Anna").
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub custom: BTreeMap<String, String>,
@@ -59,6 +62,7 @@ impl Song {
             notes: String::new(),
             parts: Vec::new(),
             links: Vec::new(),
+            attachments: Vec::new(),
             custom: BTreeMap::new(),
             extra: Extra::new(),
         }
@@ -91,6 +95,63 @@ pub struct Link {
     pub url: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub label: Option<String>,
+}
+
+/// A file stored in the song's folder.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Attachment {
+    /// File name inside the song folder (no directories).
+    pub file: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub label: Option<String>,
+}
+
+/// What kind of file an attachment is, from its extension.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum AttachmentKind {
+    Pdf,
+    Image,
+    Audio,
+    Midi,
+    Text,
+    Other,
+}
+
+impl Attachment {
+    #[must_use]
+    pub fn kind(&self) -> AttachmentKind {
+        let ext = self
+            .file
+            .rsplit_once('.')
+            .map(|(_, e)| e.to_ascii_lowercase())
+            .unwrap_or_default();
+        match ext.as_str() {
+            "pdf" => AttachmentKind::Pdf,
+            "png" | "jpg" | "jpeg" | "gif" | "webp" | "heic" | "tif" | "tiff" => {
+                AttachmentKind::Image
+            }
+            "mp3" | "m4a" | "aac" | "wav" | "aif" | "aiff" | "caf" | "flac" | "ogg" | "opus" => {
+                AttachmentKind::Audio
+            }
+            "mid" | "midi" => AttachmentKind::Midi,
+            "txt" | "md" | "cho" | "chopro" | "chordpro" | "onsong" | "rtf" => AttachmentKind::Text,
+            _ => AttachmentKind::Other,
+        }
+    }
+
+    /// Whether `name` is a plain file name that is safe to join to the song folder.
+    #[must_use]
+    pub fn is_safe_name(name: &str) -> bool {
+        !name.is_empty()
+            && name.len() <= 200
+            && name != "."
+            && name != ".."
+            && !name.starts_with('.')
+            && !name.contains(['/', '\\', '\0', ':'])
+            && name != "song.toml"
+            && name != "chart.cho"
+    }
 }
 
 /// What a link points to, derived from its host.

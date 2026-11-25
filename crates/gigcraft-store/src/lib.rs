@@ -37,6 +37,9 @@ pub const CHART_FILE: &str = "chart.cho";
 /// Files larger than this are not loaded (protects against accidents and hostile input).
 pub const MAX_FILE_BYTES: u64 = 4 << 20;
 
+/// Largest attachment copied into a library (500 MB; backing tracks can be big).
+pub const MAX_ATTACHMENT_BYTES: u64 = 500 << 20;
+
 #[derive(Debug, thiserror::Error)]
 pub enum StoreError {
     #[error("{path}: {source}")]
@@ -357,6 +360,68 @@ impl Library {
                 chart: chart_text,
             },
         );
+        Ok(())
+    }
+
+    /// Absolute path of an attachment file of a song, if the name is safe.
+    #[must_use]
+    pub fn attachment_path(&self, id: SongId, file: &str) -> Option<PathBuf> {
+        let stored = self.songs.get(&id)?;
+        gigcraft_model::Attachment::is_safe_name(file)
+            .then(|| self.root.join(SONGS_DIR).join(&stored.slug).join(file))
+    }
+
+    /// Copy `source` into the song's folder under a free, safe name (the
+    /// record is not changed; the caller adds the attachment). Returns the name.
+    pub fn copy_into_song(&mut self, id: SongId, source: &Path) -> Result<String> {
+        let stored = self.songs.get(&id).ok_or(StoreError::UnknownSong(id))?;
+        let meta = fs::metadata(source).map_err(io(source))?;
+        if !meta.is_file() {
+            return Err(StoreError::Format {
+                path: source.to_path_buf(),
+                message: "not a file".into(),
+            });
+        }
+        if meta.len() > MAX_ATTACHMENT_BYTES {
+            return Err(StoreError::Format {
+                path: source.to_path_buf(),
+                message: format!("file is larger than {} MB", MAX_ATTACHMENT_BYTES >> 20),
+            });
+        }
+        let original = source
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("file");
+        let (stem, ext) = match original.rsplit_once('.') {
+            Some((s, e)) if !s.is_empty() => (s, format!(".{}", slugify(e))),
+            _ => (original, String::new()),
+        };
+        let base = slugify(stem);
+        let dir = self.root.join(SONGS_DIR).join(&stored.slug);
+        let mut name = format!("{base}{ext}");
+        let mut n = 2;
+        while dir.join(&name).exists() || !gigcraft_model::Attachment::is_safe_name(&name) {
+            name = format!("{base}-{n}{ext}");
+            n += 1;
+        }
+        let bytes = fs::read(source).map_err(io(source))?;
+        write_file(&dir.join(&name), &bytes)?;
+        Ok(name)
+    }
+
+    /// Move an attachment file of a song to `.trash/` (the record is not changed).
+    pub fn trash_attachment(&mut self, id: SongId, file: &str) -> Result<()> {
+        let path = self
+            .attachment_path(id, file)
+            .ok_or(StoreError::UnknownSong(id))?;
+        if path.exists() {
+            let slug = self
+                .songs
+                .get(&id)
+                .map(|s| s.slug.clone())
+                .unwrap_or_default();
+            self.move_to_trash(&path, &format!("{slug}-{file}"))?;
+        }
         Ok(())
     }
 

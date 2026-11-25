@@ -5,6 +5,7 @@ struct SongDetailView: View {
     let songId: String
     var onEdit: () -> Void = {}
     @State private var transpose: Int8 = 0
+    @State private var showingAttachment: AttachmentInfo?
 
     var body: some View {
         let song = model.song(songId)
@@ -17,10 +18,17 @@ struct SongDetailView: View {
                         Text(facts(song, chart: chart)).font(.subheadline).foregroundStyle(.secondary)
                     }
                 }
-                if let chart {
+                AttachmentBar(songId: songId, showing: $showingAttachment)
+                // Without a chart, the first PDF is the chart.
+                let shown = showingAttachment ?? ((chart?.blocks.isEmpty ?? true) ? model.attachments(songId).first { $0.kind == "pdf" } : nil)
+                if let a = shown, a.kind == "pdf" {
+                    PDFKitView(url: a.url).frame(minHeight: 700)
+                } else if let a = shown, a.kind == "image", let img = UIImage(contentsOfFile: a.url.path(percentEncoded: false)) {
+                    Image(uiImage: img).resizable().scaledToFit()
+                } else if let chart, !chart.blocks.isEmpty {
                     ChartView(chart: chart, fontSize: model.fontSize)
                 } else {
-                    Text("No chart.").foregroundStyle(.secondary)
+                    Text("No chart. Edit the song to add one, or attach a PDF.").foregroundStyle(.secondary)
                 }
             }
             .padding()

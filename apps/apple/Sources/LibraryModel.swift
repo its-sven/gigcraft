@@ -197,6 +197,8 @@ final class LibraryModel {
     /// Bumped after changes so views that read the core directly re-render.
     private(set) var revision = 0
 
+    func bump() { revision += 1 }
+
     /// Semitones from the song's key to the gig key.
     func semitones(songKey: String?, gigKey: String?) -> Int8 {
         guard let from = songKey, let to = gigKey else { return 0 }
