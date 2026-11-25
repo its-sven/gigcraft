@@ -12,6 +12,7 @@ repository = "https://github.com/its-sven/gigcraft"
 [workspace.dependencies]
 gigcraft-model = { path = "crates/gigcraft-model" }
 gigcraft-chordpro = { path = "crates/gigcraft-chordpro" }
+gigcraft-formats = { path = "crates/gigcraft-formats" }
 gigcraft-store = { path = "crates/gigcraft-store" }
 gigcraft-commands = { path = "crates/gigcraft-commands" }
 gigcraft-perform = { path = "crates/gigcraft-perform" }
