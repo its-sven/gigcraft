@@ -354,3 +354,60 @@ fn import_and_export() {
         Err(CommandError::Rejected(_))
     ));
 }
+
+#[test]
+fn song_update_sets_audio_settings_with_undo() {
+    let (_d, mut e) = engine();
+    let id = run(
+        &mut e,
+        "song.create",
+        json!({"title": "Backing", "tempo_bpm": 120, "time_signature": "4/4",
+               "click": {"count_in_bars": 1, "bus": 1}}),
+    )
+    .result["id"]
+        .as_str()
+        .expect("id")
+        .to_string();
+    let got = run(&mut e, "song.get", json!({"id": id}));
+    assert_eq!(got.result["song"]["click"]["bus"], 1);
+    assert_eq!(got.result["song"]["click"]["enabled"], true);
+
+    let upd = run(
+        &mut e,
+        "song.update",
+        json!({"id": id, "fields": {
+            "tracks": [{"file": "band.wav", "role": "stem", "gain_db": -3.0, "pan": 0.5, "bus": 0}],
+            "markers": [{"name": "Chorus", "at_secs": 30.5, "end_secs": 45.0}],
+        }}),
+    );
+    // The file is not attached yet: saved, but reported.
+    assert_eq!(upd.result["issues"][0]["field"], "tracks[0].file");
+    let got = run(&mut e, "song.get", json!({"id": id}));
+    assert_eq!(got.result["song"]["tracks"][0]["role"], "stem");
+    assert_eq!(got.result["song"]["markers"][0]["end_secs"], 45.0);
+    assert!(got.result["song"].get("extra").is_none());
+
+    assert!(matches!(
+        e.run(
+            "song.update",
+            &json!({"id": id, "fields": {"tracks": [{"role": "stem"}]}})
+        ),
+        Err(CommandError::InvalidParams(_))
+    ));
+
+    run(
+        &mut e,
+        "song.update",
+        json!({"id": id, "fields": {"click": null}}),
+    );
+    let got = run(&mut e, "song.get", json!({"id": id}));
+    assert!(got.result["song"].get("click").is_none());
+
+    run(&mut e, "edit.undo", Value::Null);
+    let got = run(&mut e, "song.get", json!({"id": id}));
+    assert_eq!(got.result["song"]["click"]["count_in_bars"], 1);
+    run(&mut e, "edit.undo", Value::Null);
+    let got = run(&mut e, "song.get", json!({"id": id}));
+    assert!(got.result["song"].get("tracks").is_none());
+    assert!(got.result["song"].get("markers").is_none());
+}

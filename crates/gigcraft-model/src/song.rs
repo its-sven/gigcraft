@@ -1,4 +1,4 @@
-use crate::{Extra, MidiAction, SongId, schema_version};
+use crate::{ClickSettings, Extra, Marker, MidiAction, SongId, Track, schema_version};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -40,6 +40,15 @@ pub struct Song {
     /// Free fields defined by the user ("Singer" = "Anna").
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub custom: BTreeMap<String, String>,
+    /// Backing tracks, each an audio file from `attachments`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub tracks: Vec<Track>,
+    /// The built-in click and count-in.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub click: Option<ClickSettings>,
+    /// Named points and regions in the backing tracks.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub markers: Vec<Marker>,
     #[serde(flatten)]
     pub extra: Extra,
 }
@@ -64,6 +73,9 @@ impl Song {
             links: Vec::new(),
             attachments: Vec::new(),
             custom: BTreeMap::new(),
+            tracks: Vec::new(),
+            click: None,
+            markers: Vec::new(),
             extra: Extra::new(),
         }
     }
@@ -245,5 +257,59 @@ mod tests {
         let again = toml::to_string(&back).unwrap_or_default();
         let twice: Song = toml::from_str(&again).unwrap_or_else(|e| panic!("{e}\n{again}"));
         assert_eq!(twice, back, "second round trip must be lossless:\n{again}");
+    }
+
+    #[test]
+    fn files_without_audio_settings_round_trip_unchanged() {
+        let text = "schema = 1\nid = \"7b0f5b8e-3c3a-4c55-9f1e-2d7c1f0a9b11\"\ntitle = \"Old Song\"\nkey = \"G\"\n";
+        let song: Song = toml::from_str(text).unwrap_or_else(|e| panic!("{e}"));
+        assert!(song.tracks.is_empty() && song.click.is_none() && song.markers.is_empty());
+        assert_eq!(toml::to_string(&song).unwrap_or_default(), text);
+    }
+
+    #[test]
+    fn audio_settings_round_trip() {
+        use crate::{ClickSettings, Marker, Track, TrackRole};
+        let mut song = Song::new("With Tracks");
+        song.tempo_bpm = Some(120.0);
+        song.attachments.push(Attachment {
+            file: "band.flac".into(),
+            label: None,
+        });
+        let mut click = Track::new("band.flac");
+        click.role = TrackRole::Guide;
+        click.gain_db = -3.5;
+        click.pan = 0.25;
+        click.bus = 1;
+        click.mute = true;
+        click.label = "Guide vocals".into();
+        song.tracks = vec![Track::new("band.flac"), click];
+        song.click = Some(ClickSettings {
+            enabled: false,
+            bus: 1,
+            count_in_bars: 2,
+            volume_db: -6.0,
+        });
+        song.markers = vec![
+            Marker {
+                name: "Verse".into(),
+                at_secs: 4.0,
+                end_secs: None,
+            },
+            Marker {
+                name: "Outro vamp".into(),
+                at_secs: 180.0,
+                end_secs: Some(188.0),
+            },
+        ];
+        let text = toml::to_string(&song).unwrap_or_default();
+        let back: Song = toml::from_str(&text).unwrap_or_else(|e| panic!("{e}\n{text}"));
+        assert_eq!(back, song, "{text}");
+        // A bare [click] table means "click on".
+        let minimal: ClickSettings = toml::from_str("").unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(minimal, ClickSettings::default());
+        assert!(minimal.enabled);
+        // Defaults stay out of the file.
+        assert!(!text.contains("gain_db = 0"), "{text}");
     }
 }

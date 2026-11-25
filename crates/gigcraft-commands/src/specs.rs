@@ -48,6 +48,24 @@ const SONG_FIELDS: &[ParamSpec] = &[
     ),
     p("links", "array", false, "links: [{url, label}]"),
     p("custom", "object", false, "custom fields as name → text"),
+    p(
+        "tracks",
+        "array",
+        false,
+        "backing tracks: [{file (an attachment), label, role: backing|click|guide|stem, gain_db, pan −1…1, bus (stereo pair, 0 = outputs 1/2), mute}]",
+    ),
+    p(
+        "click",
+        "object",
+        false,
+        "built-in click using the song's tempo and time signature: {enabled, bus, count_in_bars, volume_db}; null removes it",
+    ),
+    p(
+        "markers",
+        "array",
+        false,
+        "named points and regions in the tracks: [{name, at_secs, end_secs}]",
+    ),
     p("chart", "string", false, "ChordPro chart text"),
 ];
 
