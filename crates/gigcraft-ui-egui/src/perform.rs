@@ -200,18 +200,22 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
             ));
             if let Some(t0) = p.started_at {
                 let secs = (now - t0).max(0.0) as u32;
-                ui.label(format!(
-                    "on stage {}",
-                    gigcraft_model::format_duration(secs)
+                ui.label(tr!(
+                    "on stage {time}",
+                    time = gigcraft_model::format_duration(secs)
                 ));
             }
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button("Exit").on_hover_text("Escape").clicked() {
+                if ui
+                    .button(tr!("Exit"))
+                    .on_hover_text(tr!("Escape key"))
+                    .clicked()
+                {
                     clicked = Some(Action::Exit);
                 }
                 if ui
-                    .button(egui::RichText::new("PANIC").color(ui.visuals().error_fg_color))
-                    .on_hover_text("All notes off, stop")
+                    .button(egui::RichText::new(tr!("PANIC")).color(ui.visuals().error_fg_color))
+                    .on_hover_text(tr!("All notes off, stop"))
                     .clicked()
                 {
                     clicked = Some(Action::Panic);
@@ -226,26 +230,29 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                 egui::Button::new(egui::RichText::new(t).size(size))
                     .min_size(egui::vec2(160.0, size * 2.0))
             };
-            if ui.add(big("Previous")).clicked() {
+            if ui.add(big(tr!("Previous"))).clicked() {
                 clicked = Some(Action::Previous);
             }
-            if ui.add(big("Next")).clicked() {
+            if ui.add(big(tr!("Next"))).clicked() {
                 clicked = Some(Action::Next);
             }
             ui.separator();
             let next = &st["next"];
             let next_text = match next["type"].as_str() {
-                Some("song") => format!(
-                    "Up next: {}{}",
-                    next["title"].as_str().unwrap_or_default(),
-                    next["key"]
-                        .as_str()
-                        .map(|k| format!("  [{k}]"))
-                        .unwrap_or_default()
+                Some("song") => tr!(
+                    "Up next: {title}",
+                    title = format!(
+                        "{}{}",
+                        next["title"].as_str().unwrap_or_default(),
+                        next["key"]
+                            .as_str()
+                            .map(|k| format!("  [{k}]"))
+                            .unwrap_or_default()
+                    )
                 ),
-                Some("break") => format!("Up next: break {} min", next["minutes"]),
-                Some(_) => "Up next: (missing song)".into(),
-                None => "Last song".into(),
+                Some("break") => tr!("Up next: break {minutes} min", minutes = next["minutes"]),
+                Some(_) => tr!("Up next: (missing song)").into(),
+                None => tr!("Last song").into(),
             };
             ui.label(egui::RichText::new(next_text).size(size * 0.8));
             let devices: Vec<String> = app
@@ -253,7 +260,10 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                 .status()
                 .into_iter()
                 .map(|d| {
-                    let what = d.current.map(|c| format!("preset {c}")).unwrap_or(d.state);
+                    let what = d
+                        .current
+                        .map(|c| tr!("preset {number}", number = c))
+                        .unwrap_or_else(|| crate::i18n::state(&d.state));
                     format!("{}: {what}{}", d.name, if d.busy { " …" } else { "" })
                 })
                 .collect();
@@ -263,7 +273,7 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
             } else if !p.last_sent.is_empty() {
                 ui.separator();
                 ui.label(
-                    egui::RichText::new(format!("Presets: {}", p.last_sent.join("; ")))
+                    egui::RichText::new(tr!("Presets: {list}", list = p.last_sent.join("; ")))
                         .size(size * 0.55)
                         .weak(),
                 );
@@ -286,7 +296,7 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                     );
                     if let Some(k) = cur["key"].as_str() {
                         ui.label(
-                            egui::RichText::new(format!("Key {k}"))
+                            egui::RichText::new(tr!("Key {key}", key = k))
                                 .size(size)
                                 .color(ui.visuals().hyperlink_color),
                         );
@@ -353,7 +363,7 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                     let label = cur["label"]
                         .as_str()
                         .filter(|l| !l.is_empty())
-                        .unwrap_or("Break");
+                        .unwrap_or(tr!("Break"));
                     ui.label(egui::RichText::new(label).size(size * 2.0).strong());
                     if let Some(until) = p.break_until {
                         let left = (until - now).max(0.0) as u32;
@@ -367,10 +377,12 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                 });
             }
             Some(_) => {
-                ui.label(egui::RichText::new("This song is no longer in the library.").size(size));
+                ui.label(
+                    egui::RichText::new(tr!("This song is no longer in the library.")).size(size),
+                );
             }
             None => {
-                ui.label(egui::RichText::new("This setlist is empty.").size(size));
+                ui.label(egui::RichText::new(tr!("This setlist is empty.")).size(size));
             }
         }
     });

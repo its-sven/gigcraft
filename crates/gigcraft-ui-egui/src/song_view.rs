@@ -103,14 +103,14 @@ impl Draft {
             t => json!(
                 t.replace(',', ".")
                     .parse::<f64>()
-                    .map_err(|_| format!("Tempo “{t}” is not a number"))?
+                    .map_err(|_| tr!("Tempo “{value}” is not a number", value = t))?
             ),
         };
         let capo = match self.capo.trim() {
             "" => Value::Null,
             c => json!(
                 c.parse::<u8>()
-                    .map_err(|_| format!("Capo “{c}” is not a number"))?
+                    .map_err(|_| tr!("Capo “{value}” is not a number", value = c))?
             ),
         };
         let mut parts = Vec::new();
@@ -121,12 +121,12 @@ impl Draft {
                     .channel
                     .trim()
                     .parse()
-                    .map_err(|_| format!("{}: channel must be 1–16", p.name))?;
+                    .map_err(|_| tr!("{part}: channel must be 1–16", part = p.name))?;
                 let program: u8 = pr
                     .program
                     .trim()
                     .parse()
-                    .map_err(|_| format!("{}: program must be 0–127", p.name))?;
+                    .map_err(|_| tr!("{part}: program must be 0–127", part = p.name))?;
                 actions.push(MidiAction {
                     device: pr.device.trim().to_string(),
                     message: MidiMessage::ProgramChange {
@@ -170,7 +170,7 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
     let Some(engine) = &app.engine else { return };
     let lib = engine.library();
     let Some(song) = lib.song(id).cloned() else {
-        ui.label("This song is no longer in the library.");
+        ui.label(tr!("This song is no longer in the library."));
         return;
     };
     let chart = app.chart_cache.get(lib, id, app.transpose);
@@ -183,14 +183,14 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
             ui.label(egui::RichText::new(&song.artist).size(size));
         }
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            trash = ui.button("Move to trash").clicked();
-            edit = ui.button("Edit").clicked();
+            trash = ui.button(tr!("Move to trash")).clicked();
+            edit = ui.button(tr!("Edit")).clicked();
         });
     });
     ui.horizontal(|ui| {
         let mut facts = Vec::new();
         if let Some(k) = chart.chart.key.clone().or_else(|| song.key.clone()) {
-            facts.push(format!("Key {k}"));
+            facts.push(tr!("Key {key}", key = k));
         }
         if let Some(t) = song.tempo_bpm {
             facts.push(format!("{t:.0} BPM"));
@@ -199,14 +199,17 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
             facts.push(ts.clone());
         }
         if let Some(c) = song.capo.filter(|c| *c > 0) {
-            facts.push(format!("Capo {c}"));
+            facts.push(tr!("Capo {fret}", fret = c));
         }
         if let Some(d) = song.duration_secs {
             facts.push(format_duration(d));
         }
         ui.label(facts.join("  ·  "));
         ui.separator();
-        if ui.button("−").on_hover_text("Transpose down").clicked() {
+        if crate::named(ui.button("−"), tr!("Transpose down"))
+            .on_hover_text(tr!("Transpose down"))
+            .clicked()
+        {
             app.transpose = if app.transpose <= -11 {
                 0
             } else {
@@ -214,7 +217,10 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
             };
         }
         ui.label(format!("{:+}", app.transpose));
-        if ui.button("+").on_hover_text("Transpose up").clicked() {
+        if crate::named(ui.button("+"), tr!("Transpose up"))
+            .on_hover_text(tr!("Transpose up"))
+            .clicked()
+        {
             app.transpose = if app.transpose >= 11 {
                 0
             } else {
@@ -262,7 +268,7 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
                     .open_url(egui::OpenUrl::new_tab(format!("file://{}", path.display())));
             }
             r.context_menu(|ui| {
-                if ui.button("Remove attachment").clicked() {
+                if ui.button(tr!("Remove attachment")).clicked() {
                     detach = Some(a.file.clone());
                     ui.close();
                 }
@@ -270,8 +276,8 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
         }
         if app.hooks.pick_file.is_some()
             && ui
-                .small_button("Attach file…")
-                .on_hover_text("PDF chart, image, recording – copied into the library")
+                .small_button(tr!("Attach file…"))
+                .on_hover_text(tr!("PDF chart, image, recording – copied into the library"))
                 .clicked()
         {
             attach = true;
@@ -298,7 +304,7 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
             )
             .is_some()
     {
-        app.notify("File attached.");
+        app.notify(tr!("File attached."));
     }
     if let Some(file) = detach {
         app.run("song.detach", json!({"id": id.to_string(), "file": file}));
@@ -309,9 +315,9 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
             .is_some()
     {
         app.song = None;
-        app.notify(format!(
-            "“{}” moved to the library's trash (Undo brings it back).",
-            song.title
+        app.notify(tr!(
+            "“{title}” moved to the library's trash (Undo brings it back).",
+            title = song.title
         ));
     }
 }
@@ -335,10 +341,12 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
     let mut save = false;
     let mut cancel = false;
     ui.horizontal(|ui| {
-        ui.heading("Edit song");
+        ui.heading(tr!("Edit song"));
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            cancel = ui.button("Cancel").clicked();
-            save = ui.button(egui::RichText::new("Save").strong()).clicked();
+            cancel = ui.button(tr!("Cancel")).clicked();
+            save = ui
+                .button(egui::RichText::new(tr!("Save")).strong())
+                .clicked();
         });
     });
     let save_key = ui.input(|i| i.modifiers.command && i.key_pressed(egui::Key::S));
@@ -348,55 +356,55 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
     }
     egui::ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
         egui::Grid::new("song-fields").num_columns(4).spacing([12.0, 6.0]).show(ui, |ui| {
-            field(ui, "Title", &mut draft.title, 280.0);
-            field(ui, "Artist", &mut draft.artist, 220.0);
+            field(ui, tr!("Title"), &mut draft.title, 280.0);
+            field(ui, tr!("Artist"), &mut draft.artist, 220.0);
             ui.end_row();
-            field(ui, "Key", &mut draft.key, 60.0);
-            field(ui, "Tempo (BPM)", &mut draft.tempo, 60.0);
+            field(ui, tr!("Key"), &mut draft.key, 60.0);
+            field(ui, tr!("Tempo (BPM)"), &mut draft.tempo, 60.0);
             ui.end_row();
-            field(ui, "Time", &mut draft.time, 60.0);
-            field(ui, "Duration (m:ss)", &mut draft.duration, 60.0);
+            field(ui, tr!("Time"), &mut draft.time, 60.0);
+            field(ui, tr!("Duration (m:ss)"), &mut draft.duration, 60.0);
             ui.end_row();
-            field(ui, "Capo", &mut draft.capo, 60.0);
-            field(ui, "Tags (comma)", &mut draft.tags, 220.0);
+            field(ui, tr!("Capo"), &mut draft.capo, 60.0);
+            field(ui, tr!("Tags (comma)"), &mut draft.tags, 220.0);
             ui.end_row();
         });
-        ui.label("Notes");
+        ui.label(tr!("Notes"));
         ui.add(egui::TextEdit::multiline(&mut draft.notes).desired_rows(2).desired_width(f32::INFINITY));
 
         ui.add_space(8.0);
         ui.horizontal(|ui| {
-            ui.strong("Parts and presets");
-            if ui.small_button("Add part").clicked() {
-                let name = format!("Part {}", draft.parts.len() + 1);
+            ui.strong(tr!("Parts and presets"));
+            if ui.small_button(tr!("Add part")).clicked() {
+                let name = tr!("Part {number}", number = draft.parts.len() + 1);
                 draft.parts.push(PartDraft { name, ..Default::default() });
             }
         });
-        ui.small("Each part sends its presets when it starts. Program numbers are MIDI values 0–127.");
+        ui.small(tr!("Each part sends its presets when it starts. Program numbers are MIDI values 0–127."));
         let mut remove_part = None;
         let mut move_up = None;
         for (pi, part) in draft.parts.iter_mut().enumerate() {
             ui.group(|ui| {
                 ui.horizontal(|ui| {
-                    ui.add(egui::TextEdit::singleline(&mut part.name).desired_width(140.0).hint_text("Part name"));
-                    ui.add(egui::TextEdit::singleline(&mut part.notes).desired_width(220.0).hint_text("Notes"));
-                    if pi > 0 && ui.small_button("Up").clicked() {
+                    ui.add(egui::TextEdit::singleline(&mut part.name).desired_width(140.0).hint_text(tr!("Part name")));
+                    ui.add(egui::TextEdit::singleline(&mut part.notes).desired_width(220.0).hint_text(tr!("Notes")));
+                    if pi > 0 && ui.small_button(tr!("Up")).clicked() {
                         move_up = Some(pi);
                     }
-                    if ui.small_button("Remove part").clicked() {
+                    if ui.small_button(tr!("Remove part")).clicked() {
                         remove_part = Some(pi);
                     }
                 });
                 let mut remove_preset = None;
                 for (ri, pr) in part.presets.iter_mut().enumerate() {
                     ui.horizontal(|ui| {
-                        ui.label("Device");
+                        ui.label(tr!("Device"));
                         ui.add(egui::TextEdit::singleline(&mut pr.device).desired_width(140.0));
-                        ui.label("Channel");
+                        ui.label(tr!("Channel"));
                         ui.add(egui::TextEdit::singleline(&mut pr.channel).desired_width(30.0));
-                        ui.label("Program");
+                        ui.label(tr!("Program"));
                         ui.add(egui::TextEdit::singleline(&mut pr.program).desired_width(40.0));
-                        if ui.small_button("Remove").clicked() {
+                        if ui.small_button(tr!("Remove")).clicked() {
                             remove_preset = Some(ri);
                         }
                     });
@@ -405,9 +413,13 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
                     part.presets.remove(ri);
                 }
                 if !part.other.is_empty() {
-                    ui.small(format!("+ {} other MIDI message(s), kept as they are", part.other.len()));
+                    ui.small(trn!(
+                        part.other.len(),
+                        "+ {n} other MIDI message, kept as it is",
+                        "+ {n} other MIDI messages, kept as they are"
+                    ));
                 }
-                if ui.small_button("Add program change").clicked() {
+                if ui.small_button(tr!("Add program change")).clicked() {
                     let device = part.presets.last().map(|p| p.device.clone()).unwrap_or_else(|| "Play Acoustic".into());
                     part.presets.push(PresetDraft { device, channel: "1".into(), program: "0".into() });
                 }
@@ -421,8 +433,8 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
         }
 
         ui.add_space(8.0);
-        ui.strong("Chart (ChordPro)");
-        ui.small("Chords in [brackets] before the syllable; sections with {start_of_chorus} … {end_of_chorus}; {comment: …}.");
+        ui.strong(tr!("Chart (ChordPro)"));
+        ui.small(tr!("Chords in [brackets] before the syllable; sections with {start_of_chorus} … {end_of_chorus}; {comment: …}."));
         ui.columns(2, |cols| {
             cols[0].add(
                 egui::TextEdit::multiline(&mut draft.chart)
@@ -462,7 +474,7 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
                         })
                         .collect();
                     if issues.is_empty() {
-                        app.notify("Saved.");
+                        app.notify(tr!("Saved."));
                         return;
                     }
                     draft.issues = issues;
@@ -470,8 +482,7 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
                     // Someone else changed this song: load their version, keep ours in the editor.
                     app.run("library.reload", Value::Null);
                     draft.issues = vec![
-                        "This song was changed on another device. The library has been reloaded; \
-                         save again to replace that version with yours, or cancel to keep it."
+                        tr!("This song was changed on another device. The library has been reloaded; save again to replace that version with yours, or cancel to keep it.")
                             .into(),
                     ];
                 }
@@ -486,10 +497,10 @@ fn kind_label(kind: gigcraft_model::AttachmentKind) -> &'static str {
     use gigcraft_model::AttachmentKind as K;
     match kind {
         K::Pdf => "PDF",
-        K::Image => "Image",
-        K::Audio => "Audio",
+        K::Image => tr!("Image"),
+        K::Audio => tr!("Audio"),
         K::Midi => "MIDI",
-        K::Text => "Text",
-        K::Other => "File",
+        K::Text => tr!("Text"),
+        K::Other => tr!("File"),
     }
 }

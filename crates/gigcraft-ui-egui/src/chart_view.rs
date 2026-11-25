@@ -32,7 +32,7 @@ impl Cache {
 
 pub(crate) fn show(ui: &mut egui::Ui, chart: &Chart, size: f32) {
     if chart.blocks.is_empty() {
-        ui.label(egui::RichText::new("No chart yet.").weak());
+        ui.label(egui::RichText::new(tr!("No chart yet.")).weak());
         return;
     }
     let chord_color = ui.visuals().hyperlink_color;

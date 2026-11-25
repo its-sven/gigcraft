@@ -1,0 +1,184 @@
+# GigCraft – Deutsch
+# Format (craft-i18n): Kontext<TAB>Englisch<TAB>Übersetzung. Leerer Kontext = normale Zeile,
+# @plural = Einzahl|Mehrzahl. Platzhalter wie {n} oder {title} bleiben unverändert.
+@id	language.name	Deutsch
+
+# Bibliothek und Leiste
+	Open library…	Bibliothek öffnen…
+	New demo library…	Neue Demo-Bibliothek…
+	Creates a folder “GigCraft Demo” in the folder you pick	Legt im gewählten Ordner einen Ordner „GigCraft Demo“ an
+	Undo	Widerrufen
+	Redo	Wiederholen
+	Rig…	Rig…
+	MIDI devices, pedals, footswitches	MIDI-Geräte, Pedale, Fußschalter
+	Text size	Textgröße
+	Language	Sprache
+	System language	Systemsprache
+	Songs	Songs
+	Setlists	Setlisten
+	New song	Neuer Song
+	New setlist	Neue Setliste
+	[C]Lyrics with [G]chords	[C]Text mit [G]Akkorden
+	Import file…	Datei importieren…
+	ChordPro, OnSong, OpenSong, text, BandHelper TSV, CSV, Cuebook	ChordPro, OnSong, OpenSong, Text, BandHelper-TSV, CSV, Cuebook
+	Paste…	Einfügen…
+	Chords over lyrics, ChordPro or Ultimate Guitar links	Akkorde über dem Text, ChordPro oder Ultimate-Guitar-Links
+	Search: words, "phrase", -not	Suche: Wörter, "Phrase", -nicht
+	Paste songs	Songs einfügen
+	Paste a song (ChordPro or chords over lyrics) or Ultimate Guitar links.	Einen Song einfügen (ChordPro oder Akkorde über dem Text) oder Ultimate-Guitar-Links.
+	Import song	Song importieren
+	Add Ultimate Guitar links	Ultimate-Guitar-Links hinzufügen
+	Imported: {new} new and {updated} updated songs, {setlists} setlists.	Importiert: {new} neue und {updated} geänderte Songs, {setlists} Setlisten.
+	Welcome to GigCraft	Willkommen bei GigCraft
+	Open a library folder, or create the demo library to look around.	Öffne einen Bibliotheksordner oder lege die Demo-Bibliothek zum Ausprobieren an.
+	Start with: gigcraft <library folder>	Start mit: gigcraft <Bibliotheksordner>
+	Close	Schließen
+	Pick a song, or create one with “New song”.	Wähle einen Song oder lege mit „Neuer Song“ einen an.
+	Pick a setlist, or create one with “New setlist”.	Wähle eine Setliste oder lege mit „Neue Setliste“ eine an.
+	Demo library created in {path}	Demo-Bibliothek angelegt in {path}
+@plural	{n} file could not be read – see library.info|{n} files could not be read – see library.info	{n} Datei konnte nicht gelesen werden – siehe library.info|{n} Dateien konnten nicht gelesen werden – siehe library.info
+@plural	Updated from disk ({n} change from another device or program).|Updated from disk ({n} changes from another device or program).	Von der Festplatte aktualisiert ({n} Änderung von einem anderen Gerät oder Programm).|Von der Festplatte aktualisiert ({n} Änderungen von einem anderen Gerät oder Programm).
+@plural	{n} warning – see the songs' notes.|{n} warnings – see the songs' notes.	{n} Warnung – siehe Notizen der Songs.|{n} Warnungen – siehe Notizen der Songs.
+@plural	{n} song added with its Ultimate Guitar link.|{n} songs added with their Ultimate Guitar links.	{n} Song mit Ultimate-Guitar-Link hinzugefügt.|{n} Songs mit Ultimate-Guitar-Links hinzugefügt.
+@plural	{n} was already in the library.|{n} were already in the library.	{n} war schon in der Bibliothek.|{n} waren schon in der Bibliothek.
+@plural	{n} song|{n} songs	{n} Song|{n} Songs
+
+# Song
+	This song is no longer in the library.	Dieser Song ist nicht mehr in der Bibliothek.
+	Move to trash	In den Papierkorb
+	Edit	Bearbeiten
+	Key {key}	Tonart {key}
+	Capo {fret}	Kapo {fret}
+	Transpose down	Halbton tiefer
+	Transpose up	Halbton höher
+	Remove attachment	Anhang entfernen
+	Attach file…	Datei anhängen…
+	PDF chart, image, recording – copied into the library	PDF-Noten, Bild, Aufnahme – wird in die Bibliothek kopiert
+	File attached.	Datei angehängt.
+	“{title}” moved to the library's trash (Undo brings it back).	„{title}“ liegt im Papierkorb der Bibliothek (Widerrufen holt den Song zurück).
+	No chart yet.	Noch kein Chart.
+	PDF	PDF
+	Image	Bild
+	Audio	Audio
+	MIDI	MIDI
+	Text	Text
+	File	Datei
+
+# Song-Editor
+	Edit song	Song bearbeiten
+	Cancel	Abbrechen
+	Save	Speichern
+	Saved.	Gespeichert.
+	Title	Titel
+	Artist	Interpret
+	Key	Tonart
+	Tempo (BPM)	Tempo (BPM)
+	Time	Takt
+	Duration (m:ss)	Dauer (m:ss)
+	Capo	Kapo
+	Tags (comma)	Tags (Komma)
+	Notes	Notizen
+	Parts and presets	Teile und Presets
+	Add part	Teil hinzufügen
+	Part {number}	Teil {number}
+	Each part sends its presets when it starts. Program numbers are MIDI values 0–127.	Jeder Teil sendet beim Start seine Presets. Programmnummern sind MIDI-Werte 0–127.
+	Part name	Name des Teils
+	Up	Hoch
+	Down	Runter
+	Remove part	Teil entfernen
+	Device	Gerät
+	Channel	Kanal
+	Program	Programm
+	Remove	Entfernen
+	Add program change	Program Change hinzufügen
+@plural	+ {n} other MIDI message, kept as it is|+ {n} other MIDI messages, kept as they are	+ {n} weitere MIDI-Nachricht, bleibt unverändert|+ {n} weitere MIDI-Nachrichten, bleiben unverändert
+	Chart (ChordPro)	Chart (ChordPro)
+	Chords in [brackets] before the syllable; sections with {start_of_chorus} … {end_of_chorus}; {comment: …}.	Akkorde in [Klammern] vor der Silbe; Abschnitte mit {start_of_chorus} … {end_of_chorus}; {comment: …}.
+	Tempo “{value}” is not a number	Tempo „{value}“ ist keine Zahl
+	Capo “{value}” is not a number	Kapo „{value}“ ist keine Zahl
+	{part}: channel must be 1–16	{part}: Kanal muss 1–16 sein
+	{part}: program must be 0–127	{part}: Programm muss 0–127 sein
+	This song was changed on another device. The library has been reloaded; save again to replace that version with yours, or cancel to keep it.	Dieser Song wurde auf einem anderen Gerät geändert. Die Bibliothek ist neu geladen; speichere erneut, um jene Fassung durch deine zu ersetzen, oder brich ab, um sie zu behalten.
+
+# Setliste
+	Date	Datum
+	YYYY-MM-DD	JJJJ-MM-TT
+	Perform	Auftritt
+	Stage view for this setlist	Bühnenansicht für diese Setliste
+	Done	Fertig
+	Copy as text	Als Text kopieren
+	For mail, chat or printing	Für Mail, Chat oder zum Drucken
+	{date}  ·  {total} total	{date}  ·  {total} gesamt
+	no date	kein Datum
+@plural	(+{n} song without length)|(+{n} songs without length)	(+{n} Song ohne Länge)|(+{n} Songs ohne Länge)
+	Add break	Pause hinzufügen
+	Remove set	Set entfernen
+	To next set	Ins nächste Set
+	Break	Pause
+	(missing song)	(fehlender Song)
+	Perform from here	Ab hier auftreten
+	Note for this gig	Notiz für diesen Gig
+	optional	optional
+	(optional)	(optional)
+	Add set	Set hinzufügen
+	Add songs	Songs hinzufügen
+	Search the library	Bibliothek durchsuchen
+	Add	Hinzufügen
+	Setlist copied as text.	Setliste als Text kopiert.
+	Setlist moved to the library's trash (Undo brings it back).	Setliste liegt im Papierkorb der Bibliothek (Widerrufen holt sie zurück).
+
+# Auftritt
+	on stage {time}	auf der Bühne {time}
+	Exit	Beenden
+	Escape key	Escape-Taste
+	PANIC	PANIK
+	All notes off, stop	Alle Noten aus, Stopp
+	Previous	Zurück
+	Next	Weiter
+	Up next: {title}	Als Nächstes: {title}
+	Up next: break {minutes} min	Als Nächstes: Pause {minutes} min
+	Up next: (missing song)	Als Nächstes: (fehlender Song)
+	Last song	Letzter Song
+	preset {number}	Preset {number}
+	Presets: {list}	Presets: {list}
+	This setlist is empty.	Diese Setliste ist leer.
+	Next song	Nächster Song
+	Previous song	Vorheriger Song
+	Page forward	Seite vor
+	Page back	Seite zurück
+	Send presets again	Presets erneut senden
+	Panic	Panik
+	Exit perform mode	Auftritt beenden
+
+# Rig
+	Rig: MIDI devices and pedals	Rig: MIDI-Geräte und Pedale
+	No MIDI on this platform; only simulated devices work.	Kein MIDI auf dieser Plattform; nur simulierte Geräte funktionieren.
+	Devices are matched by the name songs use in their presets (e.g. “Play Acoustic”).	Geräte werden über den Namen zugeordnet, den Songs in ihren Presets verwenden (z. B. „Play Acoustic“).
+	Name	Name
+	Profile	Profil
+	Simulated (no hardware)	Simuliert (ohne Hardware)
+	Port	Port
+	automatic	automatisch
+	Test: program 0	Test: Programm 0
+	program 1	Programm 1
+	Add device	Gerät hinzufügen
+	Device {number}	Gerät {number}
+	Add simulated Play Acoustic	Simuliertes Play Acoustic hinzufügen
+	MIDI footswitches and controllers	MIDI-Fußschalter und Controller
+	Click Learn, then press the switch or move the controller.	Auf „… lernen“ klicken, dann den Schalter drücken oder den Controller bewegen.
+	Waiting… ({action})	Warte… ({action})
+	Learn {action}	{action} lernen
+	MIDI inputs: {list}	MIDI-Eingänge: {list}
+	none	keine
+	Log	Protokoll
+	{model} ready	{model} bereit
+	not connected	nicht verbunden
+	connecting	verbinde
+	not a Play Acoustic	kein Play Acoustic
+	lost	Verbindung verloren
+	simulated	simuliert
+	ready	bereit
+	no port	kein Port
+	no device with this name in the rig settings	kein Gerät mit diesem Namen in den Rig-Einstellungen
+	only preset changes are supported for this device	für dieses Gerät werden nur Presetwechsel unterstützt
+	no MIDI port; preset not sent	kein MIDI-Port; Preset nicht gesendet

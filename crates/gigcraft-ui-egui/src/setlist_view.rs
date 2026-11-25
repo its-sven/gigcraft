@@ -53,14 +53,14 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                     json!({"id": sid, "fields": {"name": name.trim()}}),
                 ));
             }
-            ui.label("Date");
+            ui.label(tr!("Date"));
             let date = app
                 .setlist_ui
                 .date
                 .get_or_insert_with(|| d["date"].as_str().unwrap_or_default().to_string());
             let r = ui.add(
                 egui::TextEdit::singleline(date)
-                    .hint_text("YYYY-MM-DD")
+                    .hint_text(tr!("YYYY-MM-DD"))
                     .desired_width(100.0),
             );
             if r.lost_focus() && date.trim() != d["date"].as_str().unwrap_or_default() {
@@ -78,37 +78,42 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
         }
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             if ui
-                .button(egui::RichText::new("Perform").strong())
-                .on_hover_text("Stage view for this setlist")
+                .button(egui::RichText::new(tr!("Perform")).strong())
+                .on_hover_text(tr!("Stage view for this setlist"))
                 .clicked()
             {
                 cmds.push(("__perform", Value::Null));
             }
-            let label = if editing { "Done" } else { "Edit" };
+            let label = if editing { tr!("Done") } else { tr!("Edit") };
             if ui.button(label).clicked() {
                 cmds.push(("__toggle_edit", Value::Null));
             }
             if ui
-                .button("Copy as text")
-                .on_hover_text("For mail, chat or printing")
+                .button(tr!("Copy as text"))
+                .on_hover_text(tr!("For mail, chat or printing"))
                 .clicked()
             {
                 cmds.push(("__copy", Value::Null));
             }
-            if editing && ui.button("Move to trash").clicked() {
+            if editing && ui.button(tr!("Move to trash")).clicked() {
                 cmds.push(("setlist.trash", json!({"id": sid})));
             }
         });
     });
-    ui.label(format!(
-        "{}  ·  {} total{}",
-        d["date"].as_str().unwrap_or("no date"),
-        d["total"].as_str().unwrap_or_default(),
-        match d["unknown_durations"].as_u64() {
-            Some(n) if n > 0 => format!(" (+{n} songs without length)"),
-            _ => String::new(),
-        }
-    ));
+    let mut summary = tr!(
+        "{date}  ·  {total} total",
+        date = d["date"].as_str().unwrap_or(tr!("no date")),
+        total = d["total"].as_str().unwrap_or_default()
+    );
+    if let Some(n) = d["unknown_durations"].as_u64().filter(|n| *n > 0) {
+        summary.push(' ');
+        summary.push_str(&trn!(
+            n,
+            "(+{n} song without length)",
+            "(+{n} songs without length)"
+        ));
+    }
+    ui.label(summary);
     if let Some(n) = d["notes"].as_str().filter(|n| !n.is_empty()) {
         ui.label(egui::RichText::new(n).italics());
     }
@@ -133,10 +138,10 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                     .strong(),
                 );
                 if editing {
-                    if ui.small_button("Add break").clicked() {
+                    if ui.small_button(tr!("Add break")).clicked() {
                         cmds.push(("setlist.add_break", json!({"id": sid, "set": si, "minutes": 15})));
                     }
-                    if set_count > 1 && ui.small_button("Remove set").clicked() {
+                    if set_count > 1 && ui.small_button(tr!("Remove set")).clicked() {
                         cmds.push(("setlist.remove_set", json!({"id": sid, "set": si})));
                     }
                 }
@@ -149,21 +154,21 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                 item_index += 1;
                 ui.horizontal(|ui| {
                     if editing {
-                        if ui.add_enabled(ei > 0, egui::Button::new("Up").small()).clicked() {
+                        if ui.add_enabled(ei > 0, egui::Button::new(tr!("Up")).small()).clicked() {
                             cmds.push(("setlist.move_entry", json!({"id": sid, "from_set": si, "from": ei, "to": ei - 1})));
                         }
-                        if ui.add_enabled(ei + 1 < len, egui::Button::new("Down").small()).clicked() {
+                        if ui.add_enabled(ei + 1 < len, egui::Button::new(tr!("Down")).small()).clicked() {
                             cmds.push(("setlist.move_entry", json!({"id": sid, "from_set": si, "from": ei, "to": ei + 1})));
                         }
-                        if si + 1 < set_count && ui.small_button("To next set").clicked() {
+                        if si + 1 < set_count && ui.small_button(tr!("To next set")).clicked() {
                             cmds.push(("setlist.move_entry", json!({"id": sid, "from_set": si, "from": ei, "to_set": si + 1, "to": 0})));
                         }
-                        if ui.small_button("Remove").clicked() {
+                        if ui.small_button(tr!("Remove")).clicked() {
                             cmds.push(("setlist.remove_entry", json!({"id": sid, "set": si, "index": ei})));
                         }
                     }
                     if e["type"] == "break" {
-                        let label = e["label"].as_str().filter(|l| !l.is_empty()).unwrap_or("Break");
+                        let label = e["label"].as_str().filter(|l| !l.is_empty()).unwrap_or(tr!("Break"));
                         if editing {
                             let mut minutes = e["minutes"].as_u64().unwrap_or(0) as u32;
                             ui.label(format!("— {label}"));
@@ -177,7 +182,7 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                     }
                     n += 1;
                     let missing = e["missing"] == true;
-                    let title = e["title"].as_str().unwrap_or("(missing song)");
+                    let title = e["title"].as_str().unwrap_or(tr!("(missing song)"));
                     let mut text = egui::RichText::new(format!("{n}. {title}")).size(size);
                     if missing {
                         text = text.strikethrough().weak();
@@ -189,7 +194,7 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                         open_song = Some(id);
                     }
                     r.context_menu(|ui| {
-                        if ui.button("Perform from here").clicked() {
+                        if ui.button(tr!("Perform from here")).clicked() {
                             perform_at = Some(this_item);
                             ui.close();
                         }
@@ -200,7 +205,7 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                             .buffers
                             .entry((si, ei, "key"))
                             .or_insert_with(|| e["key"].as_str().unwrap_or_default().to_string());
-                        ui.label("Key");
+                        ui.label(tr!("Key"));
                         let r = ui.add(egui::TextEdit::singleline(key).desired_width(40.0));
                         if r.lost_focus() && key.trim() != e["key"].as_str().unwrap_or_default() {
                             cmds.push(("setlist.update_entry", json!({"id": sid, "set": si, "index": ei, "fields": {"key": key.trim()}})));
@@ -209,20 +214,20 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                             .buffers
                             .entry((si, ei, "notes"))
                             .or_insert_with(|| e["notes"].as_str().unwrap_or_default().to_string());
-                        let r = ui.add(egui::TextEdit::singleline(notes).hint_text("Note for this gig").desired_width(200.0));
+                        let r = ui.add(egui::TextEdit::singleline(notes).hint_text(tr!("Note for this gig")).desired_width(200.0));
                         if r.lost_focus() && notes.as_str() != e["notes"].as_str().unwrap_or_default() {
                             cmds.push(("setlist.update_entry", json!({"id": sid, "set": si, "index": ei, "fields": {"notes": notes.clone()}})));
                         }
-                        let mut optional = e["optional"] == true;
-                        if ui.checkbox(&mut optional, "optional").changed() {
-                            cmds.push(("setlist.update_entry", json!({"id": sid, "set": si, "index": ei, "fields": {"optional": optional}})));
+                        let mut optional = e[tr!("optional")] == true;
+                        if ui.checkbox(&mut optional, tr!("optional")).changed() {
+                            cmds.push(("setlist.update_entry", json!({"id": sid, "set": si, "index": ei, "fields": {tr!("optional"): optional}})));
                         }
                     } else {
                         if let Some(k) = e["key"].as_str() {
                             ui.label(egui::RichText::new(format!("[{k}]")).size(size));
                         }
-                        if e["optional"] == true {
-                            ui.label(egui::RichText::new("(optional)").size(size * 0.8).weak());
+                        if e[tr!("optional")] == true {
+                            ui.label(egui::RichText::new(tr!("(optional)")).size(size * 0.8).weak());
                         }
                     }
                 });
@@ -236,17 +241,17 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
         if editing {
             ui.add_space(12.0);
             ui.horizontal(|ui| {
-                if ui.button("Add set").clicked() {
+                if ui.button(tr!("Add set")).clicked() {
                     cmds.push(("setlist.add_set", json!({"id": sid})));
                 }
             });
             ui.add_space(8.0);
-            ui.strong("Add songs");
-            ui.add(egui::TextEdit::singleline(&mut app.setlist_ui.add_query).hint_text("Search the library"));
+            ui.strong(tr!("Add songs"));
+            ui.add(egui::TextEdit::singleline(&mut app.setlist_ui.add_query).hint_text(tr!("Search the library")));
             if let Some(engine) = &app.engine {
                 for song in engine.library().search(&app.setlist_ui.add_query).into_iter().take(12) {
                     ui.horizontal(|ui| {
-                        if ui.small_button("Add").clicked() {
+                        if ui.small_button(tr!("Add")).clicked() {
                             cmds.push(("setlist.add_song", json!({"id": sid, "song": song.id.to_string()})));
                         }
                         ui.label(song.display_name());
@@ -271,12 +276,14 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                     .and_then(|o| o.result["text"].as_str().map(str::to_string))
                     .unwrap_or_else(|| setlist_text(&d));
                 ui.ctx().copy_text(text);
-                app.notify("Setlist copied as text.");
+                app.notify(tr!("Setlist copied as text."));
             }
             "setlist.trash" => {
                 if app.run(cmd, params).is_some() {
                     app.setlist = None;
-                    app.notify("Setlist moved to the library's trash (Undo brings it back).");
+                    app.notify(tr!(
+                        "Setlist moved to the library's trash (Undo brings it back)."
+                    ));
                 }
             }
             _ => {
@@ -331,7 +338,7 @@ fn setlist_text(d: &Value) -> String {
             if let Some(k) = e["key"].as_str() {
                 out.push_str(&format!("  [{k}]"));
             }
-            if e["optional"] == true {
+            if e[tr!("optional")] == true {
                 out.push_str("  (optional)");
             }
             if let Some(note) = e["notes"].as_str().filter(|x| !x.is_empty()) {
