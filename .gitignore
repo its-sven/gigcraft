@@ -1,0 +1,21 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Apple
+xcuserdata/
+*.xcuserstate
+DerivedData/
+apps/apple/Config/Local.xcconfig
+
+# Android
+.gradle/
+local.properties
+apps/android/**/build/
+
+# Web
+node_modules/
+dist/
+
+# OS
+.DS_Store
