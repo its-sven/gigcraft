@@ -2,6 +2,8 @@
 //!
 //! `gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]]`
 
+mod midi_io;
+
 use gigcraft_ui_egui::{GigCraftApp, Hooks, Start};
 use std::path::PathBuf;
 
@@ -20,6 +22,7 @@ fn parse_args() -> Result<Start, String> {
             "--setlist" => start.setlist = Some(value("--setlist")?),
             "--edit" => start.edit = true,
             "--perform" => start.perform = true,
+            "--rig" => start.rig = true,
             "-h" | "--help" => {
                 return Err(
                     "usage: gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]]".into(),
@@ -54,6 +57,7 @@ fn main() -> eframe::Result {
             let hooks = Hooks {
                 pick_folder: Some(Box::new(|| rfd::FileDialog::new().pick_folder())),
                 pick_file: Some(Box::new(|| rfd::FileDialog::new().pick_file())),
+                midi: Some(Box::new(midi_io::Midir::new())),
             };
             Ok(Box::new(GigCraftApp::new(cc, start, hooks)))
         }),

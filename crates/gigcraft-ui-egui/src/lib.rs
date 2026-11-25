@@ -7,19 +7,24 @@
 
 mod chart_view;
 mod perform;
+mod rig_ui;
 mod setlist_view;
 mod song_view;
 
 use gigcraft_commands::{Engine, Outcome};
 use gigcraft_model::{SetlistId, SongId};
 use gigcraft_perform::Keymap;
+use gigcraft_rig::{Rig, RigConfig};
 use gigcraft_store::Library;
+
+pub use rig_ui::MidiIo;
 use serde_json::{Value, json};
 use std::path::PathBuf;
 
 const LAST_LIBRARY_KEY: &str = "gigcraft.last_library";
 const FONT_SIZE_KEY: &str = "gigcraft.font_size";
 const KEYMAP_KEY: &str = "gigcraft.keymap";
+const RIG_KEY: &str = "gigcraft.rig";
 
 /// Platform services the shell can offer.
 #[derive(Default)]
@@ -28,12 +33,16 @@ pub struct Hooks {
     pub pick_folder: Option<Box<dyn Fn() -> Option<PathBuf>>>,
     /// Ask the user for a file (attachments, imports).
     pub pick_file: Option<Box<dyn Fn() -> Option<PathBuf>>>,
+    /// MIDI ports (desktop).
+    pub midi: Option<Box<dyn MidiIo>>,
 }
 
 impl std::fmt::Debug for Hooks {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Hooks")
             .field("pick_folder", &self.pick_folder.is_some())
+            .field("pick_file", &self.pick_file.is_some())
+            .field("midi", &self.midi.is_some())
             .finish()
     }
 }
@@ -50,6 +59,8 @@ pub struct Start {
     pub edit: bool,
     /// Start perform mode with the setlist.
     pub perform: bool,
+    /// Open the rig window.
+    pub rig: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -81,6 +92,10 @@ pub struct GigCraftApp {
     last_disk_check: f64,
     /// Outside changes seen while editing (reload waits until the editor closes).
     pending_reload: bool,
+    rig: Rig,
+    rig_ui: rig_ui::RigUi,
+    /// The rig configuration changed and must be saved.
+    rig_dirty: bool,
 }
 
 impl GigCraftApp {
@@ -104,6 +119,9 @@ impl GigCraftApp {
             last_error: None,
             last_disk_check: 0.0,
             pending_reload: false,
+            rig: Rig::new(RigConfig::demo()),
+            rig_ui: rig_ui::RigUi::default(),
+            rig_dirty: false,
         };
         if let Some(storage) = cc.storage {
             if let Some(size) = storage
@@ -117,6 +135,12 @@ impl GigCraftApp {
                 .and_then(|s| serde_json::from_str(&s).ok())
             {
                 app.keymap = km;
+            }
+            if let Some(cfg) = storage
+                .get_string(RIG_KEY)
+                .and_then(|s| serde_json::from_str::<RigConfig>(&s).ok())
+            {
+                app.rig = Rig::new(cfg);
             }
             let last = storage.get_string(LAST_LIBRARY_KEY).map(PathBuf::from);
             if start.library.is_none()
@@ -133,6 +157,7 @@ impl GigCraftApp {
     }
 
     fn select(&mut self, start: &Start) {
+        self.rig_ui.open = start.rig;
         let Some(engine) = &self.engine else { return };
         let lib = engine.library();
         let norm = gigcraft_store::normalize;
@@ -311,6 +336,13 @@ impl GigCraftApp {
                 self.run("edit.redo", Value::Null);
                 self.song_draft = None;
             }
+            if ui
+                .button("Rig…")
+                .on_hover_text("MIDI devices, pedals, footswitches")
+                .clicked()
+            {
+                self.rig_ui.open = !self.rig_ui.open;
+            }
             ui.separator();
             ui.label("Text");
             ui.add(egui::Slider::new(&mut self.font_size, 12.0..=48.0).show_value(false));
@@ -435,6 +467,9 @@ impl GigCraftApp {
 
 impl eframe::App for GigCraftApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+        let time = ui.input(|i| i.time);
+        rig_ui::pump(self, ui.ctx(), time);
+        rig_ui::window(self, ui.ctx(), time);
         if self.perform.is_some() {
             perform::show(self, ui);
             return;
@@ -506,6 +541,10 @@ impl eframe::App for GigCraftApp {
         storage.set_string(FONT_SIZE_KEY, self.font_size.to_string());
         if let Ok(km) = serde_json::to_string(&self.keymap) {
             storage.set_string(KEYMAP_KEY, km);
+        }
+        if let Ok(rig) = serde_json::to_string(self.rig.config()) {
+            storage.set_string(RIG_KEY, rig);
+            self.rig_dirty = false;
         }
     }
 }

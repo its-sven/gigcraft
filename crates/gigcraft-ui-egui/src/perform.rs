@@ -35,12 +35,13 @@ pub(crate) fn start(app: &mut GigCraftApp, setlist: SetlistId, index: Option<usi
     if let Some(out) = app.run("perform.start", params) {
         let mut ui = PerformUi::default();
         apply_effects(&mut ui, &out.result, 0.0);
+        rig_effects(app, &out.result, 0.0);
         ui.state = out.result;
         app.perform = Some(ui);
     }
 }
 
-fn act(app: &mut GigCraftApp, action: Action, now: f64) {
+pub(crate) fn act(app: &mut GigCraftApp, action: Action, now: f64) {
     let name = serde_json::to_value(action).unwrap_or(Value::Null);
     let Some(out) = app.run("perform.action", json!({ "action": name })) else {
         return;
@@ -49,6 +50,7 @@ fn act(app: &mut GigCraftApp, action: Action, now: f64) {
         app.perform = None;
         return;
     }
+    rig_effects(app, &out.result, now);
     if let Some(p) = app.perform.as_mut() {
         apply_effects(p, &out.result, now);
         p.state = out.result;
@@ -56,11 +58,32 @@ fn act(app: &mut GigCraftApp, action: Action, now: f64) {
 }
 
 fn goto(app: &mut GigCraftApp, index: usize, part: usize, now: f64) {
-    if let Some(out) = app.run("perform.goto", json!({ "index": index, "part": part }))
-        && let Some(p) = app.perform.as_mut()
-    {
-        apply_effects(p, &out.result, now);
-        p.state = out.result;
+    if let Some(out) = app.run("perform.goto", json!({ "index": index, "part": part })) {
+        rig_effects(app, &out.result, now);
+        if let Some(p) = app.perform.as_mut() {
+            apply_effects(p, &out.result, now);
+            p.state = out.result;
+        }
+    }
+}
+
+/// Effects for the rig (MIDI) after a perform command.
+fn rig_effects(app: &mut GigCraftApp, result: &Value, now: f64) {
+    let ms = crate::rig_ui::now_ms(now);
+    for eff in result["effects"].as_array().into_iter().flatten() {
+        match eff["type"].as_str().unwrap_or_default() {
+            "send_part" => {
+                let actions: Vec<gigcraft_model::MidiAction> =
+                    serde_json::from_value(eff["actions"].clone()).unwrap_or_default();
+                let outs = app.rig.send_part(&actions, ms);
+                crate::rig_ui::handle(app, outs, now);
+            }
+            "panic" => {
+                let outs = app.rig.panic(ms);
+                crate::rig_ui::handle(app, outs, now);
+            }
+            _ => {}
+        }
     }
 }
 
@@ -225,7 +248,19 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                 None => "Last song".into(),
             };
             ui.label(egui::RichText::new(next_text).size(size * 0.8));
-            if !p.last_sent.is_empty() {
+            let devices: Vec<String> = app
+                .rig
+                .status()
+                .into_iter()
+                .map(|d| {
+                    let what = d.current.map(|c| format!("preset {c}")).unwrap_or(d.state);
+                    format!("{}: {what}{}", d.name, if d.busy { " …" } else { "" })
+                })
+                .collect();
+            if !devices.is_empty() {
+                ui.separator();
+                ui.label(egui::RichText::new(devices.join("   ")).size(size * 0.6));
+            } else if !p.last_sent.is_empty() {
                 ui.separator();
                 ui.label(
                     egui::RichText::new(format!("Presets: {}", p.last_sent.join("; ")))

@@ -15,6 +15,7 @@ gigcraft-chordpro = { path = "crates/gigcraft-chordpro" }
 gigcraft-store = { path = "crates/gigcraft-store" }
 gigcraft-commands = { path = "crates/gigcraft-commands" }
 gigcraft-perform = { path = "crates/gigcraft-perform" }
+gigcraft-rig = { path = "crates/gigcraft-rig" }
 gigcraft-automation = { path = "crates/gigcraft-automation" }
 gigcraft-ui-egui = { path = "crates/gigcraft-ui-egui" }
 gigcraft-midi = { path = "crates/gigcraft-midi" }
@@ -32,6 +33,7 @@ uniffi = "0.32"
 eframe = { version = "0.37", default-features = false, features = ["default_fonts", "glow", "persistence", "wayland", "x11"] }
 egui = "0.37"
 rfd = "0.15"
+midir = "0.11"
 
 # craft-libs has no release tag yet; pin one commit for every craft crate.
 craft-jsonrpc = { git = "https://github.com/storytold/craft-libs", rev = "2c81ed850319ef3504ce56d82379b346522af18e" }
