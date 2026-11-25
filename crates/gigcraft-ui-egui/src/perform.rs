@@ -14,7 +14,7 @@ use std::collections::HashMap;
 /// Seconds a key must be held to count as "hold".
 const HOLD_SECS: f64 = 0.6;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub(crate) struct PerformUi {
     state: Value,
     /// Key name → (time pressed, hold already fired).
@@ -189,9 +189,10 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
     for action in key_actions(app, ui, now) {
         act(app, action, now);
     }
-    let Some(p) = app.perform.as_ref() else {
+    let Some(p) = app.perform.clone() else {
         return;
     };
+    let p = &p;
     let st = p.state.clone();
     let size = app.font_size * 1.25;
     let mut clicked: Option<Action> = None;
@@ -212,6 +213,9 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                     time = gigcraft_model::format_duration(secs)
                 ));
             }
+            ui.separator();
+            let current_song = st["current"]["song"].as_str().and_then(|s| s.parse().ok());
+            crate::audio_ui::transport(app, ui, current_song);
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui
                     .button(tr!("Exit"))

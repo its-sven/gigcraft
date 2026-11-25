@@ -250,6 +250,9 @@ fn page(app: &mut GigCraftApp, ui: &mut egui::Ui, topic: Topic) {
                         "Next and Previous go part by part, then to the next song. Each part sends its presets."
                     ),
                     tr!("Breaks show a countdown."),
+                    tr!(
+                        "Songs with backing tracks or a click show Play next to the setlist name; the files of the next song load in the background."
+                    ),
                     tr!("PANIC sends all notes off to every device."),
                     tr!("The Text size slider in the top bar also sets the stage text size."),
                 ],
@@ -268,6 +271,12 @@ fn page(app: &mut GigCraftApp, ui: &mut egui::Ui, topic: Topic) {
                     ),
                     tr!("Use Test: program 0 and program 1 to check the connection."),
                     tr!("Footswitches: click Learn next to an action, then press the switch."),
+                    tr!(
+                        "Audio output: pick the device for backing tracks and the click, and test it with Test click. With an audio interface, send the click to its own outputs for in-ears."
+                    ),
+                    tr!(
+                        "Backing tracks: attach audio files to a song, then add them as tracks in the song editor under Backing tracks and click."
+                    ),
                 ],
             );
         }

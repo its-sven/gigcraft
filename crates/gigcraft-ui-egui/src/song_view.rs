@@ -1,7 +1,9 @@
 //! Song view and song editor.
 
 use crate::{GigCraftApp, chart_view};
-use gigcraft_model::{MidiAction, MidiMessage, Part, SongId, format_duration};
+use gigcraft_model::{
+    ClickSettings, MidiAction, MidiMessage, Part, SongId, Track, TrackRole, format_duration,
+};
 use serde_json::{Value, json};
 
 /// A program change shown as editable fields.
@@ -36,6 +38,11 @@ pub(crate) struct Draft {
     notes: String,
     chart: String,
     parts: Vec<PartDraft>,
+    tracks: Vec<Track>,
+    click_on: bool,
+    click: ClickSettings,
+    /// Audio attachments that can become tracks.
+    audio_files: Vec<String>,
     issues: Vec<String>,
 }
 
@@ -85,6 +92,15 @@ impl Draft {
             notes: s.notes.clone(),
             chart: lib.chart(id).unwrap_or_default().to_string(),
             parts,
+            tracks: s.tracks.clone(),
+            click_on: s.click.as_ref().is_some_and(|c| c.enabled),
+            click: s.click.clone().unwrap_or_default(),
+            audio_files: s
+                .attachments
+                .iter()
+                .filter(|a| a.kind() == gigcraft_model::AttachmentKind::Audio)
+                .map(|a| a.file.clone())
+                .collect(),
             issues: Vec::new(),
         })
     }
@@ -162,6 +178,12 @@ impl Draft {
             "tags": tags,
             "notes": self.notes,
             "parts": serde_json::to_value(parts).unwrap_or(Value::Null),
+            "tracks": serde_json::to_value(&self.tracks).unwrap_or(Value::Null),
+            "click": if self.click_on {
+                serde_json::to_value(ClickSettings { enabled: true, ..self.click.clone() }).unwrap_or(Value::Null)
+            } else {
+                Value::Null
+            },
         }))
     }
 }
@@ -447,6 +469,9 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
         }
 
         ui.add_space(8.0);
+        tracks_editor(ui, &mut draft);
+
+        ui.add_space(8.0);
         ui.strong(tr!("Chart (ChordPro)"));
         ui.small(tr!("Chords in [brackets] before the syllable; sections with {start_of_chorus} … {end_of_chorus}; {comment: …}."));
         ui.columns(2, |cols| {
@@ -517,4 +542,141 @@ fn kind_label(kind: gigcraft_model::AttachmentKind) -> &'static str {
         K::Text => tr!("Text"),
         K::Other => tr!("File"),
     }
+}
+
+/// Output pair of a bus: bus 0 → "1/2", bus 1 → "3/4".
+fn bus_label(bus: u32) -> String {
+    format!("{}/{}", bus * 2 + 1, bus * 2 + 2)
+}
+
+fn bus_picker(ui: &mut egui::Ui, salt: impl std::hash::Hash + std::fmt::Debug, bus: &mut u32) {
+    egui::ComboBox::from_id_salt(salt)
+        .width(60.0)
+        .selected_text(bus_label(*bus))
+        .show_ui(ui, |ui| {
+            for b in 0..8 {
+                ui.selectable_value(bus, b, bus_label(b));
+            }
+        })
+        .response
+        .on_hover_text(tr!("Audio outputs: 1/2 is the main pair; 3/4 and up need an interface with more outputs (e.g. click to in-ears only)"));
+}
+
+fn role_label(role: TrackRole) -> &'static str {
+    match role {
+        TrackRole::Backing => tr!("Backing"),
+        TrackRole::Click => tr!("Click track"),
+        TrackRole::Guide => tr!("Guide / cues"),
+        TrackRole::Stem => tr!("Stem"),
+    }
+}
+
+/// Backing tracks and the click.
+fn tracks_editor(ui: &mut egui::Ui, draft: &mut Draft) {
+    ui.horizontal(|ui| {
+        ui.strong(tr!("Backing tracks and click"));
+        let unused: Vec<String> = draft
+            .audio_files
+            .iter()
+            .filter(|f| !draft.tracks.iter().any(|t| &t.file == *f))
+            .cloned()
+            .collect();
+        ui.add_enabled_ui(!unused.is_empty(), |ui| {
+            ui.menu_button(tr!("Add track"), |ui| {
+                for f in &unused {
+                    if ui.button(f).clicked() {
+                        draft.tracks.push(Track::new(f.clone()));
+                        ui.close();
+                    }
+                }
+            })
+            .response
+            .on_hover_text(tr!(
+                "Play one of this song's audio attachments in perform mode"
+            ))
+            .on_disabled_hover_text(tr!(
+                "Attach an audio file first (Attach file… in the song view)"
+            ));
+        });
+    });
+    ui.small(tr!("In perform mode, Play starts the tracks and the click together; the next song's files are loaded in the background."));
+    let mut remove = None;
+    for (i, t) in draft.tracks.iter_mut().enumerate() {
+        ui.group(|ui| {
+            ui.horizontal_wrapped(|ui| {
+                ui.label(egui::RichText::new(&t.file).strong());
+                egui::ComboBox::from_id_salt(("track-role", i))
+                    .selected_text(role_label(t.role))
+                    .show_ui(ui, |ui| {
+                        for r in [
+                            TrackRole::Backing,
+                            TrackRole::Click,
+                            TrackRole::Guide,
+                            TrackRole::Stem,
+                        ] {
+                            ui.selectable_value(&mut t.role, r, role_label(r));
+                        }
+                    })
+                    .response
+                    .on_hover_text(tr!(
+                        "What this track is; guide and click tracks usually go to the in-ears only"
+                    ));
+                ui.label(tr!("Volume"));
+                ui.add(
+                    egui::Slider::new(&mut t.gain_db, -40.0..=12.0)
+                        .suffix(" dB")
+                        .fixed_decimals(1),
+                )
+                .on_hover_text(tr!(
+                    "Track volume in decibels; 0 dB plays the file as it is"
+                ));
+                ui.label(tr!("Pan"));
+                ui.add(
+                    egui::Slider::new(&mut t.pan, -1.0..=1.0)
+                        .fixed_decimals(2)
+                        .show_value(false),
+                )
+                .on_hover_text(tr!("Left – centre – right"));
+                ui.label(tr!("Out"));
+                bus_picker(ui, ("track-bus", i), &mut t.bus);
+                ui.checkbox(&mut t.mute, tr!("Mute"))
+                    .on_hover_text(tr!("Keep the track but do not play it"));
+                if ui
+                    .small_button(tr!("Remove"))
+                    .on_hover_text(tr!("Remove the track (the file stays attached)"))
+                    .clicked()
+                {
+                    remove = Some(i);
+                }
+            });
+        });
+    }
+    if let Some(i) = remove {
+        draft.tracks.remove(i);
+    }
+    ui.horizontal_wrapped(|ui| {
+        ui.checkbox(&mut draft.click_on, tr!("Click"))
+            .on_hover_text(tr!(
+                "A metronome click at the song's tempo, generated by GigCraft"
+            ));
+        ui.add_enabled_ui(draft.click_on, |ui| {
+            ui.label(tr!("Count-in (bars)"));
+            ui.add(egui::DragValue::new(&mut draft.click.count_in_bars).range(0..=4))
+                .on_hover_text(tr!("Bars of click before the tracks start"));
+            ui.label(tr!("Volume"));
+            ui.add(
+                egui::Slider::new(&mut draft.click.volume_db, -40.0..=12.0)
+                    .suffix(" dB")
+                    .fixed_decimals(1),
+            );
+            ui.label(tr!("Out"));
+            bus_picker(ui, "click-bus", &mut draft.click.bus);
+        });
+        if draft.click_on && draft.tempo.trim().is_empty() {
+            ui.colored_label(
+                ui.visuals().warn_fg_color,
+                tr!("The click needs a tempo (BPM) above."),
+            );
+        }
+    });
 }

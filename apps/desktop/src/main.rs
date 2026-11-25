@@ -2,6 +2,7 @@
 //!
 //! `gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]] [--rig] [--lang en|de] [--live | --join ADDRESS] [--show-help]`
 
+mod audio_io;
 mod live_io;
 mod midi_io;
 
@@ -64,6 +65,7 @@ fn main() -> eframe::Result {
                 pick_file: Some(Box::new(|| rfd::FileDialog::new().pick_file())),
                 midi: Some(Box::new(midi_io::Midir::new())),
                 live: Some(Box::new(live_io::Net::default())),
+                audio: Some(Box::new(audio_io::Cpal::default())),
             };
             Ok(Box::new(GigCraftApp::new(cc, start, hooks)))
         }),

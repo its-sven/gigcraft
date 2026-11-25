@@ -72,6 +72,10 @@ pub fn populate(engine: &mut Engine) -> Result<(), CommandError> {
         });
         if let Some(t) = directive(s.chart, "tempo").and_then(|t| t.parse::<f64>().ok()) {
             params["tempo_bpm"] = json!(t);
+            // The first demo song plays a click with one bar count-in (perform mode → Play).
+            if ids.is_empty() {
+                params["click"] = json!({ "count_in_bars": 1 });
+            }
         }
         if let Some(c) = directive(s.chart, "capo").and_then(|c| c.parse::<u8>().ok()) {
             params["capo"] = json!(c);

@@ -1833,6 +1833,8 @@ name = "gigcraft-desktop"
 version = "0.1.0"
 dependencies = [
  "eframe",
+ "gigcraft-audio",
+ "gigcraft-audio-cpal",
  "gigcraft-live-net",
  "gigcraft-ui-egui",
  "midir",
@@ -1950,6 +1952,7 @@ dependencies = [
  "craft-i18n",
  "eframe",
  "egui",
+ "gigcraft-audio",
  "gigcraft-chordpro",
  "gigcraft-commands",
  "gigcraft-live",

@@ -125,7 +125,7 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
     let mut new_config: Option<RigConfig> = None;
     let mut learn: Option<Option<Action>> = None;
     let mut test_preset: Option<(String, u8)> = None;
-    egui::Window::new(tr!("Rig: MIDI devices and pedals"))
+    egui::Window::new(tr!("Rig: devices, pedals and audio"))
         .open(&mut open)
         .default_width(640.0)
         .show(ctx, |ui| {
@@ -274,6 +274,8 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                     app.rig_ui.inputs.join(", ")
                 }
             ));
+            ui.separator();
+            crate::audio_ui::settings(app, ui);
             ui.separator();
             egui::CollapsingHeader::new(tr!("Log")).show(ui, |ui| {
                 egui::ScrollArea::vertical()

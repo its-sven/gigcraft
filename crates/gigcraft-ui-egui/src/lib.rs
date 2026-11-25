@@ -7,6 +7,7 @@
 
 #[macro_use]
 pub mod i18n;
+mod audio_ui;
 mod chart_view;
 mod help;
 mod live_ui;
@@ -21,6 +22,7 @@ use gigcraft_perform::Keymap;
 use gigcraft_rig::{Rig, RigConfig};
 use gigcraft_store::Library;
 
+pub use audio_ui::{AudioDevice, AudioHost};
 pub use live_ui::{HostEvent, Hosted, JoinEvent, LiveIo};
 pub use rig_ui::MidiIo;
 use serde_json::{Value, json};
@@ -50,6 +52,8 @@ pub struct Hooks {
     pub midi: Option<Box<dyn MidiIo>>,
     /// Local network for live sessions (desktop).
     pub live: Option<Box<dyn LiveIo>>,
+    /// Audio output for backing tracks and click (desktop).
+    pub audio: Option<Box<dyn AudioHost>>,
 }
 
 impl std::fmt::Debug for Hooks {
@@ -59,6 +63,7 @@ impl std::fmt::Debug for Hooks {
             .field("pick_file", &self.pick_file.is_some())
             .field("midi", &self.midi.is_some())
             .field("live", &self.live.is_some())
+            .field("audio", &self.audio.is_some())
             .finish()
     }
 }
@@ -126,6 +131,7 @@ pub struct GigCraftApp {
     language: i18n::Setting,
     live: live_ui::LiveUi,
     help: help::HelpUi,
+    audio: audio_ui::AudioUi,
 }
 
 impl GigCraftApp {
@@ -156,6 +162,7 @@ impl GigCraftApp {
             language: i18n::Setting::System,
             live: live_ui::LiveUi::default(),
             help: help::HelpUi::default(),
+            audio: audio_ui::AudioUi::default(),
         };
         if let Some(storage) = cc.storage {
             if let Some(lang) = storage.get_string(LANGUAGE_KEY) {
@@ -163,6 +170,7 @@ impl GigCraftApp {
             }
             i18n::set(app.language.lang());
             live_ui::load(&mut app, storage);
+            audio_ui::load_settings(&mut app, storage);
             if let Some(size) = storage
                 .get_string(FONT_SIZE_KEY)
                 .and_then(|s| s.parse().ok())
@@ -412,7 +420,7 @@ impl GigCraftApp {
             }
             if ui
                 .button(tr!("Rig…"))
-                .on_hover_text(tr!("MIDI devices, pedals, footswitches"))
+                .on_hover_text(tr!("MIDI devices, pedals, footswitches and the audio output"))
                 .clicked()
             {
                 self.rig_ui.open = !self.rig_ui.open;
@@ -771,6 +779,7 @@ impl eframe::App for GigCraftApp {
         rig_ui::pump(self, ui.ctx(), time);
         rig_ui::window(self, ui.ctx(), time);
         live_ui::pump(self, ui.ctx(), time);
+        audio_ui::pump(self, ui.ctx());
         live_ui::window(self, ui.ctx(), time);
         help::window(self, ui.ctx());
         self.paste_window(ui.ctx());
@@ -849,6 +858,7 @@ impl eframe::App for GigCraftApp {
         storage.set_string(FONT_SIZE_KEY, self.font_size.to_string());
         storage.set_string(LANGUAGE_KEY, self.language.store());
         live_ui::save(self, storage);
+        audio_ui::save_settings(self, storage);
         if let Ok(km) = serde_json::to_string(&self.keymap) {
             storage.set_string(KEYMAP_KEY, km);
         }

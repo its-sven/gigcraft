@@ -23,6 +23,7 @@ gigcraft-midi = { path = "crates/gigcraft-midi" }
 gigcraft-live = { path = "crates/gigcraft-live" }
 gigcraft-live-net = { path = "crates/gigcraft-live-net" }
 gigcraft-audio = { path = "crates/gigcraft-audio" }
+gigcraft-audio-cpal = { path = "crates/gigcraft-audio-cpal" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
