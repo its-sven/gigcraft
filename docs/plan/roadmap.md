@@ -55,6 +55,25 @@ Original plan:
 
 ## Phase 1: Solo on stage (MVP)
 
+**Status (2026-11-25):** implemented on desktop and iOS; not yet tested on a real gig or with a real pedal.
+
+| Item | State |
+|---|---|
+| 1 Library and song editor | done (desktop, iOS) |
+| 2 Chart viewer (ChordPro, transpose, capo) and PDF | done; desktop opens PDFs in the system viewer (in-app PDF rendering later) |
+| 3 Setlists: sets, breaks, overrides, same song twice, share as text | done; PDF print later |
+| 4 Perform mode, panic, keep screen on | done |
+| 5 Page turners (keys) and MIDI in with Learn | done; hold gesture on desktop, press on iOS |
+| 6 MIDI out, Play Acoustic profile and driver, simulated pedal | done (`gigcraft-midi`, `gigcraft-rig`, midir, CoreMIDI); untested with hardware |
+| 7 Import/export | done (`gigcraft-formats`); lossless zip export later (the library folder itself is lossless) |
+| 8 Folder sync with conflict detection | done; iOS folder choice with bookmark |
+| 9 Accessibility, DE/EN | open |
+| 10 Beta (TestFlight/SideStore, real gigs) | open – next |
+
+Open points found on the way: open-acoustic has no licence file (GigCraft uses only its documented protocol facts); whether the Play Acoustic numbers presets from 0 or 1 in Program Change must be checked on the hardware (the driver learns the offset at run time; the Cuebook importer assumes 1); desktop screenshots in the README are from before the rig status line.
+
+Original plan:
+
 Order matters: each step is usable on its own.
 
 1. Library and song editor (fields, parts, tags, search, smart lists) – core + both UIs.

@@ -52,6 +52,7 @@ gigcraft/
 │   │                          clock/MTC generator, timed MIDI events (no OS I/O here)
 │   ├── gigcraft-audio         realtime render graph: multitrack player, buses, click, count-in,
 │   │                          regions/loops, fades, pitch/tempo; decode via craft-audio
+│   ├── gigcraft-rig           presets → devices, MIDI in → actions, simulated pedal (ADR-0010)
 │   ├── gigcraft-sync          data sync (record versions / CRDT, see ADR-0004)
 │   ├── gigcraft-live          leader/follower protocol, transport-neutral messages
 │   ├── gigcraft-automation    CLI, JSON control channel, MCP server
