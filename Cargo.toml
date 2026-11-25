@@ -36,7 +36,7 @@ eframe = { version = "0.37", default-features = false, features = ["accesskit", 
 egui = "0.37"
 rfd = "0.15"
 midir = "0.11"
-cpal = "0.16"
+cpal = "0.18"
 
 # craft-libs has no release tag yet; pin one commit for every craft crate.
 craft-jsonrpc = { git = "https://github.com/storytold/craft-libs", rev = "2c81ed850319ef3504ce56d82379b346522af18e" }
