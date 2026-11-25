@@ -1,0 +1,38 @@
+# GigCraft device profile: TC-Helicon Play Acoustic and Play Electric.
+# The format is described in generic-midi.toml.
+#
+# Protocol facts (identity, parameter 0x2A4, preset name request, front-panel
+# event tunnel) are documented by the open-acoustic project, docs/SYSEX.md
+# (firmware 1.4.00), and were used first by the Cuebook app.
+
+schema = 1
+id = "tc-helicon-play-acoustic"
+name = "TC-Helicon Play Acoustic / Play Electric"
+manufacturer = "TC-Helicon"
+models = ["Play Acoustic", "Play Electric"]
+# 112 presets were read from a Play Acoustic by Cuebook; not checked on a Play Electric.
+preset_count = 112
+numbering = "one"
+switching = "play_acoustic_stepping"
+notes = """
+The firmware drops MIDI Program Change on USB, so GigCraft's Play Acoustic \
+driver tries Program Change once and remembers whether it worked; otherwise \
+it steps to the preset with the pedal's own front-panel buttons (one step \
+per preset), checking the preset number after each step. The pedal must \
+show its preset screen: inside a menu the buttons change pages instead. \
+Tip: store your presets in set order, then every song change is one step.
+
+GigCraft only reads from the pedal (identity, current preset number and \
+name) and never writes parameters, so settings that can lock USB SysEx out \
+(MIDI CTRL, FILTER) are never touched."""
+
+[identity]
+manufacturer = [0x00, 0x01, 0x38]
+
+[[identity.family]]
+code = 0x70
+model = "Play Acoustic"
+
+[[identity.family]]
+code = 0x71
+model = "Play Electric"

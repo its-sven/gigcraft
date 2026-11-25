@@ -106,6 +106,7 @@ fn layering() -> Result {
         "gigcraft-commands",
         "gigcraft-perform",
         "gigcraft-automation",
+        "gigcraft-midi",
     ];
     const FORBIDDEN: &[&str] = &[
         "egui",
