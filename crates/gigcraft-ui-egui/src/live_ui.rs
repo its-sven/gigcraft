@@ -421,7 +421,11 @@ fn cue_buttons(app: &mut GigCraftApp, ui: &mut egui::Ui, time: f64) {
     let mut send = None;
     ui.horizontal_wrapped(|ui| {
         for c in QUICK_CUES {
-            if ui.button(crate::i18n::t(c)).clicked() {
+            if ui
+                .button(crate::i18n::t(c))
+                .on_hover_text(tr!("Show this to the whole band"))
+                .clicked()
+            {
                 send = Some(crate::i18n::t(c).to_string());
             }
         }
@@ -433,7 +437,13 @@ fn cue_buttons(app: &mut GigCraftApp, ui: &mut egui::Ui, time: f64) {
                 .desired_width(260.0),
         );
         let enter = r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
-        if (ui.button(tr!("Send")).clicked() || enter) && !app.live.cue_text.trim().is_empty() {
+        if (ui
+            .button(tr!("Send"))
+            .on_hover_text(tr!("Send the text to every band member (Enter)"))
+            .clicked()
+            || enter)
+            && !app.live.cue_text.trim().is_empty()
+        {
             send = Some(std::mem::take(&mut app.live.cue_text));
         }
     });
@@ -496,7 +506,7 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                 Mode::Off => {
                     ui.strong(tr!("Lead the band"));
                     ui.label(tr!("Band members follow your setlist on their phones, tablets or computers – on the same Wi-Fi, no app needed."));
-                    if ui.button(egui::RichText::new(tr!("Start live session")).strong()).clicked() {
+                    if ui.button(egui::RichText::new(tr!("Start live session")).strong()).on_hover_text(tr!("Serve the band viewer on this network and show its address and QR code")).clicked() {
                         action = Some("host");
                     }
                     ui.add_space(8.0);
@@ -507,7 +517,7 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                                 .hint_text("192.168.1.20:8787")
                                 .desired_width(220.0),
                         );
-                        if ui.button(tr!("Join")).clicked() {
+                        if ui.button(tr!("Join")).on_hover_text(tr!("Follow the leader at this address")).clicked() {
                             action = Some("join");
                         }
                     });
@@ -552,7 +562,7 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                         });
                     }
                     ui.separator();
-                    if ui.button(tr!("End live session")).clicked() {
+                    if ui.button(tr!("End live session")).on_hover_text(tr!("Tell everyone the session is over and stop serving")).clicked() {
                         action = Some("stop");
                     }
                 }
@@ -561,7 +571,7 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                 } => {
                     ui.label(tr!("Following {address}", address = address));
                     ui.label(status.as_str());
-                    if ui.button(tr!("Leave")).clicked() {
+                    if ui.button(tr!("Leave")).on_hover_text(tr!("Stop following the leader")).clicked() {
                         action = Some("stop");
                     }
                 }
@@ -659,7 +669,11 @@ pub(crate) fn follow_view(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                 ui.label(status.as_str());
             }
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                if ui.button(tr!("Leave")).clicked() {
+                if ui
+                    .button(tr!("Leave"))
+                    .on_hover_text(tr!("Stop following the leader"))
+                    .clicked()
+                {
                     leave = true;
                 }
             });
@@ -675,6 +689,7 @@ pub(crate) fn follow_view(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                         .selected(ready)
                         .min_size(egui::vec2(160.0, size * 2.0)),
                 )
+                .on_hover_text(tr!("Tell the band you are ready for this song"))
                 .clicked()
             {
                 toggle_ready = true;

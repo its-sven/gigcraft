@@ -1,6 +1,6 @@
 //! GigCraft desktop app.
 //!
-//! `gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]] [--rig] [--lang en|de] [--live | --join ADDRESS]`
+//! `gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]] [--rig] [--lang en|de] [--live | --join ADDRESS] [--show-help]`
 
 mod live_io;
 mod midi_io;
@@ -26,10 +26,11 @@ fn parse_args() -> Result<Start, String> {
             "--rig" => start.rig = true,
             "--lang" => start.language = Some(value("--lang")?),
             "--live" => start.live = true,
+            "--show-help" => start.help = true,
             "--join" => start.join = Some(value("--join")?),
             "-h" | "--help" => {
                 return Err(
-                    "usage: gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]] [--rig] [--lang en|de] [--live | --join ADDRESS]".into(),
+                    "usage: gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]] [--rig] [--lang en|de] [--live | --join ADDRESS] [--show-help]".into(),
                 );
             }
             _ if text.starts_with('-') => return Err(format!("unknown option {text}")),

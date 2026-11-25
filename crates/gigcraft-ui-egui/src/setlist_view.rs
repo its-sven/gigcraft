@@ -85,7 +85,13 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                 cmds.push(("__perform", Value::Null));
             }
             let label = if editing { tr!("Done") } else { tr!("Edit") };
-            if ui.button(label).clicked() {
+            if ui
+                .button(label)
+                .on_hover_text(tr!(
+                    "Add, move and remove songs and breaks; set the key and a note for this gig"
+                ))
+                .clicked()
+            {
                 cmds.push(("__toggle_edit", Value::Null));
             }
             if ui
@@ -95,7 +101,14 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
             {
                 cmds.push(("__copy", Value::Null));
             }
-            if editing && ui.button(tr!("Move to trash")).clicked() {
+            if editing
+                && ui
+                    .button(tr!("Move to trash"))
+                    .on_hover_text(tr!(
+                        "Move this setlist to the library's trash; Undo brings it back"
+                    ))
+                    .clicked()
+            {
                 cmds.push(("setlist.trash", json!({"id": sid})));
             }
         });
@@ -138,10 +151,10 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                     .strong(),
                 );
                 if editing {
-                    if ui.small_button(tr!("Add break")).clicked() {
+                    if ui.small_button(tr!("Add break")).on_hover_text(tr!("Add a break with a countdown at the end of this set")).clicked() {
                         cmds.push(("setlist.add_break", json!({"id": sid, "set": si, "minutes": 15})));
                     }
-                    if set_count > 1 && ui.small_button(tr!("Remove set")).clicked() {
+                    if set_count > 1 && ui.small_button(tr!("Remove set")).on_hover_text(tr!("Remove this set and its entries")).clicked() {
                         cmds.push(("setlist.remove_set", json!({"id": sid, "set": si})));
                     }
                 }
@@ -154,16 +167,16 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                 item_index += 1;
                 ui.horizontal(|ui| {
                     if editing {
-                        if ui.add_enabled(ei > 0, egui::Button::new(tr!("Up")).small()).clicked() {
+                        if ui.add_enabled(ei > 0, egui::Button::new(tr!("Up")).small()).on_hover_text(tr!("Move up")).clicked() {
                             cmds.push(("setlist.move_entry", json!({"id": sid, "from_set": si, "from": ei, "to": ei - 1})));
                         }
-                        if ui.add_enabled(ei + 1 < len, egui::Button::new(tr!("Down")).small()).clicked() {
+                        if ui.add_enabled(ei + 1 < len, egui::Button::new(tr!("Down")).small()).on_hover_text(tr!("Move down")).clicked() {
                             cmds.push(("setlist.move_entry", json!({"id": sid, "from_set": si, "from": ei, "to": ei + 1})));
                         }
-                        if si + 1 < set_count && ui.small_button(tr!("To next set")).clicked() {
+                        if si + 1 < set_count && ui.small_button(tr!("To next set")).on_hover_text(tr!("Move to the start of the next set")).clicked() {
                             cmds.push(("setlist.move_entry", json!({"id": sid, "from_set": si, "from": ei, "to_set": si + 1, "to": 0})));
                         }
-                        if ui.small_button(tr!("Remove")).clicked() {
+                        if ui.small_button(tr!("Remove")).on_hover_text(tr!("Remove from this setlist – the song stays in the library")).clicked() {
                             cmds.push(("setlist.remove_entry", json!({"id": sid, "set": si, "index": ei})));
                         }
                     }
@@ -187,7 +200,9 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                     if missing {
                         text = text.strikethrough().weak();
                     }
-                    let r = ui.add_enabled(!missing, egui::Button::new(text).frame(false));
+                    let r = ui
+                        .add_enabled(!missing, egui::Button::new(text).frame(false))
+                        .on_hover_text(tr!("Open the song; right-click to perform from here"));
                     if r.clicked()
                         && let Some(id) = e["song"].as_str().and_then(|s| s.parse().ok())
                     {
@@ -219,8 +234,8 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
                             cmds.push(("setlist.update_entry", json!({"id": sid, "set": si, "index": ei, "fields": {"notes": notes.clone()}})));
                         }
                         let mut optional = e[tr!("optional")] == true;
-                        if ui.checkbox(&mut optional, tr!("optional")).changed() {
-                            cmds.push(("setlist.update_entry", json!({"id": sid, "set": si, "index": ei, "fields": {tr!("optional"): optional}})));
+                        if ui.checkbox(&mut optional, tr!("optional")).on_hover_text(tr!("Play only if there is time")).changed() {
+                            cmds.push(("setlist.update_entry", json!({"id": sid, "set": si, "index": ei, "fields": {"optional": optional}})));
                         }
                     } else {
                         if let Some(k) = e["key"].as_str() {
@@ -241,7 +256,7 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
         if editing {
             ui.add_space(12.0);
             ui.horizontal(|ui| {
-                if ui.button(tr!("Add set")).clicked() {
+                if ui.button(tr!("Add set")).on_hover_text(tr!("Add another set, e.g. an encore")).clicked() {
                     cmds.push(("setlist.add_set", json!({"id": sid})));
                 }
             });
@@ -251,7 +266,7 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SetlistId) {
             if let Some(engine) = &app.engine {
                 for song in engine.library().search(&app.setlist_ui.add_query).into_iter().take(12) {
                     ui.horizontal(|ui| {
-                        if ui.small_button(tr!("Add")).clicked() {
+                        if ui.small_button(tr!("Add")).on_hover_text(tr!("Add to the end of this setlist")).clicked() {
                             cmds.push(("setlist.add_song", json!({"id": sid, "song": song.id.to_string()})));
                         }
                         ui.label(song.display_name());

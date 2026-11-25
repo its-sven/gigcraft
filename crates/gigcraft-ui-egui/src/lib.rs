@@ -8,6 +8,7 @@
 #[macro_use]
 pub mod i18n;
 mod chart_view;
+mod help;
 mod live_ui;
 mod perform;
 mod rig_ui;
@@ -82,6 +83,8 @@ pub struct Start {
     pub live: bool,
     /// Join a live session at this address.
     pub join: Option<String>,
+    /// Open the help window.
+    pub help: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -122,6 +125,7 @@ pub struct GigCraftApp {
     /// Interface language setting.
     language: i18n::Setting,
     live: live_ui::LiveUi,
+    help: help::HelpUi,
 }
 
 impl GigCraftApp {
@@ -151,6 +155,7 @@ impl GigCraftApp {
             paste: None,
             language: i18n::Setting::System,
             live: live_ui::LiveUi::default(),
+            help: help::HelpUi::default(),
         };
         if let Some(storage) = cc.storage {
             if let Some(lang) = storage.get_string(LANGUAGE_KEY) {
@@ -192,6 +197,7 @@ impl GigCraftApp {
         }
         app.select(&start);
         app.start_live(&start);
+        app.help.open = start.help;
         app
     }
 
@@ -346,12 +352,10 @@ impl GigCraftApp {
 
     fn top_bar(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            ui.heading("GigCraft");
-            ui.separator();
             let mut want_demo = None;
             if self.hooks.pick_folder.is_some() {
                 ui.menu_button(tr!("Library"), |ui| {
-                    if ui.button(tr!("Open library…")).clicked() {
+                    if ui.button(tr!("Open library…")).on_hover_text(tr!("Open a folder with GigCraft songs and setlists – also one shared through iCloud Drive, Nextcloud or Syncthing")).clicked() {
                         want_demo = Some(false);
                         ui.close();
                     }
@@ -413,6 +417,13 @@ impl GigCraftApp {
             {
                 self.rig_ui.open = !self.rig_ui.open;
             }
+            if ui
+                .button(tr!("Help"))
+                .on_hover_text(tr!("How GigCraft works, and keyboard shortcuts (F1)"))
+                .clicked()
+            {
+                self.help.open = !self.help.open;
+            }
             ui.separator();
             ui.label(tr!("Text size"));
             ui.add(egui::Slider::new(&mut self.font_size, 12.0..=48.0).show_value(false))
@@ -470,14 +481,20 @@ impl GigCraftApp {
 
     fn sidebar(&mut self, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
-            ui.selectable_value(&mut self.view, View::Songs, tr!("Songs"));
-            ui.selectable_value(&mut self.view, View::Setlists, tr!("Setlists"));
+            ui.selectable_value(&mut self.view, View::Songs, tr!("Songs"))
+                .on_hover_text(tr!("All songs in the library"));
+            ui.selectable_value(&mut self.view, View::Setlists, tr!("Setlists"))
+                .on_hover_text(tr!("Running orders for gigs and rehearsals"));
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 let (label, cmd) = match self.view {
                     View::Songs => (tr!("New song"), "song"),
                     View::Setlists => (tr!("New setlist"), "setlist"),
                 };
-                if ui.small_button(label).clicked() {
+                if ui
+                    .small_button(label)
+                    .on_hover_text(tr!("Create one and open the editor"))
+                    .clicked()
+                {
                     self.create(cmd);
                 }
             });
@@ -641,10 +658,10 @@ impl GigCraftApp {
                         .desired_width(f32::INFINITY),
                 );
                 ui.horizontal(|ui| {
-                    if ui.button(tr!("Import song")).clicked() {
+                    if ui.button(tr!("Import song")).on_hover_text(tr!("Add the pasted song to the library")).clicked() {
                         action = Some("import.text");
                     }
-                    if ui.button(tr!("Add Ultimate Guitar links")).clicked() {
+                    if ui.button(tr!("Add Ultimate Guitar links")).on_hover_text(tr!("Create a song for each link, with the link attached (charts are not copied)")).clicked() {
                         action = Some("import.ultimate_guitar");
                     }
                 });
@@ -688,14 +705,63 @@ impl GigCraftApp {
     fn welcome(&mut self, ui: &mut egui::Ui) {
         ui.vertical_centered(|ui| {
             ui.add_space(80.0);
-            ui.heading(tr!("Welcome to GigCraft"));
+            ui.heading(egui::RichText::new(tr!("Welcome to GigCraft")).size(28.0));
+            ui.add_space(4.0);
+            ui.label(tr!(
+                "Setlists, chord charts and your pedal presets – on stage and with the band."
+            ));
+            ui.add_space(16.0);
             ui.label(tr!(
                 "Open a library folder, or create the demo library to look around."
             ));
+            ui.add_space(8.0);
+            welcome_buttons(self, ui);
             if self.hooks.pick_folder.is_none() {
                 ui.label(tr!("Start with: gigcraft <library folder>"));
             }
         });
+    }
+}
+
+/// The first steps: demo library, own folder, help.
+pub(crate) fn welcome_buttons(app: &mut GigCraftApp, ui: &mut egui::Ui) {
+    let big = |t: &str| {
+        egui::Button::new(egui::RichText::new(t).size(18.0)).min_size(egui::vec2(220.0, 40.0))
+    };
+    let mut want_demo = None;
+    ui.horizontal(|ui| {
+        if app.hooks.pick_folder.is_some() {
+            if ui
+                .add(big(tr!("New demo library…")))
+                .on_hover_text(tr!("Creates a folder “GigCraft Demo” in the folder you pick"))
+                .clicked()
+            {
+                want_demo = Some(true);
+            }
+            if ui
+                .add(big(tr!("Open library…")))
+                .on_hover_text(tr!("Open a folder with GigCraft songs and setlists – also one shared through iCloud Drive, Nextcloud or Syncthing"))
+                .clicked()
+            {
+                want_demo = Some(false);
+            }
+        }
+        if ui
+            .add(big(tr!("Help")))
+            .on_hover_text(tr!("How GigCraft works, and keyboard shortcuts (F1)"))
+            .clicked()
+        {
+            app.help.show(help::Topic::Start);
+        }
+    });
+    if let Some(demo) = want_demo
+        && let Some(path) = app.hooks.pick_folder.as_ref().and_then(|pick| pick())
+    {
+        if demo {
+            app.create_demo(path);
+        } else {
+            app.open(path);
+        }
     }
 }
 
@@ -706,6 +772,7 @@ impl eframe::App for GigCraftApp {
         rig_ui::window(self, ui.ctx(), time);
         live_ui::pump(self, ui.ctx(), time);
         live_ui::window(self, ui.ctx(), time);
+        help::window(self, ui.ctx());
         self.paste_window(ui.ctx());
         if self.live.following() {
             live_ui::follow_view(self, ui);

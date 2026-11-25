@@ -230,3 +230,120 @@
 	Slower	Langsamer
 	Faster	Schneller
 	Stop after this bar	Stopp nach dem Takt
+
+# Tooltips
+	A MIDI device songs can send presets to, matched by its name	Ein MIDI-Gerät, an das Songs Presets senden können – zugeordnet über den Namen
+	A part (intro, verse, solo…) can switch presets when it starts	Ein Teil (Intro, Strophe, Solo…) kann beim Start Presets umschalten
+	A pretend Play Acoustic for rehearsing without the pedal	Ein simuliertes Play Acoustic zum Üben ohne Pedal
+	Add a break with a countdown at the end of this set	Eine Pause mit Countdown am Ende dieses Sets einfügen
+	Add another set, e.g. an encore	Ein weiteres Set hinzufügen, z. B. eine Zugabe
+	Add the pasted song to the library	Den eingefügten Song in die Bibliothek aufnehmen
+	Add to the end of this setlist	Ans Ende dieser Setliste anhängen
+	Add, move and remove songs and breaks; set the key and a note for this gig	Songs und Pausen hinzufügen, verschieben, entfernen; Tonart und Notiz für diesen Gig festlegen
+	All songs in the library	Alle Songs der Bibliothek
+	Change fields, parts, presets and the chart	Angaben, Teile, Presets und Chart ändern
+	Click, then press the footswitch or move the controller that should do this	Klicken, dann den Fußschalter drücken oder den Controller bewegen, der das auslösen soll
+	Create a song for each link, with the link attached (charts are not copied)	Für jeden Link einen Song anlegen, mit dem Link (Charts werden nicht kopiert)
+	Create one and open the editor	Neu anlegen und im Editor öffnen
+	Delete this part	Diesen Teil löschen
+	Discard the changes	Änderungen verwerfen
+	Follow the leader at this address	Dem Leader unter dieser Adresse folgen
+	Forget this footswitch	Diesen Fußschalter vergessen
+	How GigCraft works, and keyboard shortcuts (F1)	So funktioniert GigCraft, und Tastenkürzel (F1)
+	Jump to this part and send its presets	Zu diesem Teil springen und seine Presets senden
+	Move down	Nach unten
+	Move this part up	Diesen Teil nach oben schieben
+	Move this setlist to the library's trash; Undo brings it back	Diese Setliste in den Papierkorb der Bibliothek legen; Widerrufen holt sie zurück
+	Move this song to the library's trash; Undo brings it back	Diesen Song in den Papierkorb der Bibliothek legen; Widerrufen holt ihn zurück
+	Move to the start of the next set	An den Anfang des nächsten Sets verschieben
+	Move up	Nach oben
+	Next part or song (Right arrow or Space; hold for the next song)	Nächster Teil oder Song (Pfeil rechts oder Leertaste; halten für den nächsten Song)
+	Open a folder with GigCraft songs and setlists – also one shared through iCloud Drive, Nextcloud or Syncthing	Einen Ordner mit GigCraft-Songs und -Setlisten öffnen – auch einen, der über iCloud Drive, Nextcloud oder Syncthing geteilt ist
+	Open the song; right-click to perform from here	Song öffnen; Rechtsklick, um ab hier aufzutreten
+	Open; right-click to remove	Öffnen; Rechtsklick zum Entfernen
+	Play only if there is time	Nur spielen, wenn Zeit bleibt
+	Previous part or song (Left arrow)	Vorheriger Teil oder Song (Pfeil links)
+	Rehearse without the pedal: GigCraft pretends to switch its presets	Üben ohne Pedal: GigCraft tut so, als würde es die Presets umschalten
+	Remove from this setlist – the song stays in the library	Aus dieser Setliste entfernen – der Song bleibt in der Bibliothek
+	Remove this device from the rig; songs keep their presets	Dieses Gerät aus dem Rig entfernen; Songs behalten ihre Presets
+	Remove this program change	Diesen Program Change entfernen
+	Remove this set and its entries	Dieses Set mit seinen Einträgen entfernen
+	Running orders for gigs and rehearsals	Abläufe für Gigs und Proben
+	Save the changes (Cmd+S or Ctrl+S)	Änderungen speichern (Cmd+S oder Strg+S)
+	Send a preset to a device when this part starts	Beim Start dieses Teils ein Preset an ein Gerät senden
+	Send program change 0, to check the connection and whether the device counts from 0 or 1	Program Change 0 senden, um die Verbindung zu prüfen und ob das Gerät ab 0 oder 1 zählt
+	Send program change 1	Program Change 1 senden
+	Send the text to every band member (Enter)	Den Text an alle in der Band senden (Eingabetaste)
+	Serve the band viewer on this network and show its address and QR code	Die Bandansicht in diesem Netzwerk bereitstellen und Adresse und QR-Code zeigen
+	Show this to the whole band	Das der ganzen Band zeigen
+	Stop following the leader	Dem Leader nicht mehr folgen
+	Tell everyone the session is over and stop serving	Allen das Ende der Sitzung melden und die Bereitstellung beenden
+	Tell the band you are ready for this song	Der Band melden, dass du für diesen Song bereit bist
+
+# Hilfe
+	Help	Hilfe
+	GigCraft Help	GigCraft-Hilfe
+	Setlists, chord charts and your pedal presets – on stage and with the band.	Setlisten, Akkord-Charts und deine Pedal-Presets – auf der Bühne und mit der Band.
+	Getting started	Erste Schritte
+	Songs and charts	Songs und Charts
+	On stage	Auf der Bühne
+	MIDI devices and pedals	MIDI-Geräte und Pedale
+	Playing together	Zusammen spielen
+	Import, export, sync	Import, Export, Abgleich
+	Keyboard shortcuts	Tastenkürzel
+	Language and accessibility	Sprache und Barrierefreiheit
+	Save the song in the editor	Song im Editor speichern
+	This help	Diese Hilfe
+	In perform mode	Im Auftrittsmodus
+	{key} twice	{key} zweimal
+	hold {key}	{key} halten
+	Bluetooth page turners act as keyboards and work out of the box. MIDI footswitches are set up under Rig… > Learn.	Bluetooth-Seitenwender verhalten sich wie Tastaturen und funktionieren sofort. MIDI-Fußschalter richtest du unter Rig… > Lernen ein.
+	GigCraft keeps your songs and setlists in an ordinary folder on your computer – your library. There is no account and nothing is uploaded.	GigCraft speichert deine Songs und Setlisten in einem ganz normalen Ordner auf deinem Computer – deiner Bibliothek. Es gibt kein Konto, und nichts wird hochgeladen.
+	Look around: Library > New demo library… creates a library with example songs and a setlist.	Zum Umsehen: Bibliothek > Neue Demo-Bibliothek… legt eine Bibliothek mit Beispielsongs und einer Setliste an.
+	Or open your own folder with Library > Open library…. An empty folder becomes a new library.	Oder öffne deinen eigenen Ordner mit Bibliothek > Bibliothek öffnen…. Ein leerer Ordner wird zur neuen Bibliothek.
+	Add songs with New song, Import file… or Paste….	Songs fügst du mit Neuer Song, Datei importieren… oder Einfügen… hinzu.
+	Make a setlist under Setlists and press Perform for the stage view.	Leg unter Setlisten eine Setliste an und drücke Auftritt für die Bühnenansicht.
+	Tip: rest the mouse on any button to see what it does.	Tipp: Halte die Maus über einen Knopf, um zu sehen, was er tut.
+	A song has its details (key, tempo, time signature, duration, capo, tags, notes), a chart, attachments and parts.	Ein Song hat Angaben (Tonart, Tempo, Taktart, Dauer, Kapo, Tags, Notizen), einen Chart, Anhänge und Teile.
+	Charts in ChordPro	Charts in ChordPro
+	Write chords in square brackets right before the syllable they belong to:	Schreibe Akkorde in eckigen Klammern direkt vor die Silbe, zu der sie gehören:
+	Sections: {start_of_chorus} … {end_of_chorus}, {start_of_verse: 2} … {end_of_verse}.	Abschnitte: {start_of_chorus} … {end_of_chorus}, {start_of_verse: 2} … {end_of_verse}.
+	Repeat the chorus with {chorus}; a remark with {comment: Solo over the verse}.	Den Refrain wiederholst du mit {chorus}, eine Anmerkung mit {comment: Solo over the verse}.
+	The editor shows the result next to the text while you type.	Der Editor zeigt das Ergebnis schon beim Tippen neben dem Text.
+	Key and transposing	Tonart und Transponieren
+	− and + above the chart transpose it for viewing. A setlist can give a song another key for one gig; the chart follows on stage.	− und + über dem Chart transponieren ihn zum Ansehen. Eine Setliste kann einem Song für einen Gig eine andere Tonart geben; auf der Bühne folgt der Chart.
+	Attachments	Anhänge
+	Attach file… copies a PDF, image or recording into the library. Right-click an attachment to remove it.	Datei anhängen… kopiert ein PDF, Bild oder eine Aufnahme in die Bibliothek. Rechtsklick auf einen Anhang entfernt ihn.
+	Parts (intro, verse, solo…) can each send presets to your MIDI devices when they start. Add them in the song editor under Parts and presets.	Teile (Intro, Strophe, Solo…) können beim Start jeweils Presets an deine MIDI-Geräte senden. Du legst sie im Song-Editor unter Teile und Presets an.
+	A setlist has one or more sets with songs and breaks. Press Edit to change it, Done when finished.	Eine Setliste hat ein oder mehrere Sets mit Songs und Pausen. Mit Bearbeiten änderst du sie, mit Fertig schließt du ab.
+	For each gig you can set a different key, a note, and mark a song as optional. The song itself stays unchanged.	Für jeden Gig kannst du eine andere Tonart und eine Notiz festlegen und Songs als optional markieren. Der Song selbst bleibt unverändert.
+	The same song can appear twice, e.g. again as an encore.	Derselbe Song kann zweimal vorkommen, z. B. noch einmal als Zugabe.
+	Copy as text gives a list for mail, chat or printing.	Als Text kopieren liefert eine Liste für Mail, Chat oder zum Drucken.
+	Right-click a song to start performing from there.	Rechtsklick auf einen Song startet den Auftritt ab dort.
+	Perform opens the stage view: big type, the gig note, the chart in the gig key and what comes next.	Auftritt öffnet die Bühnenansicht: große Schrift, die Gig-Notiz, der Chart in der Gig-Tonart und was als Nächstes kommt.
+	Next and Previous go part by part, then to the next song. Each part sends its presets.	Weiter und Zurück gehen Teil für Teil, dann zum nächsten Song. Jeder Teil sendet seine Presets.
+	Breaks show a countdown.	Pausen zeigen einen Countdown.
+	PANIC sends all notes off to every device.	PANIK schickt „Alle Noten aus“ an jedes Gerät.
+	The Text size slider in the top bar also sets the stage text size.	Der Regler Textgröße oben stellt auch die Schriftgröße auf der Bühne ein.
+	Songs name a device in their presets, e.g. “Play Acoustic”. Under Rig… you tell GigCraft which MIDI port that device is on – once per computer.	Songs nennen in ihren Presets ein Gerät, z. B. „Play Acoustic“. Unter Rig… sagst du GigCraft, an welchem MIDI-Port dieses Gerät hängt – einmal pro Computer.
+	The TC-Helicon Play Acoustic is switched by stepping with its own buttons, so GigCraft never changes its settings. Turn off Simulated to use the real pedal.	Das TC-Helicon Play Acoustic wird über seine eigenen Tasten weitergeschaltet, GigCraft ändert also nie seine Einstellungen. Schalte Simuliert aus, um das echte Pedal zu nutzen.
+	Use Test: program 0 and program 1 to check the connection.	Mit Test: Programm 0 und Programm 1 prüfst du die Verbindung.
+	Footswitches: click Learn next to an action, then press the switch.	Fußschalter: Klicke bei einer Aktion auf Lernen und drücke dann den Schalter.
+	One device leads the show; everyone else follows on the same Wi-Fi.	Ein Gerät führt durch die Show, alle anderen folgen im selben WLAN.
+	Live… > Start live session shows an address and a QR code.	Live… > Live-Sitzung starten zeigt eine Adresse und einen QR-Code.
+	Band members open the address in a browser on their phone or tablet – no app needed – and see the current song with chords in the gig key.	Die Band öffnet die Adresse im Browser auf Handy oder Tablet – ohne App – und sieht den aktuellen Song mit Akkorden in der Gig-Tonart.
+	Start Perform as usual. Every move reaches the band at once.	Starte den Auftritt wie gewohnt. Jeder Schritt kommt sofort bei der Band an.
+	Another GigCraft can join the address under Live…: it shows its own chart and sends its own presets to its own devices.	Ein anderes GigCraft kann der Adresse unter Live… beitreten: Es zeigt seinen eigenen Chart und sendet eigene Presets an die eigenen Geräte.
+	Ready tells the leader you are ready for this song. Cues like “Last chorus” appear on every screen.	Bereit meldet dem Leader, dass du für diesen Song bereit bist. Cues wie „Letzter Refrain“ erscheinen auf allen Bildschirmen.
+	Nothing leaves your network. Anyone on the network can follow, but only the leader moves the show.	Nichts verlässt dein Netzwerk. Alle im Netzwerk können folgen, aber nur der Leader steuert die Show.
+	Import file… reads ChordPro, OnSong, OpenSong, text with chords over the lyrics, BandHelper exports (TSV), CSV and Cuebook libraries.	Datei importieren… liest ChordPro, OnSong, OpenSong, Text mit Akkorden über dem Text, BandHelper-Exporte (TSV), CSV und Cuebook-Bibliotheken.
+	Paste… takes a song or Ultimate Guitar links; for links, GigCraft stores the link, not the chart.	Einfügen… nimmt einen Song oder Ultimate-Guitar-Links; bei Links speichert GigCraft den Link, nicht den Chart.
+	Copy as text in a setlist, and the command line, export songs and setlists.	Als Text kopieren in einer Setliste und die Kommandozeile exportieren Songs und Setlisten.
+	Using several devices	Mehrere Geräte nutzen
+	Keep the library in iCloud Drive, Nextcloud or Syncthing and open the same folder on every device. Changes appear within a few seconds. If two devices change the same song, GigCraft asks before overwriting.	Leg die Bibliothek in iCloud Drive, Nextcloud oder Syncthing und öffne auf jedem Gerät denselben Ordner. Änderungen erscheinen nach wenigen Sekunden. Ändern zwei Geräte denselben Song, fragt GigCraft, bevor etwas überschrieben wird.
+	Nothing gets lost	Nichts geht verloren
+	Deleted songs and setlists go to the library's trash. Undo brings back every change.	Gelöschte Songs und Setlisten landen im Papierkorb der Bibliothek. Widerrufen nimmt jede Änderung zurück.
+	Choose the language at the top right; System language follows your computer.	Die Sprache wählst du oben rechts; Systemsprache folgt deinem Computer.
+	Screen readers (VoiceOver, Narrator, Orca) can read and operate every control.	Screenreader (VoiceOver, Sprachausgabe, Orca) können jedes Bedienelement vorlesen und bedienen.
+	The Text size slider scales charts and the stage view.	Der Regler Textgröße vergrößert Charts und die Bühnenansicht.
+	Everything works with the keyboard: Tab moves between controls.	Alles geht auch mit der Tastatur: Tab springt zwischen den Bedienelementen.

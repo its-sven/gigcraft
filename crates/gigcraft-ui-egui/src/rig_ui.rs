@@ -159,13 +159,14 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                                         .changed();
                                 }
                             });
-                        if ui.small_button(tr!("Remove")).clicked() {
+                        if ui.small_button(tr!("Remove")).on_hover_text(tr!("Remove this device from the rig; songs keep their presets")).clicked() {
                             remove = Some(i);
                         }
                     });
                     ui.horizontal(|ui| {
                         changed |= ui
                             .checkbox(&mut d.simulated, tr!("Simulated (no hardware)"))
+                            .on_hover_text(tr!("Rehearse without the pedal: GigCraft pretends to switch its presets"))
                             .changed();
                         if !d.simulated {
                             ui.label(tr!("Port"));
@@ -198,10 +199,10 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                                     .map(|c| format!(" · {}", tr!("preset {number}", number = c)))
                                     .unwrap_or_default()
                             ));
-                            if ui.small_button(tr!("Test: program 0")).clicked() {
+                            if ui.small_button(tr!("Test: program 0")).on_hover_text(tr!("Send program change 0, to check the connection and whether the device counts from 0 or 1")).clicked() {
                                 test_preset = Some((d.name.clone(), 0));
                             }
-                            if ui.small_button(tr!("program 1")).clicked() {
+                            if ui.small_button(tr!("program 1")).on_hover_text(tr!("Send program change 1")).clicked() {
                                 test_preset = Some((d.name.clone(), 1));
                             }
                         });
@@ -213,7 +214,7 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                 changed = true;
             }
             ui.horizontal(|ui| {
-                if ui.button(tr!("Add device")).clicked() {
+                if ui.button(tr!("Add device")).on_hover_text(tr!("A MIDI device songs can send presets to, matched by its name")).clicked() {
                     cfg.devices.push(DeviceConfig {
                         name: tr!("Device {number}", number = cfg.devices.len() + 1),
                         port: None,
@@ -224,7 +225,7 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                     });
                     changed = true;
                 }
-                if ui.button(tr!("Add simulated Play Acoustic")).clicked() {
+                if ui.button(tr!("Add simulated Play Acoustic")).on_hover_text(tr!("A pretend Play Acoustic for rehearsing without the pedal")).clicked() {
                     cfg.devices.extend(RigConfig::demo().devices);
                     changed = true;
                 }
@@ -238,11 +239,11 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
             for (i, m) in cfg.mappings.iter().enumerate() {
                 ui.horizontal(|ui| {
                     ui.label(format!(
-                        "{}  →  {}",
+                        "{}  ->  {}",
                         m.trigger,
                         crate::i18n::t(m.action.label())
                     ));
-                    if ui.small_button(tr!("Remove")).clicked() {
+                    if ui.small_button(tr!("Remove")).on_hover_text(tr!("Forget this footswitch")).clicked() {
                         remove_map = Some(i);
                     }
                 });
@@ -260,7 +261,7 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                     } else {
                         tr!("Learn {action}", action = label)
                     };
-                    if ui.selectable_label(waiting, text).clicked() {
+                    if ui.selectable_label(waiting, text).on_hover_text(tr!("Click, then press the footswitch or move the controller that should do this")).clicked() {
                         learn = Some(if waiting { None } else { Some(a) });
                     }
                 }

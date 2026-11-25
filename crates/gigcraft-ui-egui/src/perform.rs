@@ -238,10 +238,20 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                 egui::Button::new(egui::RichText::new(t).size(size))
                     .min_size(egui::vec2(160.0, size * 2.0))
             };
-            if ui.add(big(tr!("Previous"))).clicked() {
+            if ui
+                .add(big(tr!("Previous")))
+                .on_hover_text(tr!("Previous part or song (Left arrow)"))
+                .clicked()
+            {
                 clicked = Some(Action::Previous);
             }
-            if ui.add(big(tr!("Next"))).clicked() {
+            if ui
+                .add(big(tr!("Next")))
+                .on_hover_text(tr!(
+                    "Next part or song (Right arrow or Space; hold for the next song)"
+                ))
+                .clicked()
+            {
                 clicked = Some(Action::Next);
             }
             ui.separator();
@@ -334,6 +344,7 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                                     i == current_part,
                                     egui::RichText::new(name).size(size * 0.8),
                                 )
+                                .on_hover_text(tr!("Jump to this part and send its presets"))
                                 .clicked()
                             {
                                 jump = Some((index, i));
