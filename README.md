@@ -89,6 +89,8 @@ cargo xtask ci        # format, clippy, tests, layering check
 | `crates/gigcraft-perform` | perform mode: running order, stage actions, keymap |
 | `crates/gigcraft-midi` | MIDI parser, device profiles, Play Acoustic driver, MIDI Learn (no I/O) |
 | `crates/gigcraft-rig` | presets → devices, MIDI input → actions, simulated pedal (no I/O) |
+| `crates/gigcraft-audio` | backing-track engine: multitrack, buses, click/count-in, fades, regions (no I/O; [craft-audio](https://github.com/storytold/craft-libs) decoding) |
+| `crates/gigcraft-audio-cpal` | desktop audio host: runs the engine on an output device ([cpal](https://github.com/RustAudio/cpal), Apache-2.0) |
 | `crates/gigcraft-formats` | import/export (ChordPro, OnSong, OpenSong, BandHelper TSV, CSV, Cuebook, Ultimate Guitar) |
 | `crates/gigcraft-automation` | command lines and the MCP server |
 | `crates/gigcraft-ffi` | the core for Swift (UniFFI) |
