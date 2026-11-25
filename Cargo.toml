@@ -21,6 +21,7 @@ gigcraft-automation = { path = "crates/gigcraft-automation" }
 gigcraft-ui-egui = { path = "crates/gigcraft-ui-egui" }
 gigcraft-midi = { path = "crates/gigcraft-midi" }
 gigcraft-live = { path = "crates/gigcraft-live" }
+gigcraft-live-net = { path = "crates/gigcraft-live-net" }
 
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

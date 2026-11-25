@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<title>GigCraft Live</title>
+<style>
+  :root {
+    --bg: #111; --fg: #f2f2f2; --dim: #9a9a9a; --line: #2a2a2a; --chord: #5fb4ff;
+    --accent: #ffb547; --ok: #3ccf6e; --bad: #ff5a5a; --panel: #1c1c1c;
+    --size: 22px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { --bg: #fafafa; --fg: #111; --dim: #666; --line: #ddd; --chord: #0b62c4; --accent: #b35c00; --panel: #fff; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  body { min-height: 100vh; display: flex; flex-direction: column; padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left); }
+  button, input { font: inherit; color: inherit; }
+  button { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; min-height: 44px; cursor: pointer; }
+  button.on { background: var(--ok); color: #000; border-color: var(--ok); font-weight: 600; }
+  input { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; width: 100%; }
+  header { display: flex; gap: 10px; align-items: center; padding: 8px 14px; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--dim); flex-wrap: wrap; }
+  header strong { color: var(--fg); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--bad); display: inline-block; }
+  .dot.ok { background: var(--ok); }
+  .grow { flex: 1; }
+  main { flex: 1; padding: 12px 16px 24px; overflow-x: hidden; }
+  h1 { font-size: calc(var(--size) * 1.5); margin: 0 0 4px; line-height: 1.15; }
+  .facts { color: var(--dim); font-size: calc(var(--size) * 0.8); }
+  .facts .key { color: var(--chord); font-weight: 600; }
+  .note { color: var(--accent); font-size: var(--size); margin: 8px 0; }
+  .parts { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+  .parts span { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: calc(var(--size) * 0.65); color: var(--dim); }
+  .parts span.now { background: var(--chord); color: #000; border-color: var(--chord); font-weight: 600; }
+  .chart { font-size: var(--size); margin-top: 12px; }
+  .block { margin: 0 0 calc(var(--size) * 0.7); }
+  .block.chorus { padding-left: calc(var(--size) * 0.9); border-left: 3px solid var(--line); }
+  .label { font-weight: 700; font-size: calc(var(--size) * 0.8); margin-bottom: 2px; }
+  .label.recall { font-style: italic; }
+  .line { display: flex; flex-wrap: wrap; align-items: flex-end; }
+  .seg { display: inline-flex; flex-direction: column; white-space: pre; }
+  .seg .c { color: var(--chord); font-weight: 700; min-height: 1.2em; padding-right: .35em; }
+  .comment { color: var(--dim); font-style: italic; }
+  .comment.em { font-weight: 700; }
+  .empty { height: calc(var(--size) * 0.5); }
+  .break { text-align: center; margin-top: 18vh; }
+  .break .big { font-size: calc(var(--size) * 2.2); font-weight: 700; }
+  .break .clock { font-size: calc(var(--size) * 3.4); font-variant-numeric: tabular-nums; }
+  footer { position: sticky; bottom: 0; background: var(--bg); border-top: 1px solid var(--line); padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .next { color: var(--dim); }
+  .cues button { padding: 8px 12px; min-height: 40px; }
+  #toast { position: fixed; left: 12px; right: 12px; top: 12px; padding: 16px 18px; border-radius: 14px; background: var(--accent); color: #000; font-size: calc(var(--size) * 1.1); font-weight: 700; box-shadow: 0 8px 30px rgba(0,0,0,.4); display: none; z-index: 10; }
+  #join { max-width: 420px; margin: 12vh auto 0; padding: 0 20px; display: flex; flex-direction: column; gap: 12px; }
+  #join h1 { font-size: 28px; }
+  .muted { color: var(--dim); font-size: 14px; }
+  .roster { color: var(--dim); font-size: 13px; }
+  .roster b.r { color: var(--ok); }
+  .hidden { display: none !important; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<div id="toast" role="alert"></div>
+
+<section id="join">
+  <h1>GigCraft Live</h1>
+  <p class="muted" data-t="intro">Follow the band leader's setlist and chart on this device.</p>
+  <label for="name" data-t="name">Your name</label>
+  <input id="name" autocomplete="name" maxlength="40">
+  <label for="instrument" data-t="instrument">Instrument</label>
+  <input id="instrument" maxlength="40" placeholder="Bass, Drums, Vocals…">
+  <button id="go" class="on" data-t="join">Join</button>
+  <p id="joinError" class="muted" role="status"></p>
+</section>
+
+<div id="live" class="hidden" style="display:contents">
+  <header>
+    <span class="dot" id="dot" aria-hidden="true"></span>
+    <span id="status" class="sr"></span>
+    <strong id="setlist"></strong><span id="pos"></span>
+    <span class="grow"></span>
+    <span id="leader"></span>
+    <button id="smaller" aria-label="Smaller text">A−</button>
+    <button id="bigger" aria-label="Larger text">A+</button>
+  </header>
+  <main id="main" aria-live="polite"></main>
+  <footer>
+    <div class="row"><span class="next grow" id="next"></span><button id="ready" aria-pressed="false" data-t="ready">Ready</button></div>
+    <div class="row cues" id="cues"></div>
+    <div class="row"><input id="cueText" maxlength="200" aria-label="Cue to the band" placeholder="Cue to the band…"><button id="send" data-t="send">Send</button></div>
+    <div class="roster" id="roster"></div>
+  </footer>
+</div>
+
+<script>
+"use strict";
+const de = (navigator.language || "").toLowerCase().startsWith("de");
+const T = de ? {
+  intro: "Folge der Setliste und dem Chart des Bandleaders auf diesem Gerät.", name: "Dein Name", instrument: "Instrument",
+  join: "Beitreten", ready: "Bereit", send: "Senden", key: "Tonart", next: "Als Nächstes", last: "Letzter Song",
+  brk: "Pause", missing: "Song fehlt in der Bibliothek des Leaders", waiting: "Warte auf den Start der Show…",
+  connecting: "Verbinde…", offline: "Getrennt – verbinde neu…", ended: "Sitzung beendet", noChart: "Kein Chart.",
+  cues: ["Letzter Refrain", "Refrain nochmal", "Solo verlängern", "Langsamer", "Schneller", "Stopp nach dem Takt"],
+  ph: "Nachricht an die Band…", connected: "verbunden", disconnected: "getrennt", of: "von"
+} : {
+  intro: "Follow the band leader's setlist and chart on this device.", name: "Your name", instrument: "Instrument",
+  join: "Join", ready: "Ready", send: "Send", key: "Key", next: "Up next", last: "Last song",
+  brk: "Break", missing: "Song missing from the leader's library", waiting: "Waiting for the show to start…",
+  connecting: "Connecting…", offline: "Disconnected – reconnecting…", ended: "Session ended", noChart: "No chart.",
+  cues: ["Last chorus", "Chorus again", "Extend solo", "Slower", "Faster", "Stop after this bar"],
+  ph: "Cue to the band…", connected: "connected", disconnected: "disconnected", of: "of"
+};
+document.documentElement.lang = de ? "de" : "en";
+document.querySelectorAll("[data-t]").forEach(el => { el.textContent = T[el.dataset.t]; });
+const $ = id => document.getElementById(id);
+$("cueText").placeholder = T.ph;
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (_) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (_) {} }
+};
+$("name").value = store.get("gc.name") || "";
+$("instrument").value = store.get("gc.instrument") || "";
+let size = Number(store.get("gc.size")) || 22;
+const applySize = () => document.documentElement.style.setProperty("--size", size + "px");
+applySize();
+
+let ws = null, me = null, snapshot = null, ready = false, breakEnds = null, wantOpen = false, toastTimer = null;
+
+function el(tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+
+function connect() {
+  wantOpen = true;
+  setStatus(false, T.connecting);
+  ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+  ws.onopen = () => ws.send(JSON.stringify({ type: "join", protocol: 1, name: me.name, instrument: me.instrument }));
+  ws.onmessage = ev => { try { onMessage(JSON.parse(ev.data)); } catch (e) { console.warn(e); } };
+  ws.onclose = () => {
+    setStatus(false, T.offline);
+    if (wantOpen) setTimeout(connect, 2000);
+  };
+}
+
+function setStatus(ok, text) {
+  $("dot").classList.toggle("ok", ok);
+  $("status").textContent = ok ? T.connected : T.disconnected;
+  if (!ok && text) $("leader").textContent = text;
+}
+
+function onMessage(m) {
+  switch (m.type) {
+    case "welcome":
+      setStatus(true);
+      me.id = m.member;
+      $("leader").textContent = "♪ " + m.leader;
+      break;
+    case "state": {
+      const before = snapshot;
+      snapshot = m.snapshot;
+      const moved = !before || !snapshot || before.index !== snapshot.index || before.setlist !== snapshot.setlist;
+      if (moved) {
+        ready = false;
+        breakEnds = snapshot && snapshot.current && snapshot.current.type === "break"
+          ? Date.now() + (snapshot.current.minutes || 0) * 60000 : null;
+        window.scrollTo(0, 0);
+      }
+      render();
+      break;
+    }
+    case "roster": {
+      const mine = m.members.find(x => x.id === me.id);
+      if (mine) ready = mine.ready;
+      const r = $("roster");
+      r.textContent = "";
+      m.members.forEach((x, i) => {
+        if (i) r.append(" · ");
+        const b = el("b", x.ready ? "r" : "", (x.ready ? "✓ " : "") + x.name + (x.instrument ? " (" + x.instrument + ")" : ""));
+        r.append(b);
+      });
+      renderReady();
+      break;
+    }
+    case "cue":
+      toast(m.from + ": " + m.text);
+      break;
+    case "bye":
+      wantOpen = false;
+      setStatus(false, T.ended + (m.reason ? " – " + m.reason : ""));
+      break;
+  }
+}
+
+function toast(text) {
+  const t = $("toast");
+  t.textContent = text;
+  t.style.display = "block";
+  if (navigator.vibrate) navigator.vibrate(200);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.display = "none"; }, 8000);
+}
+$("toast").onclick = () => { $("toast").style.display = "none"; };
+
+function renderReady() {
+  const b = $("ready");
+  b.classList.toggle("on", ready);
+  b.setAttribute("aria-pressed", String(ready));
+  b.textContent = (ready ? "✓ " : "") + T.ready;
+}
+
+function render() {
+  const main = $("main");
+  main.textContent = "";
+  renderReady();
+  if (!snapshot) {
+    $("setlist").textContent = ""; $("pos").textContent = ""; $("next").textContent = "";
+    main.append(el("p", "muted", T.waiting));
+    return;
+  }
+  $("setlist").textContent = snapshot.setlist_name;
+  $("pos").textContent = " " + (snapshot.index + 1) + " / " + snapshot.count;
+  $("pos").setAttribute("aria-label", (snapshot.index + 1) + " " + T.of + " " + snapshot.count);
+  const n = snapshot.next;
+  $("next").textContent = !n ? T.last
+    : T.next + ": " + (n.type === "song" ? n.title + (n.key ? "  [" + n.key + "]" : "")
+      : n.type === "break" ? (n.label || T.brk) + " " + n.minutes + " min" : "—");
+  const c = snapshot.current;
+  if (!c) return;
+  if (c.type === "break") {
+    const b = el("div", "break");
+    b.append(el("div", "big", c.label || T.brk));
+    const clock = el("div", "clock", "");
+    clock.id = "clock";
+    b.append(clock);
+    main.append(b);
+    tick();
+    return;
+  }
+  if (c.type !== "song") { main.append(el("p", "note", T.missing)); return; }
+  main.append(el("h1", "", c.title));
+  const facts = el("div", "facts");
+  if (c.key) { const k = el("span", "key", T.key + " " + c.key); facts.append(k, "  "); }
+  const bits = [c.tempo_bpm ? Math.round(c.tempo_bpm) + " BPM" : "", c.time_signature || "", c.artist || ""].filter(Boolean);
+  facts.append(bits.join(" · "));
+  main.append(facts);
+  if (c.gig_notes) main.append(el("div", "note", c.gig_notes));
+  if (c.part_names && c.part_names.length > 1) {
+    const parts = el("div", "parts");
+    c.part_names.forEach((p, i) => {
+      const s = el("span", i === snapshot.part ? "now" : "", p);
+      if (i === snapshot.part) s.setAttribute("aria-current", "step");
+      parts.append(s);
+    });
+    main.append(parts);
+  }
+  main.append(chart(c.chart));
+}
+
+function chart(ch) {
+  const box = el("div", "chart");
+  if (!ch || !ch.blocks || !ch.blocks.length) { box.append(el("p", "muted", T.noChart)); return box; }
+  for (const b of ch.blocks) {
+    const blk = el("div", "block" + (b.kind === "chorus" ? " chorus" : ""));
+    if (b.label) {
+      const l = el("div", "label" + (b.kind === "chorus_recall" ? " recall" : ""), b.label);
+      l.setAttribute("role", "heading"); l.setAttribute("aria-level", "2");
+      blk.append(l);
+    }
+    for (const line of b.lines) {
+      if (line.type === "empty") { blk.append(el("div", "empty")); continue; }
+      if (line.type === "comment") { blk.append(el("div", "comment" + (line.emphasis ? " em" : ""), line.text)); continue; }
+      const segs = line.segments || [];
+      const hasChord = segs.some(s => s.chord);
+      const row = el("div", "line");
+      const lyric = segs.map(s => s.text).join("");
+      row.setAttribute("aria-label", lyric + (hasChord ? " — " + segs.filter(s => s.chord).map(s => s.chord).join(", ") : ""));
+      for (const s of segs) {
+        const seg = el("span", "seg");
+        seg.setAttribute("aria-hidden", "true");
+        if (hasChord) seg.append(el("span", "c", s.chord || " "));
+        seg.append(el("span", "", s.text || " "));
+        row.append(seg);
+      }
+      blk.append(row);
+    }
+    box.append(blk);
+  }
+  return box;
+}
+
+function tick() {
+  const c = $("clock");
+  if (!c || breakEnds == null) return;
+  const left = Math.max(0, Math.round((breakEnds - Date.now()) / 1000));
+  c.textContent = Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0");
+}
+setInterval(tick, 500);
+
+function send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
+
+$("go").onclick = () => {
+  const name = $("name").value.trim();
+  if (!name) { $("joinError").textContent = T.name + "?"; $("name").focus(); return; }
+  me = { name, instrument: $("instrument").value.trim() };
+  store.set("gc.name", me.name); store.set("gc.instrument", me.instrument);
+  $("join").classList.add("hidden");
+  $("live").classList.remove("hidden");
+  render();
+  connect();
+  if (navigator.wakeLock) navigator.wakeLock.request("screen").catch(() => {});
+};
+$("ready").onclick = () => { ready = !ready; renderReady(); send({ type: "ready", ready }); };
+$("send").onclick = () => { const t = $("cueText").value.trim(); if (t) { send({ type: "cue", text: t }); $("cueText").value = ""; } };
+$("cueText").onkeydown = e => { if (e.key === "Enter") $("send").click(); };
+for (const c of T.cues) {
+  const b = el("button", "", c);
+  b.onclick = () => send({ type: "cue", text: c });
+  $("cues").append(b);
+}
+$("smaller").onclick = () => { size = Math.max(14, size - 2); store.set("gc.size", size); applySize(); };
+$("bigger").onclick = () => { size = Math.min(48, size + 2); store.set("gc.size", size); applySize(); };
+if ($("name").value) $("go").focus(); else $("name").focus();
+</script>
+</body>
+</html>
