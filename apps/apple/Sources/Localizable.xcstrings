@@ -371,6 +371,16 @@
         }
       }
     },
+    "Audio interface: %lld outputs": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio-Interface: %lld Ausgänge"
+          }
+        }
+      }
+    },
     "Audio output: %@": {
       "localizations": {
         "de": {
@@ -607,6 +617,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Click"
+          }
+        }
+      }
+    },
+    "Click output": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Click-Ausgang"
           }
         }
       }
@@ -983,12 +1003,12 @@
         }
       }
     },
-    "In perform mode, Play starts the tracks and the click together (key P or a footswitch). With section start times, the chart follows the backing track. The iPad plays in stereo.": {
+    "In perform mode, Play starts the tracks and the click together (key P or a footswitch). With section start times, the chart follows the backing track. Outputs 3/4 and up need an audio interface (e.g. the click to the in-ears only).": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Im Auftritt startet Abspielen die Spuren und den Click gemeinsam (Taste P oder Fußschalter). Mit Startzeiten der Abschnitte folgt der Chart dem Backing-Track. Das iPad spielt in Stereo."
+            "value": "Im Auftritt startet Abspielen die Spuren und den Click gemeinsam (Taste P oder Fußschalter). Mit Startzeiten der Abschnitte folgt der Chart dem Backing-Track. Ausgänge ab 3/4 brauchen ein Audio-Interface (z. B. den Click nur auf die In-Ears)."
           }
         }
       }
@@ -1519,6 +1539,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Andere…"
+          }
+        }
+      }
+    },
+    "Output": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ausgang"
           }
         }
       }

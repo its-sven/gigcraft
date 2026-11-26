@@ -26,6 +26,9 @@ final class AudioBridge {
     private var timer: Timer?
     private var wanted: String?
 
+    /// Output channels in use (2, or more with an audio interface).
+    private(set) var channels = 2
+
     /// Start the audio output (once).
     @discardableResult
     func start() -> Bool {
@@ -37,46 +40,78 @@ final class AudioBridge {
             try session.setActive(true)
             let rate = session.sampleRate > 0 ? session.sampleRate : 48_000
             let audio = AudioCore(sampleRate: UInt32(rate), maxFrames: UInt32(Self.maxFrames))
-            let handle = audio.takeRenderer()
-            let scratch = UnsafeMutablePointer<Float>.allocate(capacity: Self.maxFrames * 2)
-            scratch.initialize(repeating: 0, count: Self.maxFrames * 2)
-            guard let format = AVAudioFormat(standardFormatWithSampleRate: rate, channels: 2) else { return false }
-            let renderer = UnsafeMutableRawPointer(bitPattern: UInt(handle))
-            let maxFrames = Self.maxFrames
-            // The render block runs on the real-time thread: no allocation, no locks.
-            let node = AVAudioSourceNode(format: format) { _, _, frameCount, bufferList -> OSStatus in
-                let buffers = UnsafeMutableAudioBufferListPointer(bufferList)
-                let total = Int(frameCount)
-                var done = 0
-                while done < total {
-                    let n = min(maxFrames, total - done)
-                    gigcraft_audio_render(renderer, scratch, UInt32(n), 2)
-                    for ch in 0..<min(2, buffers.count) {
-                        guard let data = buffers[ch].mData?.assumingMemoryBound(to: Float.self) else { continue }
-                        for i in 0..<n { data[done + i] = scratch[i * 2 + ch] }
-                    }
-                    done += n
-                }
-                return noErr
-            }
-            let engine = AVAudioEngine()
-            engine.attach(node)
-            engine.connect(node, to: engine.mainMixerNode, format: format)
-            try engine.start()
             self.audio = audio
-            self.engine = engine
-            self.handle = handle
-            self.scratch = scratch
+            self.handle = audio.takeRenderer()
+            try buildOutput()
             NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification, object: nil, queue: .main) { [weak self] note in
                 guard let raw = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt,
                       AVAudioSession.InterruptionType(rawValue: raw) == .ended else { return }
                 try? self?.engine?.start()
+            }
+            // An audio interface plugged in or out: rebuild for its outputs.
+            NotificationCenter.default.addObserver(forName: AVAudioSession.routeChangeNotification, object: nil, queue: .main) { [weak self] _ in
+                try? self?.buildOutput()
             }
             return true
         } catch {
             self.error = String(localized: "Audio output: \(error.localizedDescription)")
             return false
         }
+    }
+
+    /// (Re)build the output for the current route: stereo through the mixer,
+    /// or every output of an interface (bus 1 → outputs 1/2, bus 2 → 3/4…).
+    private func buildOutput() throws {
+        engine?.stop()
+        engine = nil
+        let session = AVAudioSession.sharedInstance()
+        let wanted = min(8, max(2, session.maximumOutputNumberOfChannels))
+        try? session.setPreferredOutputNumberOfChannels(wanted)
+        let channels = max(2, min(8, session.outputNumberOfChannels))
+        let rate = session.sampleRate > 0 ? session.sampleRate : 48_000
+        // The old node has stopped rendering: its buffer can go.
+        scratch?.deallocate()
+        let scratch = UnsafeMutablePointer<Float>.allocate(capacity: Self.maxFrames * channels)
+        scratch.initialize(repeating: 0, count: Self.maxFrames * channels)
+        self.scratch = scratch
+        let format: AVAudioFormat?
+        if channels == 2 {
+            format = AVAudioFormat(standardFormatWithSampleRate: rate, channels: 2)
+        } else {
+            let layout = AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_DiscreteInOrder | UInt32(channels))
+            format = layout.map { AVAudioFormat(standardFormatWithSampleRate: rate, channelLayout: $0) }
+        }
+        guard let format else { return }
+        let renderer = UnsafeMutableRawPointer(bitPattern: UInt(handle))
+        let maxFrames = Self.maxFrames
+        let chans = channels
+        // The render block runs on the real-time thread: no allocation, no locks.
+        let node = AVAudioSourceNode(format: format) { _, _, frameCount, bufferList -> OSStatus in
+            let buffers = UnsafeMutableAudioBufferListPointer(bufferList)
+            let total = Int(frameCount)
+            var done = 0
+            while done < total {
+                let n = min(maxFrames, total - done)
+                gigcraft_audio_render(renderer, scratch, UInt32(n), UInt32(chans))
+                for ch in 0..<min(chans, buffers.count) {
+                    guard let data = buffers[ch].mData?.assumingMemoryBound(to: Float.self) else { continue }
+                    for i in 0..<n { data[done + i] = scratch[i * chans + ch] }
+                }
+                done += n
+            }
+            return noErr
+        }
+        let engine = AVAudioEngine()
+        engine.attach(node)
+        if channels == 2 {
+            engine.connect(node, to: engine.mainMixerNode, format: format)
+        } else {
+            // Straight to the interface's outputs, no stereo downmix.
+            engine.connect(node, to: engine.outputNode, format: format)
+        }
+        try engine.start()
+        self.engine = engine
+        self.channels = channels
     }
 
     /// Follow the show: load the current song, decode the next one.

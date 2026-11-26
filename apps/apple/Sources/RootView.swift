@@ -210,6 +210,9 @@ struct RigSection: View {
                 }
             }
             if let last = rig.log.last { Text(last).font(.caption).foregroundStyle(.secondary) }
+            if model.audio.channels > 2 {
+                Text("Audio interface: \(model.audio.channels) outputs").font(.caption).foregroundStyle(.secondary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()

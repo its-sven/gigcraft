@@ -51,6 +51,7 @@ struct SongEditorView: View {
     @State private var clickOn = false
     @State private var countIn = 0
     @State private var clickVolume = 0.0
+    @State private var clickBus = 0
     /// Start time ("m:ss") per chart section; other markers kept as they are.
     @State private var sectionTimes: [String: String] = [:]
     @State private var otherMarkers: [[String: Any]] = []
@@ -108,6 +109,9 @@ struct SongEditorView: View {
                             .frame(maxWidth: 260)
                         Text(verbatim: String(format: "%+.0f dB", clickVolume)).monospacedDigit().frame(width: 60, alignment: .trailing)
                     }
+                    Picker("Click output", selection: $clickBus) {
+                        ForEach(0..<4) { b in Text(verbatim: "\(b * 2 + 1)/\(b * 2 + 2)").tag(b) }
+                    }
                     if tempo.trimmingCharacters(in: .whitespaces).isEmpty {
                         Text("The click needs a tempo (BPM) above.").foregroundStyle(.orange)
                     }
@@ -131,6 +135,10 @@ struct SongEditorView: View {
                             Text(verbatim: String(format: "%+.0f dB", track.gainDb)).monospacedDigit().font(.caption).frame(width: 56, alignment: .trailing)
                             Toggle("Mute", isOn: $track.mute).toggleStyle(.button).font(.caption)
                         }
+                        Picker("Output", selection: $track.bus) {
+                            ForEach(0..<4) { b in Text(verbatim: "\(b * 2 + 1)/\(b * 2 + 2)").tag(b) }
+                        }
+                        .font(.caption)
                     }
                 }
                 .onDelete { tracks.remove(atOffsets: $0) }
@@ -161,7 +169,7 @@ struct SongEditorView: View {
             } header: {
                 Text("Backing tracks and click")
             } footer: {
-                Text("In perform mode, Play starts the tracks and the click together (key P or a footswitch). With section start times, the chart follows the backing track. The iPad plays in stereo.")
+                Text("In perform mode, Play starts the tracks and the click together (key P or a footswitch). With section start times, the chart follows the backing track. Outputs 3/4 and up need an audio interface (e.g. the click to the in-ears only).")
             }
             Section("Chart (ChordPro)") {
                 TextEditor(text: $chart)
@@ -218,6 +226,7 @@ struct SongEditorView: View {
             clickOn = click["enabled"] as? Bool ?? true
             countIn = click["count_in_bars"] as? Int ?? 0
             clickVolume = click["volume_db"] as? Double ?? 0
+            clickBus = click["bus"] as? Int ?? 0
         }
         audioFiles = model.attachments(songId).filter { $0.kind == "audio" }.map(\.file)
         let labels = Set(previewChart(source: rec.chart).blocks.compactMap(\.label))
@@ -265,7 +274,7 @@ struct SongEditorView: View {
         fields["tracks"] = tracks.map { t -> [String: Any] in
             ["file": t.file, "label": t.label, "role": t.role, "gain_db": t.gainDb, "pan": t.pan, "bus": t.bus, "mute": t.mute]
         }
-        fields["click"] = clickOn ? (["enabled": true, "count_in_bars": countIn, "volume_db": clickVolume] as [String: Any]) : NSNull()
+        fields["click"] = clickOn ? (["enabled": true, "count_in_bars": countIn, "volume_db": clickVolume, "bus": clickBus] as [String: Any]) : NSNull()
         fields["parts"] = parts.map { p -> [String: Any] in
             let actions: [[String: Any]] = p.presets.map { ["device": $0.device, "type": "program_change", "channel": $0.channel, "program": $0.program] } + p.other.map { $0 as [String: Any] }
             return ["name": p.name, "notes": p.notes, "actions": actions]
