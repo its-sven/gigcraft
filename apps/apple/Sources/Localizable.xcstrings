@@ -401,6 +401,16 @@
         }
       }
     },
+    "Back up now": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jetzt sichern"
+          }
+        }
+      }
+    },
     "Backing": {
       "localizations": {
         "de": {
@@ -427,6 +437,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Backing-Tracks und Click"
+          }
+        }
+      }
+    },
+    "Backup failed.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup fehlgeschlagen."
+          }
+        }
+      }
+    },
+    "Backup saved in Files → GigCraft → Backups.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backup gespeichert in Dateien → GigCraft → Backups."
+          }
+        }
+      }
+    },
+    "Backups": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Backups"
           }
         }
       }
@@ -929,6 +969,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "GigCraft speichert deine Songs und Setlisten in einem ganz normalen Ordner – deiner Bibliothek. Es gibt kein Konto, und nichts wird hochgeladen."
+          }
+        }
+      }
+    },
+    "GigCraft saves the library once a day as a ZIP file in Files → GigCraft → Backups and keeps the last 14. To restore, unzip a backup and choose its folder.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GigCraft sichert die Bibliothek einmal am Tag als ZIP-Datei in Dateien → GigCraft → Backups und behält die letzten 14. Zum Wiederherstellen ein Backup entpacken und seinen Ordner wählen."
           }
         }
       }

@@ -83,6 +83,30 @@ static SPECS: &[CommandSpec] = &[
         params: &[],
     },
     CommandSpec {
+        id: "library.backup",
+        summary: "Write the library (without its trash) as a ZIP into a folder",
+        mutates: false,
+        params: &[
+            p("dir", "string", true, "folder for the backup"),
+            p(
+                "now",
+                "integer",
+                false,
+                "Unix time for the name (default: now)",
+            ),
+        ],
+    },
+    CommandSpec {
+        id: "library.auto_backup",
+        summary: "The daily backup: once a day into a folder, keeping the newest",
+        mutates: false,
+        params: &[
+            p("dir", "string", true, "folder for automatic backups"),
+            p("keep", "integer", false, "how many to keep (default 14)"),
+            p("now", "integer", false, "Unix time (default: now)"),
+        ],
+    },
+    CommandSpec {
         id: "library.reload",
         summary: "Read the library from disk again (clears undo)",
         mutates: false,

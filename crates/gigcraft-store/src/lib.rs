@@ -21,6 +21,8 @@ mod slug;
 pub use search::normalize;
 pub use slug::slugify;
 
+mod backup;
+
 use gigcraft_model::{LibraryInfo, Setlist, SetlistId, Song, SongId};
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;

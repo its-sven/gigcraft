@@ -43,6 +43,9 @@ pub(crate) fn named(r: egui::Response, name: &str) -> egui::Response {
     r
 }
 
+/// A finished backup: (made by hand?, the file or why it failed).
+type BackupDone = (bool, Result<Option<PathBuf>, String>);
+
 /// Platform services the shell can offer.
 #[derive(Default)]
 pub struct Hooks {
@@ -56,6 +59,8 @@ pub struct Hooks {
     pub live: Option<Box<dyn LiveIo>>,
     /// Audio output for backing tracks and click (desktop).
     pub audio: Option<Box<dyn AudioHost>>,
+    /// Folder for the daily automatic backups (outside the library).
+    pub backup_dir: Option<PathBuf>,
 }
 
 impl std::fmt::Debug for Hooks {
@@ -66,6 +71,7 @@ impl std::fmt::Debug for Hooks {
             .field("midi", &self.midi.is_some())
             .field("live", &self.live.is_some())
             .field("audio", &self.audio.is_some())
+            .field("backup_dir", &self.backup_dir)
             .finish()
     }
 }
@@ -141,6 +147,8 @@ pub struct GigCraftApp {
     help: help::HelpUi,
     audio: audio_ui::AudioUi,
     stage: stage_display::StageUi,
+    /// Backups running in the background: (manual?, result).
+    backups: Vec<std::sync::mpsc::Receiver<BackupDone>>,
 }
 
 impl GigCraftApp {
@@ -174,6 +182,7 @@ impl GigCraftApp {
             help: help::HelpUi::default(),
             audio: audio_ui::AudioUi::default(),
             stage: stage_display::StageUi::default(),
+            backups: Vec::new(),
         };
         if let Some(storage) = cc.storage {
             if let Some(lang) = storage.get_string(LANGUAGE_KEY) {
@@ -283,6 +292,9 @@ impl GigCraftApp {
             Ok(lib) => {
                 let problems = lib.problems().len();
                 self.engine = Some(Engine::new(lib));
+                if let Some(dir) = self.hooks.backup_dir.clone() {
+                    self.start_backup(path.clone(), dir, false);
+                }
                 self.song = None;
                 self.setlist = None;
                 self.song_draft = None;
@@ -299,6 +311,52 @@ impl GigCraftApp {
                 });
             }
             Err(e) => self.message = Some((e.to_string(), true)),
+        }
+    }
+
+    /// Back up the library at `root` into `dir` on a worker thread (the daily
+    /// automatic one, or `manual` now).
+    fn start_backup(&mut self, root: PathBuf, dir: PathBuf, manual: bool) {
+        let (tx, rx) = std::sync::mpsc::channel();
+        let spawned = std::thread::Builder::new()
+            .name("gigcraft-backup".into())
+            .spawn(move || {
+                let now = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0);
+                let result = Library::open(&root).and_then(|lib| {
+                    if manual {
+                        lib.backup(&dir, now).map(Some)
+                    } else {
+                        lib.auto_backup(&dir, now, 14)
+                    }
+                });
+                let _ = tx.send((manual, result.map_err(|e| e.to_string())));
+            });
+        if spawned.is_ok() {
+            self.backups.push(rx);
+        }
+    }
+
+    fn poll_backups(&mut self) {
+        let mut done = Vec::new();
+        self.backups.retain(|rx| match rx.try_recv() {
+            Ok(r) => {
+                done.push(r);
+                false
+            }
+            Err(std::sync::mpsc::TryRecvError::Empty) => true,
+            Err(_) => false,
+        });
+        for (manual, result) in done {
+            match result {
+                Ok(Some(path)) if manual => {
+                    self.notify(tr!("Backup saved: {path}", path = path.display()))
+                }
+                Ok(_) => {}
+                Err(e) => self.message = Some((tr!("Backup failed: {error}", error = e), true)),
+            }
         }
     }
 
@@ -395,6 +453,30 @@ impl GigCraftApp {
                         .clicked()
                     {
                         want_demo = Some(true);
+                        ui.close();
+                    }
+                    ui.separator();
+                    let open = self.engine.as_ref().map(|e| e.library().root().to_path_buf());
+                    if ui
+                        .add_enabled(open.is_some(), egui::Button::new(tr!("Back up now…")))
+                        .on_hover_text(tr!("Save the whole library as one ZIP file in a folder you pick"))
+                        .clicked()
+                    {
+                        if let (Some(root), Some(dir)) =
+                            (open, self.hooks.pick_folder.as_ref().and_then(|pick| pick()))
+                        {
+                            self.start_backup(root, dir, true);
+                        }
+                        ui.close();
+                    }
+                    if let Some(dir) = self.hooks.backup_dir.clone()
+                        && ui
+                            .button(tr!("Open backups folder"))
+                            .on_hover_text(tr!("GigCraft saves each library once a day there and keeps the last 14"))
+                            .clicked()
+                    {
+                        let _ = std::fs::create_dir_all(&dir);
+                        ui.ctx().open_url(egui::OpenUrl::new_tab(format!("file://{}", dir.display())));
                         ui.close();
                     }
                 });
@@ -799,6 +881,7 @@ impl eframe::App for GigCraftApp {
         rig_ui::pump(self, ui.ctx(), time);
         rig_ui::window(self, ui.ctx(), time);
         live_ui::pump(self, ui.ctx(), time);
+        self.poll_backups();
         audio_ui::pump(self, ui.ctx());
         live_ui::window(self, ui.ctx(), time);
         help::window(self, ui.ctx());

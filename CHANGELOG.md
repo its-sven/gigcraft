@@ -2,6 +2,11 @@
 
 Versions follow the roadmap phases (`docs/plan/roadmap.md`). Downloads: the GitHub release of each version – desktop app for macOS, Windows and Linux, and an unsigned iOS IPA for SideStore/AltStore.
 
+## 0.2.1
+
+- **Backups:** once a day each library is saved as a ZIP outside the library (desktop: the app's data folder, iOS: Files → GigCraft → Backups), the last 14 are kept; "Back up now" anywhere. Restore = unzip and open the folder.
+- **iPad/iPhone with an audio interface:** every output is used (up to 8), so the click can go to the in-ears only; output pairs per track and for the click in the iOS editor.
+
 ## 0.2.0 – band on stage (Phase 2, part 1)
 
 - **Live sessions:** a computer, iPad or iPhone leads the setlist; the band follows on the same Wi-Fi in any browser (QR code, no app) or in GigCraft with its own chart and its own pedal presets. Leaders are found by name on the network (Bonjour). Ready status and cues ("last chorus") for everyone.

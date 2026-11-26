@@ -181,6 +181,23 @@ impl Engine {
             "library.check" => {
                 Ok(serde_json::json!({ "external_changes": self.lib.external_changes() }))
             }
+            "library.backup" | "library.auto_backup" => {
+                let dir = std::path::PathBuf::from(p.str("dir")?);
+                let now = match p.opt_i64("now")? {
+                    Some(t) => u64::try_from(t).unwrap_or(0),
+                    None => std::time::SystemTime::now()
+                        .duration_since(std::time::UNIX_EPOCH)
+                        .map(|d| d.as_secs())
+                        .unwrap_or(0),
+                };
+                let path = if id == "library.backup" {
+                    Some(self.lib.backup(&dir, now)?)
+                } else {
+                    let keep = p.opt_usize("keep")?.unwrap_or(14).max(1);
+                    self.lib.auto_backup(&dir, now, keep)?
+                };
+                Ok(serde_json::json!({ "path": path.map(|p| p.display().to_string()) }))
+            }
             "library.reload" => {
                 self.lib.reload()?;
                 self.undo.clear();

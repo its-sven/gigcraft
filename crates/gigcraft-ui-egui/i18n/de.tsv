@@ -430,3 +430,11 @@
 	Tempo sync for delays and loopers: always at the song's tempo, or only while backing tracks play (with Start and Stop)	Tempo-Sync für Delays und Looper: immer im Song-Tempo oder nur während Backing-Tracks laufen (mit Start und Stopp)
 	MIDI clock per device: always at the song's tempo (delays, tremolos), or only while backing tracks play, with Start and Stop (drum machines, loopers).	MIDI-Clock pro Gerät: immer im Tempo des Songs (Delays, Tremolos) oder nur während Backing-Tracks laufen, mit Start und Stopp (Drumcomputer, Looper).
 	When a part has the name of a section (Chorus, or Verse for Verse: 2), it starts with its presets as the backing track reaches that section.	Heißt ein Teil wie ein Abschnitt (Chorus, oder Verse für Verse: 2), startet er samt Presets, sobald der Backing-Track diesen Abschnitt erreicht.
+	Back up now…	Jetzt sichern…
+	Save the whole library as one ZIP file in a folder you pick	Die ganze Bibliothek als eine ZIP-Datei in einen Ordner deiner Wahl sichern
+	Open backups folder	Backup-Ordner öffnen
+	GigCraft saves each library once a day there and keeps the last 14	GigCraft sichert dort jede Bibliothek einmal am Tag und behält die letzten 14
+	Backup saved: {path}	Backup gespeichert: {path}
+	Backup failed: {error}	Backup fehlgeschlagen: {error}
+	Backups	Backups
+	Once a day GigCraft saves each library as a ZIP file (Library > Open backups folder) and keeps the last 14; Library > Back up now… saves one wherever you like. To restore, unzip a backup and open its folder.	Einmal am Tag sichert GigCraft jede Bibliothek als ZIP-Datei (Bibliothek > Backup-Ordner öffnen) und behält die letzten 14; Bibliothek > Jetzt sichern… legt eines ab, wo du willst. Zum Wiederherstellen ein Backup entpacken und seinen Ordner öffnen.

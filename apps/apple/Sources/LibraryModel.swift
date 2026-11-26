@@ -126,6 +126,7 @@ final class LibraryModel {
             refreshSongs()
             refreshSetlists()
             bump()
+            backUp(auto: true)
             return true
         } catch {
             errorMessage = "\(error)"
@@ -479,5 +480,24 @@ extension LibraryModel {
         guard let current = markers.max(by: { $0.1 < $1.1 }) else { return nil }
         let want = current.0.trimmingCharacters(in: .whitespaces).lowercased()
         return chart.blocks.firstIndex { ($0.label ?? "").trimmingCharacters(in: .whitespaces).lowercased() == want }
+    }
+}
+
+extension LibraryModel {
+    /// Backups live in the app's own Documents/Backups (Files app → GigCraft),
+    /// never inside the library (which may be a synced folder).
+    static var backupsFolder: URL { URL.documentsDirectory.appending(path: "Backups", directoryHint: .isDirectory) }
+
+    /// The daily automatic backup (`auto`), or one now; runs off the main thread.
+    func backUp(auto: Bool, done: ((String?) -> Void)? = nil) {
+        guard let core else { return }
+        let dir = Self.backupsFolder.path(percentEncoded: false)
+        DispatchQueue.global(qos: .utility).async {
+            let out = try? core.run(command: auto ? "library.auto_backup" : "library.backup",
+                                    paramsJson: String(decoding: (try? JSONSerialization.data(withJSONObject: ["dir": dir])) ?? Data(), as: UTF8.self))
+            let path = out.flatMap { try? JSONSerialization.jsonObject(with: Data($0.utf8)) as? [String: Any] }
+                .flatMap { ($0["result"] as? [String: Any])?["path"] as? String }
+            DispatchQueue.main.async { done?(path) }
+        }
     }
 }

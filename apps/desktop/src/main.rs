@@ -77,8 +77,26 @@ fn main() -> eframe::Result {
                 midi: Some(Box::new(midi_io::Midir::new())),
                 live: Some(Box::new(live_io::Net::default())),
                 audio: Some(Box::new(audio_io::Cpal::default())),
+                backup_dir: backup_dir(),
             };
             Ok(Box::new(GigCraftApp::new(cc, start, hooks)))
         }),
     )
+}
+
+/// Where the daily backups go: the system's folder for app data, never the
+/// library itself (that may be a synced folder).
+fn backup_dir() -> Option<PathBuf> {
+    let home = std::env::var_os("HOME").map(PathBuf::from);
+    let base = if cfg!(target_os = "macos") {
+        home.map(|h| h.join("Library/Application Support/GigCraft"))
+    } else if cfg!(windows) {
+        std::env::var_os("APPDATA").map(|a| PathBuf::from(a).join("GigCraft"))
+    } else {
+        std::env::var_os("XDG_DATA_HOME")
+            .map(PathBuf::from)
+            .or_else(|| home.map(|h| h.join(".local/share")))
+            .map(|d| d.join("gigcraft"))
+    };
+    base.map(|b| b.join("Backups"))
 }

@@ -347,6 +347,13 @@ fn page(app: &mut GigCraftApp, ui: &mut egui::Ui, topic: Topic) {
                     "Keep the library in iCloud Drive, Nextcloud or Syncthing and open the same folder on every device. Changes appear within a few seconds. If two devices change the same song, GigCraft asks before overwriting."
                 ),
             );
+            heading(ui, tr!("Backups"));
+            para(
+                ui,
+                tr!(
+                    "Once a day GigCraft saves each library as a ZIP file (Library > Open backups folder) and keeps the last 14; Library > Back up now… saves one wherever you like. To restore, unzip a backup and open its folder."
+                ),
+            );
             heading(ui, tr!("Nothing gets lost"));
             para(
                 ui,

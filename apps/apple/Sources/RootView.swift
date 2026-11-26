@@ -153,6 +153,7 @@ struct LibrarySettingsView: View {
     @Environment(LibraryModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var picking = false
+    @State private var backupMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -166,6 +167,19 @@ struct LibrarySettingsView: View {
                     Button("Use the app's own folder") { model.useAppFolder(); dismiss() }
                 } footer: {
                     Text("To use the same songs on iPhone, iPad and computer, pick the same folder in iCloud Drive, Nextcloud or another Files provider on each device. An empty folder becomes a new library. Changes from other devices appear within a few seconds; if both change the same song, the second save asks first.")
+                }
+                Section {
+                    Button("Back up now") {
+                        model.backUp(auto: false) { path in
+                            backupMessage = path.map { _ in String(localized: "Backup saved in Files → GigCraft → Backups.") }
+                                ?? String(localized: "Backup failed.")
+                        }
+                    }
+                    if let backupMessage { Text(backupMessage).font(.callout).foregroundStyle(.secondary) }
+                } header: {
+                    Text("Backups")
+                } footer: {
+                    Text("GigCraft saves the library once a day as a ZIP file in Files → GigCraft → Backups and keeps the last 14. To restore, unzip a backup and choose its folder.")
                 }
             }
             .safeAreaInset(edge: .bottom) { RigSection().padding() }
