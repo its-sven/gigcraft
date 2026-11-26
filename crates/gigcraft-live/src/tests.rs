@@ -49,6 +49,17 @@ fn join_gets_welcome_state_and_roster() {
     assert!(matches!(&msgs[0], ToFollower::Welcome { member: 1, leader, .. } if leader == "Sven"));
     assert!(matches!(&msgs[1], ToFollower::State { snapshot: Some(s), .. } if s.index == 0));
     assert!(matches!(&msgs[2], ToFollower::Roster { members } if members.len() == 1));
+    // Once the leader has scrolled, a late joiner gets that too.
+    let song = l.snapshot().unwrap().song().unwrap().song;
+    l.scroll(
+        song,
+        Spot {
+            block: 1,
+            fraction: 0.5,
+        },
+    );
+    let msgs = sent(&join(&mut l, 9, "Ben"), 9);
+    assert!(matches!(&msgs[2], ToFollower::Scroll { spot, .. } if spot.block == 1));
     assert!(out.contains(&LeaderOut::Event(LeaderEvent::Joined(Member {
         id: 1,
         name: "Anna".into(),
@@ -249,4 +260,98 @@ fn wire_format_is_stable() {
     let cue: ToFollower =
         serde_json::from_str(r#"{"type":"cue","from":"Ben","text":"stop"}"#).unwrap();
     assert!(matches!(cue, ToFollower::Cue(Cue { at_ms: 0, .. })));
+}
+
+#[test]
+fn a_spot_is_the_same_place_on_any_screen() {
+    // Small screen: blocks at 0, 100, 300; chart 400 high.
+    let small = [0.0, 100.0, 300.0];
+    let spot = Spot::at(200.0, &small, 400.0);
+    assert_eq!(spot.block, 1);
+    assert!((spot.fraction - 0.5).abs() < 1e-6);
+    // Larger type: the same place is further down.
+    let big = [0.0, 150.0, 450.0];
+    assert_eq!(spot.offset(&big, 600.0), Some(300.0));
+    assert_eq!(Spot::at(-5.0, &small, 400.0), Spot::default());
+    assert_eq!(
+        Spot {
+            block: 9,
+            fraction: 0.0
+        }
+        .offset(&small, 400.0),
+        None
+    );
+}
+
+#[test]
+fn followers_see_the_leaders_scrolling_and_the_band_mark() {
+    let mut l = Leader::new("s1", "Sven");
+    let list = SetlistId::default();
+    l.set_snapshot(Some(snap(list, 0, 0)));
+    let mut f = Follower::new("Anna", "Bass");
+    for o in join(&mut l, 7, "Anna") {
+        if let LeaderOut::Send { text, .. } = o {
+            f.on_text(&text).unwrap();
+        }
+    }
+    let song = l.snapshot().unwrap().song().unwrap().song;
+    // Scrolling: sent once, not again for a tiny move.
+    let out = l.scroll(
+        song,
+        Spot {
+            block: 2,
+            fraction: 0.3,
+        },
+    );
+    assert_eq!(sent(&out, 7).len(), 1);
+    assert!(
+        l.scroll(
+            song,
+            Spot {
+                block: 2,
+                fraction: 0.31
+            }
+        )
+        .is_empty()
+    );
+    for o in out {
+        if let LeaderOut::Send { text, .. } = o {
+            assert_eq!(f.on_text(&text).unwrap(), vec![FollowerEvent::Scrolled]);
+        }
+    }
+    assert_eq!(f.leader_scroll().unwrap().1.block, 2);
+    // A follower marks a place: everyone gets it, with who set it.
+    let text = f.mark_spot(
+        song,
+        Spot {
+            block: 1,
+            fraction: 0.0,
+        },
+        "from the bridge",
+    );
+    let out = l.on_text(7, &text, 0);
+    let mark = l.mark().unwrap().clone();
+    assert_eq!(mark.from, "Anna");
+    assert_eq!(mark.text, "from the bridge");
+    assert!(out.contains(&LeaderOut::Event(LeaderEvent::Mark(Some(mark.clone())))));
+    // A late joiner gets it with the welcome.
+    let msgs = sent(&join(&mut l, 8, "Ben"), 8);
+    assert!(
+        matches!(&msgs[0], ToFollower::Welcome { mark: Some(m), .. } if m.text == "from the bridge")
+    );
+    // The leader clears it.
+    let out = l.set_mark(None);
+    assert!(matches!(&sent(&out, 7)[0], ToFollower::Mark { mark: None }));
+    assert!(l.mark().is_none());
+    // Nonsense is ignored.
+    assert!(
+        l.scroll(
+            song,
+            Spot {
+                block: 1,
+                fraction: f32::NAN
+            }
+        )
+        .is_empty()
+    );
 }

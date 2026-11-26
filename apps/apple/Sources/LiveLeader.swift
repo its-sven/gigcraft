@@ -13,6 +13,10 @@ final class LiveLeader: NSObject, NetServiceDelegate {
     private(set) var roster: [LiveMember] = []
     private(set) var cue: (from: String, text: String, at: Date)?
     private(set) var error: String?
+    /// The band's mark, if one is set.
+    private(set) var mark: BandMark?
+    /// A band member set a mark: scroll there once.
+    var jump: BandMark?
 
     private var core: LeaderCore?
     private var timer: Timer?
@@ -48,6 +52,23 @@ final class LiveLeader: NSObject, NetServiceDelegate {
         urls = []
         roster = []
         cue = nil
+        mark = nil
+    }
+
+    /// The leader's chart is at `spot`: followers who follow the scrolling go there.
+    func scroll(song: String, spot: ChartSpot) {
+        core?.scroll(songId: song, block: UInt32(max(0, spot.block)), fraction: Float(spot.fraction))
+    }
+
+    /// Mark a place for the whole band (`nil`: clear the mark).
+    func setMark(song: String?, spot: ChartSpot = ChartSpot(block: 0, fraction: 0)) {
+        guard let core else { return }
+        handle(core.setMark(songId: song ?? "", block: UInt32(max(0, spot.block)), fraction: Float(spot.fraction), text: ""))
+        refreshMark()
+    }
+
+    private func refreshMark() {
+        mark = core?.markJson().flatMap { try? JSONDecoder().decode(BandMark.self, from: Data($0.utf8)) }
     }
 
     func sendCue(_ text: String) {
@@ -77,6 +98,9 @@ final class LiveLeader: NSObject, NetServiceDelegate {
                 roster = (try? Self.decoder.decode([LiveMember].self, from: Data(core.rosterJson().utf8))) ?? []
             case "cue":
                 cue = (e["from"] as? String ?? "", e["text"] as? String ?? "", Date())
+            case "mark":
+                refreshMark()
+                if let mark { jump = mark }
             default:
                 break
             }

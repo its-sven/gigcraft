@@ -138,6 +138,7 @@ pub(crate) fn show(app: &mut GigCraftApp, ctx: &egui::Context) {
                         let opts = chart_view::Options {
                             highlight,
                             lyrics_only: app.stage.mode == Mode::Lyrics,
+                            mark: None,
                         };
                         let out =
                             area.show(ui, |ui| chart_view::show_with(ui, &chart.chart, size, opts));

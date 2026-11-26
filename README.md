@@ -18,6 +18,10 @@
 |---|---|
 | <img src="docs/img/iphone-perform.png" alt="Stage view on iPhone: setlist name, song counter, Play, track position, auto-scroll and menu in two rows, big chart, up next, wide Previous/Next buttons" width="300"> | <img src="docs/img/iphone-song.png" alt="Song view on iPhone: title, artist, readouts for key, tempo, length and scroll speed, chart scrolling by itself, pause and more menu at the top" width="300"> |
 
+| Rehearsal: a band mark on the leader's iPad | |
+|---|---|
+| <img src="docs/img/ipad-band-mark.png" alt="iPad leading a live session: an amber line labelled From here – Anna at the start of the chorus, set by a band member in the browser viewer" width="400"> | |
+
 | Perform mode on the desktop | Song editor with live preview |
 |---|---|
 | <img src="docs/img/desktop-perform.png" alt="Desktop perform mode: big chart, gig note, Previous/Next, up next, presets sent" width="480"> | <img src="docs/img/desktop-song-editor.png" alt="Desktop song editor: fields, parts with program changes, ChordPro text and rendered preview side by side" width="480"> |
@@ -57,6 +61,7 @@
 - **Rig**: song parts send presets to MIDI devices; MIDI clock at the song's tempo for delays, drum machines and loopers; the TC-Helicon Play Acoustic/Electric is driven by stepping with its own buttons when it ignores Program Change (read-only, never writes settings); a simulated pedal for rehearsing without hardware.
 - **Import/export**: one import for ChordPro, OnSong, OpenSong, chords-over-lyrics text, BandHelper TSV, CSV, Cuebook libraries, web links (`.webloc`, `.url`), Ultimate Guitar tab links and shared playlists (as setlists) – paste, drop or pick a file. Ultimate Guitar songs get title, artist, key, capo and tuning and keep their link (charts are never copied); ChordPro, TSV and setlist text out.
 - **Auto-scroll**: the chart scrolls as fast as the song is long, faster or slower in steps, by key or footswitch; scroll by hand at any time.
+- **Rehearse together**: in a live session the band's charts scroll with the leader's, and anyone can mark a place ("from here") that shows on every screen.
 - **Sync** through any shared folder (iCloud Drive, Nextcloud, Syncthing): changes from other devices appear within seconds; conflicting saves are caught instead of overwriting.
 - **Live sessions**: one device – computer, iPad or iPhone – leads the show; band members follow on the same Wi-Fi – in any browser via QR code, or in GigCraft (desktop, iPad, iPhone) with their own chart and their own pedal presets. Ready status and cues ("last chorus") for everyone. Nothing leaves the local network.
 - **Backing tracks and click** (desktop, iPad, iPhone): audio files per song with volume, pan, mute and output pair (click to the in-ears on outputs 3/4), click with count-in, Play/Stop in perform mode; the next song loads in the background.

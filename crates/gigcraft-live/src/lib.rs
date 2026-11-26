@@ -138,6 +138,61 @@ pub struct Member {
     pub ready: bool,
 }
 
+/// A place in a chart that means the same on every screen: a section
+/// (chart block, from 0) and how far into it (0.0 = its top, 1.0 = the next).
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+pub struct Spot {
+    pub block: usize,
+    #[serde(default)]
+    pub fraction: f32,
+}
+
+impl Spot {
+    /// The spot at `offset` in a chart whose blocks start at `tops` (points,
+    /// ascending; `end` is the chart's height).
+    #[must_use]
+    pub fn at(offset: f32, tops: &[f32], end: f32) -> Self {
+        let Some(block) = tops.iter().rposition(|t| *t <= offset) else {
+            return Self::default();
+        };
+        let next = tops.get(block + 1).copied().unwrap_or(end);
+        let span = (next - tops[block]).max(1.0);
+        Self {
+            block,
+            fraction: ((offset - tops[block]) / span).clamp(0.0, 1.0),
+        }
+    }
+
+    /// The very top: the start of the first section, or above it (the song's title).
+    #[must_use]
+    pub fn is_top(&self) -> bool {
+        self.block == 0 && self.fraction <= 0.0
+    }
+
+    /// The offset of this spot in a chart whose blocks start at `tops`.
+    #[must_use]
+    pub fn offset(&self, tops: &[f32], end: f32) -> Option<f32> {
+        let top = *tops.get(self.block)?;
+        let next = tops.get(self.block + 1).copied().unwrap_or(end);
+        Some(top + (next - top).max(0.0) * self.fraction.clamp(0.0, 1.0))
+    }
+
+    fn valid(&self) -> bool {
+        self.fraction.is_finite() && self.block < 10_000
+    }
+}
+
+/// A place marked for the whole band ("from here"), e.g. in rehearsal.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Mark {
+    pub song: SongId,
+    pub spot: Spot,
+    /// Who set it.
+    pub from: String,
+    #[serde(default)]
+    pub text: String,
+}
+
 /// A short message to the whole band.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Cue {
@@ -164,6 +219,8 @@ pub enum ToFollower {
         member: u32,
         #[serde(default)]
         cues: Vec<Cue>,
+        #[serde(default)]
+        mark: Option<Mark>,
     },
     State {
         seq: u64,
@@ -173,6 +230,15 @@ pub enum ToFollower {
         members: Vec<Member>,
     },
     Cue(Cue),
+    /// Where the leader's chart is (for "follow the leader's scrolling").
+    Scroll {
+        song: SongId,
+        spot: Spot,
+    },
+    /// The band's mark was set or cleared.
+    Mark {
+        mark: Option<Mark>,
+    },
     Bye {
         reason: String,
     },
@@ -194,6 +260,14 @@ pub enum ToLeader {
     Cue {
         text: String,
     },
+    /// Mark a place for everyone.
+    Mark {
+        song: SongId,
+        spot: Spot,
+        #[serde(default)]
+        text: String,
+    },
+    ClearMark,
     Ping,
 }
 
@@ -234,6 +308,8 @@ pub enum LeaderEvent {
     Left(Member),
     ReadyChanged(Member),
     Cue(Cue),
+    /// The band's mark was set (`Some`) or cleared.
+    Mark(Option<Mark>),
     /// A message that was not understood (kept for the log).
     Rejected {
         conn: ConnId,
@@ -251,6 +327,9 @@ pub struct Leader {
     seq: u64,
     snapshot: Option<Snapshot>,
     cues: Vec<Cue>,
+    mark: Option<Mark>,
+    /// The last scroll position sent.
+    scroll: Option<(SongId, Spot)>,
 }
 
 impl Leader {
@@ -265,6 +344,8 @@ impl Leader {
             seq: 0,
             snapshot: None,
             cues: Vec::new(),
+            mark: None,
+            scroll: None,
         }
     }
 
@@ -289,6 +370,54 @@ impl Leader {
 
     pub fn snapshot(&self) -> Option<&Snapshot> {
         self.snapshot.as_ref()
+    }
+
+    /// The band's mark, if one is set.
+    pub fn mark(&self) -> Option<&Mark> {
+        self.mark.as_ref()
+    }
+
+    /// The leader's chart is at `spot` of `song`: tell the band (only when it
+    /// moved noticeably, so calling it every frame is fine).
+    pub fn scroll(&mut self, song: SongId, spot: Spot) -> Vec<LeaderOut> {
+        if !spot.valid() {
+            return Vec::new();
+        }
+        if let Some((s, last)) = self.scroll
+            && s == song
+            && last.block == spot.block
+            && (last.fraction - spot.fraction).abs() < 0.02
+        {
+            return Vec::new();
+        }
+        self.scroll = Some((song, spot));
+        self.to_all(&ToFollower::Scroll { song, spot })
+    }
+
+    /// Set (or with `None`, clear) the band's mark.
+    pub fn set_mark(&mut self, mark: Option<(SongId, Spot, &str)>) -> Vec<LeaderOut> {
+        let from = self.name.clone();
+        self.put_mark(mark.map(|(song, spot, text)| (song, spot, text.to_string(), from)))
+    }
+
+    fn put_mark(&mut self, mark: Option<(SongId, Spot, String, String)>) -> Vec<LeaderOut> {
+        let mark = match mark {
+            Some((_, spot, _, _)) if !spot.valid() => return Vec::new(),
+            Some((song, spot, text, from)) => Some(Mark {
+                song,
+                spot,
+                from,
+                text: clean(&text, MAX_CUE_CHARS),
+            }),
+            None => None,
+        };
+        if mark == self.mark {
+            return Vec::new();
+        }
+        self.mark = mark.clone();
+        let mut out = self.to_all(&ToFollower::Mark { mark: mark.clone() });
+        out.push(LeaderOut::Event(LeaderEvent::Mark(mark)));
+        out
     }
 
     fn to_all(&self, msg: &ToFollower) -> Vec<LeaderOut> {
@@ -373,6 +502,7 @@ impl Leader {
                         leader: self.name.clone(),
                         member: id,
                         cues: self.cues.clone(),
+                        mark: self.mark.clone(),
                     }),
                 });
                 out.push(LeaderOut::Send {
@@ -382,6 +512,12 @@ impl Leader {
                         snapshot: self.snapshot.clone(),
                     }),
                 });
+                if let Some((song, spot)) = self.scroll {
+                    out.push(LeaderOut::Send {
+                        conn,
+                        text: encode(&ToFollower::Scroll { song, spot }),
+                    });
+                }
                 out.extend(self.roster());
                 out.push(LeaderOut::Event(LeaderEvent::Joined(member)));
             }
@@ -402,6 +538,18 @@ impl Leader {
                 };
                 let from = m.name.clone();
                 out.extend(self.push_cue(from, &text, now_ms));
+            }
+            ToLeader::Mark { song, spot, text } => {
+                let Some(m) = self.members.get(&conn) else {
+                    return out;
+                };
+                let from = m.name.clone();
+                out.extend(self.put_mark(Some((song, spot, text, from))));
+            }
+            ToLeader::ClearMark => {
+                if self.members.contains_key(&conn) {
+                    out.extend(self.put_mark(None));
+                }
             }
             ToLeader::Ping => {}
         }
@@ -494,6 +642,10 @@ pub enum FollowerEvent {
     },
     Roster,
     Cue(Cue),
+    /// The leader's chart moved.
+    Scrolled,
+    /// The band's mark changed.
+    Marked,
     Ended {
         reason: String,
     },
@@ -512,6 +664,8 @@ pub struct Follower {
     roster: Vec<Member>,
     cues: Vec<Cue>,
     ready: bool,
+    mark: Option<Mark>,
+    scroll: Option<(SongId, Spot)>,
 }
 
 impl Follower {
@@ -569,6 +723,30 @@ impl Follower {
         self.ready
     }
 
+    /// The band's mark, if one is set.
+    pub fn mark(&self) -> Option<&Mark> {
+        self.mark.as_ref()
+    }
+
+    /// Where the leader's chart is, if it said so.
+    pub fn leader_scroll(&self) -> Option<(SongId, Spot)> {
+        self.scroll
+    }
+
+    /// Mark a place for everyone; returns the message to send.
+    pub fn mark_spot(&self, song: SongId, spot: Spot, text: &str) -> String {
+        encode(&ToLeader::Mark {
+            song,
+            spot,
+            text: clean(text, MAX_CUE_CHARS),
+        })
+    }
+
+    /// Clear the band's mark; returns the message to send.
+    pub fn clear_mark(&self) -> String {
+        encode(&ToLeader::ClearMark)
+    }
+
     /// Text received from the leader.
     pub fn on_text(&mut self, text: &str) -> Result<Vec<FollowerEvent>, String> {
         if text.len() > MAX_MESSAGE_BYTES {
@@ -585,8 +763,10 @@ impl Follower {
                 leader,
                 member,
                 cues,
+                mark,
                 ..
             } => {
+                self.mark = mark;
                 if self.session.as_deref() != Some(session.as_str()) {
                     self.seq = 0;
                     self.snapshot = None;
@@ -635,6 +815,17 @@ impl Follower {
                     self.cues.remove(0);
                 }
                 vec![FollowerEvent::Cue(cue)]
+            }
+            ToFollower::Scroll { song, spot } => {
+                if !spot.valid() {
+                    return Vec::new();
+                }
+                self.scroll = Some((song, spot));
+                vec![FollowerEvent::Scrolled]
+            }
+            ToFollower::Mark { mark } => {
+                self.mark = mark;
+                vec![FollowerEvent::Marked]
             }
             ToFollower::Bye { reason } => {
                 self.member = None;

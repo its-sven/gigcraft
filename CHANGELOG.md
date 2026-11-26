@@ -2,6 +2,15 @@
 
 Versions follow the roadmap phases (`docs/plan/roadmap.md`). Downloads: the GitHub release of each version – desktop app for macOS, Windows and Linux, and an unsigned iOS IPA for SideStore/AltStore.
 
+## 0.2.4
+
+- **Scroll together:** in a live session every chart follows the leader's scrolling – on desktop, iPad/iPhone and in the browser viewer – measured by section, so it matches on any screen size and text size. Each band member can switch it off.
+- **Band mark for rehearsals:** "Mark here" draws a line with your name at that place on every screen ("from here"); everyone jumps there once, "Clear mark" removes it. Late joiners get it too.
+- **Links in the editor:** add, change and remove a song's links (videos, tabs, recordings) on desktop and iOS.
+- **Auto-scroll in the desktop song view** for practising, with the same speed setting as the stage view.
+- **Songs without a chart** that came from Ultimate Guitar show "Open on Ultimate Guitar" right where the chart would be, on stage too.
+- iPhone: wrapping preset rows in the editor, two-row footer when following a leader.
+
 ## 0.2.3
 
 - **One import for everything:** paste or drop a song, Ultimate Guitar tab links, a share message or a playlist link – or pick any file, including web links saved as `.webloc`/`.url` and pages saved from the browser. GigCraft works out what it is; "Import from clipboard" on iPad/iPhone takes a copied link in one tap. Files it cannot read get a clear message.

@@ -35,12 +35,14 @@ pub(crate) fn show(ui: &mut egui::Ui, chart: &Chart, size: f32) {
 }
 
 /// How to draw a chart.
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Default)]
 pub(crate) struct Options {
     /// Mark this block (the section the backing track is in).
     pub highlight: Option<usize>,
     /// Lyrics without chords (singers, audience screens).
     pub lyrics_only: bool,
+    /// The band's mark: block, how far into it (0–1), and its label.
+    pub mark: Option<(usize, f32, String)>,
 }
 
 /// Draw `chart`; returns the top of each block, relative to where the chart starts.
@@ -127,6 +129,36 @@ pub(crate) fn show_with(ui: &mut egui::Ui, chart: &Chart, size: f32, opts: Optio
                 accent,
             );
         }
+    }
+    if let Some((block, fraction, label)) = &opts.mark
+        && let Some(top) = tops.get(*block)
+    {
+        // A line across the chart with the mark's label, where it was set.
+        let end = ui.cursor().top() - origin;
+        let next = tops.get(block + 1).copied().unwrap_or(end);
+        let y = origin + top + (next - top) * fraction.clamp(0.0, 1.0);
+        let left = ui.min_rect().left() - 6.0;
+        let right = ui.max_rect().right();
+        let painter = ui.painter();
+        painter.line_segment(
+            [egui::pos2(left, y), egui::pos2(right, y)],
+            egui::Stroke::new(2.0, accent),
+        );
+        let galley = painter.layout_no_wrap(
+            label.clone(),
+            egui::FontId::proportional((size * 0.6).max(11.0)),
+            egui::Color32::BLACK,
+        );
+        let rect = egui::Rect::from_min_size(
+            egui::pos2(right - galley.size().x - 14.0, y - galley.size().y - 4.0),
+            galley.size() + egui::vec2(10.0, 4.0),
+        );
+        painter.rect_filled(rect, 4.0, accent);
+        painter.galley(
+            rect.min + egui::vec2(5.0, 2.0),
+            galley,
+            egui::Color32::BLACK,
+        );
     }
     tops
 }

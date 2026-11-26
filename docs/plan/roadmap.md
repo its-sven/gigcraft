@@ -101,6 +101,7 @@ Order matters: each step is usable on its own.
 | 6 Variants, history, queue, backups, settings export | backups done (daily ZIP outside the library, keep 14, back up now; desktop and iOS); settings export/import done (desktop); variants, history, queue open |
 | 7 Web build (wasm) | open (the UI crate keeps network and audio behind hooks so it can build for the web) |
 | 8 From rehearsals (0.2.3) | done: one import for text, links, web shortcuts and saved pages; Ultimate Guitar details (title, artist, key, capo, tuning, never the chart) and the link kept and shown; auto-scroll (stage view everywhere, song view on iOS; key S, footswitch); iPhone layouts for the song and stage views; readable, closable error messages |
+| 9 Rehearse together (0.2.4) | done: scroll sync in live sessions (by section, any screen size; switchable per member), band mark "from here" for everyone, link editing, desktop song-view auto-scroll; per-device notes at chart places open |
 
 Also done along the way: help window (F1) and tooltips on every control (desktop), help sheet (iOS); the design pass (amber LED accent, display readouts, status LEDs, app icon).
 

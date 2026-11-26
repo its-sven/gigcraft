@@ -136,6 +136,12 @@ struct FollowView: View {
     @Environment(LibraryModel.self) private var model
     @State private var customCue = ""
     @State private var askingCue = false
+    /// Where the chart's sections are and where it is scrolled.
+    @State private var chartLayout = ChartLayout()
+    @State private var scrollY: CGFloat = 0
+    @State private var scrollTarget: CGFloat?
+    @AppStorage("gc.live.followScroll") private var followScroll = true
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     private static let quickCues: [LocalizedStringResource] = [
         "Last chorus", "Chorus again", "Extend solo", "Slower", "Faster", "Stop after this bar",
@@ -247,7 +253,8 @@ struct FollowView: View {
                 }
                 if let n = cur.gigNotes, !n.isEmpty { Text(n).font(.system(size: size)).foregroundStyle(.orange) }
                 if let chart, !chart.blocks.isEmpty {
-                    ChartView(chart: chart, fontSize: size)
+                    let mark = model.live.mark.flatMap { $0.song == songId ? (block: $0.spot.block, fraction: $0.spot.fraction, label: $0.label) : nil }
+                    ChartView(chart: chart, fontSize: size, mark: mark, onLayout: { chartLayout = $0 })
                 } else if own != nil, let pdf = model.attachments(songId).first(where: { $0.kind == "pdf" }) {
                     PDFKitView(url: pdf.url).frame(minHeight: 900)
                 } else {
@@ -255,6 +262,19 @@ struct FollowView: View {
                 }
             }
             .padding()
+            .coordinateSpace(name: "gcScroll")
+            .background(ScrollBridge(onScroll: { scrollY = $0 }, target: $scrollTarget))
+        }
+        // Scroll with the leader (unless switched off).
+        .onChange(of: model.live.leaderScroll) { _, s in
+            guard followScroll, let s, s.song == songId else { return }
+            scrollTarget = s.spot.offset(tops: chartLayout.tops, end: chartLayout.end)
+        }
+        // A new band mark: go there once.
+        .onChange(of: model.live.jump) { _, jump in
+            guard let jump, jump.song == songId else { return }
+            scrollTarget = jump.spot.offset(tops: chartLayout.tops, end: chartLayout.end)
+            model.live.jump = nil
         }
     }
 
@@ -267,9 +287,7 @@ struct FollowView: View {
             default: return String(localized: "Up next: (missing song)")
             }
         }()
-        return HStack(spacing: 16) {
-            Text(nextText).font(.system(size: size * 0.8)).lineLimit(2)
-            Spacer()
+        let controls = HStack(spacing: 12) {
             Menu {
                 ForEach(Array(Self.quickCues.enumerated()), id: \.offset) { _, c in
                     Button(String(localized: c)) { live.sendCue(String(localized: c)) }
@@ -281,6 +299,20 @@ struct FollowView: View {
             }
             .buttonStyle(StageButtonStyle())
             .accessibilityHint("Show a short message on every band member's screen")
+            Menu {
+                Toggle(isOn: $followScroll) { Label("Scroll with the leader", systemImage: "arrow.up.and.down.text.horizontal") }
+                Section("Band mark") {
+                    MarkControls(canMark: live.snapshot?.current?.song != nil && !chartLayout.tops.isEmpty, hasMark: live.mark != nil,
+                                 mark: {
+                                     live.setMark(song: live.snapshot?.current?.song,
+                                                  spot: ChartSpot.at(scrollY, tops: chartLayout.tops, end: chartLayout.end))
+                                 },
+                                 clear: { live.setMark(song: nil) })
+                }
+            } label: {
+                Label("More", systemImage: "ellipsis.circle").labelStyle(.iconOnly).font(.title2).frame(minHeight: 34)
+            }
+            .accessibilityLabel("More")
             Button { live.toggleReady() } label: {
                 Label("Ready", systemImage: live.ready ? "checkmark.circle.fill" : "circle").frame(minWidth: 110, minHeight: 34)
             }
@@ -288,6 +320,21 @@ struct FollowView: View {
             .overlay(alignment: .topTrailing) { if live.ready { LED(color: .ledGreen).offset(x: 4, y: -4) } }
             .accessibilityValue(live.ready ? Text("ready") : Text("not ready"))
             .accessibilityHint("Tell the band you are ready for this song")
+        }
+        return Group {
+            if sizeClass == .compact {
+                // iPhone: what comes next above, the buttons below.
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(nextText).font(.system(size: size * 0.7)).lineLimit(1)
+                    controls
+                }
+            } else {
+                HStack(spacing: 16) {
+                    Text(nextText).font(.system(size: size * 0.8)).lineLimit(2)
+                    Spacer()
+                    controls
+                }
+            }
         }
         .padding()
     }

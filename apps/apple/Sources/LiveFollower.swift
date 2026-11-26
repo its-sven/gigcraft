@@ -48,6 +48,12 @@ final class LiveFollower {
     private(set) var roster: [LiveMember] = []
     private(set) var ready = false
     private(set) var cue: (from: String, text: String, at: Date)?
+    /// The band's mark, if one is set.
+    private(set) var mark: BandMark?
+    /// A new mark: scroll there once.
+    var jump: BandMark?
+    /// Where the leader's chart is.
+    private(set) var leaderScroll: LiveScroll?
 
     /// Called when the leader moves to another part (send own presets).
     var onPartChanged: (() -> Void)?
@@ -82,6 +88,8 @@ final class LiveFollower {
         snapshot = nil
         roster = []
         cue = nil
+        mark = nil
+        leaderScroll = nil
     }
 
     func toggleReady() {
@@ -94,6 +102,14 @@ final class LiveFollower {
         guard let core, !text.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         send(core.cueMessage(text: text))
     }
+
+    /// Mark a place for the whole band (`nil`: clear the mark).
+    func setMark(song: String?, spot: ChartSpot = ChartSpot(block: 0, fraction: 0)) {
+        guard let core else { return }
+        send(core.markMessage(songId: song ?? "", block: UInt32(max(0, spot.block)), fraction: Float(spot.fraction), text: ""))
+    }
+
+
 
     private func connect() {
         guard active, let urlText = liveWsUrl(address: address), let url = URL(string: urlText), let core else { return }
@@ -141,6 +157,12 @@ final class LiveFollower {
             case "joined":
                 leader = e["leader"] as? String ?? ""
                 status = String(localized: "connected")
+                mark = core.markJson().flatMap { try? JSONDecoder().decode(BandMark.self, from: Data($0.utf8)) }
+            case "marked":
+                mark = core.markJson().flatMap { try? JSONDecoder().decode(BandMark.self, from: Data($0.utf8)) }
+                if let mark { jump = mark }
+            case "scrolled":
+                leaderScroll = core.leaderScrollJson().flatMap { try? JSONDecoder().decode(LiveScroll.self, from: Data($0.utf8)) }
             case "moved":
                 snapshot = core.snapshotJson().flatMap { try? Self.decoder.decode(LiveSnapshot.self, from: Data($0.utf8)) }
                 ready = core.ready()

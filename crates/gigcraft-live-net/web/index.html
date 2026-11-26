@@ -41,7 +41,10 @@
   .parts { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
   .parts span { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: calc(var(--size) * 0.65); color: var(--dim); }
   .parts span.now { background: var(--accent); color: var(--on-accent); border-color: var(--accent); font-weight: 600; }
-  .chart { font-size: var(--size); margin-top: 12px; }
+  .chart { font-size: var(--size); margin-top: 12px; position: relative; }
+  .mark { position: absolute; left: -8px; right: 0; border-top: 2px solid var(--accent); pointer-events: none; }
+  .mark span { position: absolute; right: 0; bottom: 2px; background: var(--accent); color: var(--on-accent); font-size: 13px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+  header button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
   .block { margin: 0 0 calc(var(--size) * 0.7); }
   .block.chorus { padding-left: calc(var(--size) * 0.9); border-left: 3px solid var(--line); }
   .label { font-weight: 700; font-size: calc(var(--size) * 0.8); margin-bottom: 2px; }
@@ -92,12 +95,13 @@
     <strong id="setlist"></strong><span id="pos"></span>
     <span class="grow"></span>
     <span id="leader"></span>
+    <button id="follow" aria-pressed="true" data-t="follow">Follow</button>
     <button id="smaller" aria-label="Smaller text">A−</button>
     <button id="bigger" aria-label="Larger text">A+</button>
   </header>
   <main id="main" aria-live="polite"></main>
   <footer>
-    <div class="row"><span class="next grow" id="next"></span><button id="cueToggle" aria-expanded="false" aria-controls="cuePanel" data-t="cue">Cue…</button><button id="ready" class="primary" aria-pressed="false" data-t="ready" title="Tell the band you are ready for this song">Ready</button></div>
+    <div class="row"><span class="next grow" id="next"></span><button id="markBtn" data-t="mark">Mark here</button><button id="clearMark" class="hidden" data-t="clearMark">Clear mark</button><button id="cueToggle" aria-expanded="false" aria-controls="cuePanel" data-t="cue">Cue…</button><button id="ready" class="primary" aria-pressed="false" data-t="ready" title="Tell the band you are ready for this song">Ready</button></div>
     <div id="cuePanel" class="hidden">
       <div class="row cues" id="cues"></div>
       <div class="row" style="margin-top:8px"><input id="cueText" maxlength="200" aria-label="Cue to the band" placeholder="Cue to the band…" style="flex:1;width:auto"><button id="send" data-t="send">Send</button></div>
@@ -115,14 +119,16 @@ const T = de ? {
   brk: "Pause", missing: "Song fehlt in der Bibliothek des Leaders", waiting: "Warte auf den Start der Show…",
   connecting: "Verbinde…", offline: "Getrennt – verbinde neu…", ended: "Sitzung beendet", noChart: "Kein Chart.",
   cues: ["Letzter Refrain", "Refrain nochmal", "Solo verlängern", "Langsamer", "Schneller", "Stopp nach dem Takt"],
-  ph: "Nachricht an die Band…", connected: "verbunden", disconnected: "getrennt", of: "von"
+  ph: "Nachricht an die Band…", connected: "verbunden", disconnected: "getrennt", of: "von",
+  follow: "Mitscrollen", mark: "Hier markieren", clearMark: "Marker löschen", fromHere: "Ab hier"
 } : {
   intro: "Follow the band leader's setlist and chart on this device.", name: "Your name", instrument: "Instrument",
   join: "Join", ready: "Ready", send: "Send", cue: "Cue…", key: "Key", song: "Song", time: "Time", next: "Up next", last: "Last song",
   brk: "Break", missing: "Song missing from the leader's library", waiting: "Waiting for the show to start…",
   connecting: "Connecting…", offline: "Disconnected – reconnecting…", ended: "Session ended", noChart: "No chart.",
   cues: ["Last chorus", "Chorus again", "Extend solo", "Slower", "Faster", "Stop after this bar"],
-  ph: "Cue to the band…", connected: "connected", disconnected: "disconnected", of: "of"
+  ph: "Cue to the band…", connected: "connected", disconnected: "disconnected", of: "of",
+  follow: "Follow", mark: "Mark here", clearMark: "Clear mark", fromHere: "From here"
 };
 document.documentElement.lang = de ? "de" : "en";
 document.querySelectorAll("[data-t]").forEach(el => { el.textContent = T[el.dataset.t]; });
@@ -140,6 +146,8 @@ const applySize = () => document.documentElement.style.setProperty("--size", siz
 applySize();
 
 let ws = null, me = null, snapshot = null, ready = false, breakEnds = null, wantOpen = false, toastTimer = null;
+// The band's mark, the leader's last scroll position, and whether to follow it.
+let mark = null, leaderSpot = null, follow = store.get("gc.follow") !== "0";
 
 function el(tag, cls, text) {
   const e = document.createElement(tag);
@@ -173,6 +181,7 @@ function onMessage(m) {
       setStatus(true);
       me.id = m.member;
       welcomed = true;
+      mark = m.mark || null;
       for (const p of pending.splice(0)) ws.send(JSON.stringify(p));
       $("leader").textContent = "♪ " + m.leader;
       break;
@@ -204,6 +213,15 @@ function onMessage(m) {
     }
     case "cue":
       toast(m.from + ": " + m.text);
+      break;
+    case "scroll":
+      leaderSpot = m;
+      if (follow) scrollToSpot(m.song, m.spot, true);
+      break;
+    case "mark":
+      mark = m.mark || null;
+      renderMark();
+      if (mark) scrollToSpot(mark.song, mark.spot, true);
       break;
     case "bye":
       wantOpen = false;
@@ -278,6 +296,56 @@ function render() {
     main.append(parts);
   }
   main.append(chart(c.chart));
+  renderMark();
+}
+
+function currentSong() {
+  const c = snapshot && snapshot.current;
+  return c && c.type === "song" ? c.song : null;
+}
+
+// A spot (section + how far into it) ↔ a position in this page's chart.
+function spotOffset(spot) {
+  const box = document.querySelector(".chart");
+  const blocks = box ? box.querySelectorAll(".block") : [];
+  const b = blocks[spot.block];
+  if (!b) return null;
+  const next = blocks[spot.block + 1];
+  const end = next ? next.offsetTop : box.offsetHeight;
+  return box.offsetTop + b.offsetTop + (end - b.offsetTop) * Math.min(1, Math.max(0, spot.fraction || 0));
+}
+
+function spotHere() {
+  const box = document.querySelector(".chart");
+  if (!box) return null;
+  const y = window.scrollY - box.offsetTop;
+  const blocks = [...box.querySelectorAll(".block")];
+  let i = 0;
+  blocks.forEach((b, k) => { if (b.offsetTop <= y) i = k; });
+  if (!blocks.length) return null;
+  const top = blocks[i].offsetTop;
+  const end = blocks[i + 1] ? blocks[i + 1].offsetTop : box.offsetHeight;
+  return { block: i, fraction: Math.min(1, Math.max(0, (y - top) / Math.max(1, end - top))) };
+}
+
+function scrollToSpot(song, spot, smooth) {
+  if (!spot || song !== currentSong()) return;
+  // The very top: show the title too.
+  const y = spot.block === 0 && !(spot.fraction > 0) ? 0 : spotOffset(spot);
+  if (y != null) window.scrollTo({ top: Math.max(0, y), behavior: smooth ? "smooth" : "auto" });
+}
+
+function renderMark() {
+  document.querySelectorAll(".mark").forEach(e => e.remove());
+  $("clearMark").classList.toggle("hidden", !mark);
+  const box = document.querySelector(".chart");
+  if (!mark || !box || mark.song !== currentSong()) return;
+  const y = spotOffset(mark.spot);
+  if (y == null) return;
+  const line = el("div", "mark");
+  line.style.top = (y - box.offsetTop) + "px";
+  line.append(el("span", "", (mark.text || T.fromHere) + " – " + mark.from));
+  box.append(line);
 }
 
 function readout(label, value) {
@@ -359,8 +427,22 @@ for (const c of T.cues) {
   b.onclick = () => { send({ type: "cue", text: c }); closeCues(); };
   $("cues").append(b);
 }
-$("smaller").onclick = () => { size = Math.max(14, size - 2); store.set("gc.size", size); applySize(); };
-$("bigger").onclick = () => { size = Math.min(48, size + 2); store.set("gc.size", size); applySize(); };
+$("smaller").onclick = () => { size = Math.max(14, size - 2); store.set("gc.size", size); applySize(); renderMark(); };
+$("bigger").onclick = () => { size = Math.min(48, size + 2); store.set("gc.size", size); applySize(); renderMark(); };
+const renderFollow = () => $("follow").setAttribute("aria-pressed", String(follow));
+renderFollow();
+$("follow").title = de ? "Dem Scrollen des Leaders folgen" : "Follow the leader's scrolling";
+$("follow").onclick = () => {
+  follow = !follow; store.set("gc.follow", follow ? "1" : "0"); renderFollow();
+  if (follow && leaderSpot) scrollToSpot(leaderSpot.song, leaderSpot.spot, true);
+};
+$("markBtn").title = de ? "Die Stelle oben auf deinem Bildschirm für die ganze Band markieren" : "Mark the place at the top of your screen for the whole band";
+$("markBtn").onclick = () => {
+  const song = currentSong(), spot = spotHere();
+  if (song && spot) send({ type: "mark", song, spot, text: "" });
+};
+$("clearMark").onclick = () => send({ type: "clear_mark" });
+window.addEventListener("resize", renderMark);
 if ($("name").value) $("go").focus(); else $("name").focus();
 </script>
 </body>

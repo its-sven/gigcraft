@@ -150,13 +150,30 @@ struct ChartView: View {
     var lyricsOnly = false
     /// Leave room on the left for the section marker (stage views).
     var followsTrack = false
+    /// The band's mark in a live session: section, how far into it, label.
+    var mark: (block: Int, fraction: Double, label: String)?
+    /// Where the sections start in the scroll content (`gcScroll` space).
+    var onLayout: ((ChartLayout) -> Void)?
+    /// Section tops in this view, for drawing the mark.
+    @State private var localTops: [Int: CGFloat] = [:]
+    @State private var height: CGFloat = 0
 
-    init(chart: Chart, fontSize: Double, highlight: Int? = nil, lyricsOnly: Bool = false, followsTrack: Bool = false) {
+    init(chart: Chart, fontSize: Double, highlight: Int? = nil, lyricsOnly: Bool = false, followsTrack: Bool = false,
+         mark: (block: Int, fraction: Double, label: String)? = nil, onLayout: ((ChartLayout) -> Void)? = nil) {
         self.chart = chart
         self.baseSize = fontSize
         self.highlight = highlight
         self.lyricsOnly = lyricsOnly
         self.followsTrack = followsTrack
+        self.mark = mark
+        self.onLayout = onLayout
+    }
+
+    /// Where the mark goes in this view.
+    private var markY: CGFloat? {
+        guard let mark, let top = localTops[mark.block] else { return nil }
+        let next = localTops[mark.block + 1] ?? height
+        return top + max(0, next - top) * CGFloat(min(1, max(0, mark.fraction)))
     }
 
     private var fontSize: Double { scaled(baseSize) }
@@ -187,6 +204,48 @@ struct ChartView: View {
                     }
                 }
                 .id(index)
+                .background {
+                    if mark != nil || onLayout != nil {
+                        GeometryReader { g in
+                            Color.clear
+                                .preference(key: ChartLayoutKey.self, value: [index: g.frame(in: .named("gcChart")).minY])
+                                .preference(key: ScrollTopsKey.self, value: [index: g.frame(in: .named("gcScroll")).minY])
+                        }
+                    }
+                }
+            }
+        }
+        .coordinateSpace(name: "gcChart")
+        .background {
+            if mark != nil || onLayout != nil {
+                GeometryReader { g in
+                    Color.clear
+                        .preference(key: ScrollTopsKey.self, value: [-1: g.frame(in: .named("gcScroll")).maxY])
+                        .onAppear { height = g.size.height }
+                        .onChange(of: g.size.height) { _, h in height = h }
+                }
+            }
+        }
+        .onPreferenceChange(ChartLayoutKey.self) { localTops = $0 }
+        .onPreferenceChange(ScrollTopsKey.self) { value in
+            guard let onLayout else { return }
+            let tops = value.filter { $0.key >= 0 }.sorted { $0.key < $1.key }.map(\.value)
+            onLayout(ChartLayout(tops: tops, end: value[-1] ?? tops.last ?? 0))
+        }
+        .overlay(alignment: .topLeading) {
+            if let mark, let y = markY {
+                ZStack(alignment: .bottomTrailing) {
+                    Rectangle().fill(Color.accentColor).frame(height: 2)
+                    Text(verbatim: mark.label)
+                        .font(.caption.bold())
+                        .foregroundStyle(.black)
+                        .padding(.horizontal, 8).padding(.vertical, 2)
+                        .background(Color.accentColor, in: .rect(cornerRadius: 6))
+                        .offset(y: -4)
+                }
+                .offset(y: y)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text("Band mark: \(mark.label)"))
             }
         }
     }

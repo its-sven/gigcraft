@@ -581,6 +581,26 @@
         }
       }
     },
+    "Band mark": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band-Marker"
+          }
+        }
+      }
+    },
+    "Band mark: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band-Marker: %@"
+          }
+        }
+      }
+    },
     "Band members follow your setlist on their phones, tablets or computers – on the same Wi-Fi, no app needed.": {
       "localizations": {
         "de": {
@@ -747,6 +767,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Refrain nochmal"
+          }
+        }
+      }
+    },
+    "Clear mark": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marker löschen"
           }
         }
       }
@@ -1122,6 +1152,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Diesem Leader folgen"
+          }
+        }
+      }
+    },
+    "From here": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ab hier"
           }
         }
       }
@@ -1627,6 +1667,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Leg unter Setlisten eine Setliste an und tippe auf Auftritt (Play-Symbol) für die Bühnenansicht."
+          }
+        }
+      }
+    },
+    "Mark here": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hier markieren"
+          }
+        }
+      }
+    },
+    "Mark the place at the top of your chart for the whole band, e.g. where a rehearsal goes on": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Markiert die Stelle oben in deinem Chart für die ganze Band, z. B. wo es in der Probe weitergeht"
           }
         }
       }
@@ -2408,6 +2468,16 @@
         }
       }
     },
+    "Scroll with the leader": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit dem Leader scrollen"
+          }
+        }
+      }
+    },
     "Search songs": {
       "localizations": {
         "de": {
@@ -2786,6 +2856,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Der Bandleader startet Live → Live-Sitzung starten – am Computer, iPad oder iPhone – und bekommt eine Adresse und einen QR-Code."
+          }
+        }
+      }
+    },
+    "The chart is on Ultimate Guitar (button above). To have it here too, paste its text in the editor.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Chart liegt auf Ultimate Guitar (Knopf oben). Um es auch hier zu haben, füge seinen Text im Editor ein."
+          }
+        }
+      }
+    },
+    "The chart is on Ultimate Guitar.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das Chart liegt auf Ultimate Guitar."
           }
         }
       }
@@ -3183,22 +3273,12 @@
         }
       }
     },
-    "The chart is on Ultimate Guitar (button above). To have it here too, paste its text in the editor.": {
+    "Everyone's chart scrolls with the leader's; switch it off in the … menu to scroll yourself. Mark here (… menu) puts a line with your name at the top of your chart on every screen – handy in rehearsal; Clear mark removes it.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Das Chart liegt auf Ultimate Guitar (Knopf oben). Um es auch hier zu haben, füge seinen Text im Editor ein."
-          }
-        }
-      }
-    },
-    "The chart is on Ultimate Guitar.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Das Chart liegt auf Ultimate Guitar."
+            "value": "Jedes Chart scrollt mit dem des Leaders mit; im …-Menü abschaltbar, dann scrollst du selbst. „Hier markieren“ (…-Menü) setzt oben in deinem Chart eine Linie mit deinem Namen – auf allen Bildschirmen, praktisch in der Probe; „Marker löschen“ entfernt sie."
           }
         }
       }

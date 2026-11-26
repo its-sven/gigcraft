@@ -320,6 +320,9 @@ fn page(app: &mut GigCraftApp, ui: &mut egui::Ui, topic: Topic) {
                         "Ready tells the leader you are ready for this song. Cues like “Last chorus” appear on every screen."
                     ),
                     tr!(
+                        "Everyone's chart scrolls with the leader's (switch it off under Scroll with the leader to scroll yourself). Mark here puts a line with your name at the top of your chart on every screen – handy in rehearsal for “from here”; Clear mark removes it."
+                    ),
+                    tr!(
                         "Nothing leaves your network. Anyone on the network can follow, but only the leader moves the show."
                     ),
                     tr!(

@@ -319,6 +319,7 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                 speed = Some(true);
             }
             ui.separator();
+            crate::live_ui::mark_buttons(app, ui, now);
             crate::stage_display::picker(app, ui);
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui
@@ -433,6 +434,10 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
         ui.add_space(6.0);
     });
 
+    // Live session: the band's mark, and a new mark to jump to.
+    let cur_song: Option<SongId> = st["current"]["song"].as_str().and_then(|s| s.parse().ok());
+    let live_mark = cur_song.and_then(|s| crate::live_ui::band_mark(app, s));
+    let live_jump = cur_song.and_then(|s| crate::live_ui::scroll_target(app, s));
     let mut new_scroll = None;
     let mut view_height = 0.0;
     egui::CentralPanel::default().show(ui, |ui| {
@@ -551,12 +556,13 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                         }
                     }
                     let mut area = egui::ScrollArea::vertical().auto_shrink(false);
-                    if let Some(o) = p.pending_scroll.or(follow).or(auto) {
+                    if let Some(o) = p.pending_scroll.or(live_jump).or(follow).or(auto) {
                         area = area.vertical_scroll_offset(o);
                     }
                     let opts = chart_view::Options {
                         highlight,
                         lyrics_only: false,
+                        mark: live_mark.clone(),
                     };
                     let out =
                         area.show(ui, |ui| chart_view::show_with(ui, &chart.chart, size, opts));
@@ -597,6 +603,9 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
         }
     });
 
+    if let (Some(song), Some(tops), Some(offset)) = (cur_song, new_tops.as_ref(), new_scroll) {
+        crate::live_ui::chart_shown(app, song, tops, content_height, offset, now);
+    }
     if let Some(p) = app.perform.as_mut() {
         p.pending_scroll = None;
         if let Some(t) = new_tops {

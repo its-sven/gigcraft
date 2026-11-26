@@ -50,6 +50,7 @@ struct HelpView: View {
             "The band leader starts Live → Start live session – on a computer, iPad or iPhone – and gets an address and a QR code.",
             "Follow (antenna icon) lists the leaders on your network – or enter the address. You see the leader's song with your own chart, and your own presets go to your devices.",
             "Ready tells the leader you are ready for this song; Cue sends a short message to every screen.",
+            "Everyone's chart scrolls with the leader's; switch it off in the … menu to scroll yourself. Mark here (… menu) puts a line with your name at the top of your chart on every screen – handy in rehearsal; Clear mark removes it.",
             "Without the app, band members can open the address in Safari.",
             "On a shared venue Wi-Fi, better use the band's own router or a phone hotspot – no internet needed.",
         ]),

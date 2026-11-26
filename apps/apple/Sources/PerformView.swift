@@ -11,6 +11,14 @@ struct PerformView: View {
     @AppStorage("gc.stage.lyricsOnly") private var stageLyricsOnly = false
     @AppStorage("gc.scroll.factor") private var scrollFactor = 1.0
     @Environment(\.horizontalSizeClass) private var sizeClass
+    /// Live session: where the chart's sections are and where it is scrolled.
+    @State private var chartLayout = ChartLayout()
+    @State private var scrollY: CGFloat = 0
+    @State private var scrollTarget: CGFloat?
+
+    private var currentSongId: String? {
+        ((model.performState?["current"] as? [String: Any])?["song"] as? String)
+    }
 
     var body: some View {
         let st = model.performState ?? [:]
@@ -155,6 +163,16 @@ struct PerformView: View {
                     Label("Scroll faster", systemImage: "hare")
                 }
             }
+            if model.leader.active {
+                Section("Band") {
+                    MarkControls(canMark: currentSongId != nil && !chartLayout.tops.isEmpty, hasMark: model.leader.mark != nil,
+                                 mark: {
+                                     model.leader.setMark(song: currentSongId,
+                                                          spot: ChartSpot.at(scrollY, tops: chartLayout.tops, end: chartLayout.end))
+                                 },
+                                 clear: { model.leader.setMark(song: nil) })
+                }
+            }
             if UIApplication.shared.connectedScenes.contains(where: { $0.session.role == .windowExternalDisplayNonInteractive }) {
                 Picker(selection: $stageLyricsOnly) {
                     Text("Chart with chords (band)").tag(false)
@@ -239,7 +257,9 @@ struct PerformView: View {
                     Text(n).font(.system(size: size)).foregroundStyle(.orange)
                 }
                 if let chart, !chart.blocks.isEmpty {
-                    ChartView(chart: chart, fontSize: size, highlight: section, followsTrack: true)
+                    let mark = model.leader.mark.flatMap { $0.song == songId ? (block: $0.spot.block, fraction: $0.spot.fraction, label: $0.label) : nil }
+                    ChartView(chart: chart, fontSize: size, highlight: section, followsTrack: true,
+                              mark: mark, onLayout: model.leader.active ? { chartLayout = $0 } : nil)
                 } else if let pdf = model.attachments(songId).first(where: { $0.kind == "pdf" }) {
                     PDFKitView(url: pdf.url).frame(minHeight: 900)
                 } else if let link = model.song(songId)?.ultimateGuitar, let url = URL(string: link) {
@@ -255,11 +275,25 @@ struct PerformView: View {
                 }
             }
             .padding()
+            .coordinateSpace(name: "gcScroll")
+            .background(ScrollBridge(onScroll: { y in
+                scrollY = y
+                // Leading a band: followers who follow the scrolling go along.
+                if model.leader.active, !chartLayout.tops.isEmpty {
+                    model.leader.scroll(song: songId, spot: ChartSpot.at(y, tops: chartLayout.tops, end: chartLayout.end))
+                }
+            }, target: $scrollTarget))
             .background(AutoScrollDriver(running: Binding(get: { model.autoScrolling }, set: { model.autoScrolling = $0 })) { content, visible in
                 AutoScrollSpeed.pointsPerSecond(content: content, visible: visible,
                                                 lengthSecs: AutoScrollSpeed.seconds(model.song(songId)?.duration),
                                                 fontSize: scaled(size), factor: scrollFactor)
             })
+        }
+        // A band member marked a place: go there once.
+        .onChange(of: model.leader.jump) { _, jump in
+            guard let jump, jump.song == songId else { return }
+            scrollTarget = jump.spot.offset(tops: chartLayout.tops, end: chartLayout.end)
+            model.leader.jump = nil
         }
         // Follow the backing track: scroll when it enters the next section.
         .onChange(of: section) { _, new in

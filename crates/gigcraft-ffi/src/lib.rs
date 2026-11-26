@@ -286,6 +286,8 @@ impl FollowerCore {
                 } => serde_json::json!({"type": "moved", "song_changed": song_changed, "part_changed": part_changed}),
                 E::Roster => serde_json::json!({"type": "roster"}),
                 E::Cue(c) => serde_json::json!({"type": "cue", "from": c.from, "text": c.text}),
+                E::Scrolled => serde_json::json!({"type": "scrolled"}),
+                E::Marked => serde_json::json!({"type": "marked"}),
                 E::Ended { reason } => serde_json::json!({"type": "ended", "reason": reason}),
             })
             .collect();
@@ -302,6 +304,36 @@ impl FollowerCore {
     /// The band (`[{"id","name","instrument","ready"}]`).
     pub fn roster_json(&self) -> String {
         serde_json::to_string(self.lock().roster()).unwrap_or_else(|_| "[]".into())
+    }
+
+    /// The band's mark (`gigcraft_live::Mark` as JSON), if one is set.
+    pub fn mark_json(&self) -> Option<String> {
+        self.lock()
+            .mark()
+            .and_then(|m| serde_json::to_string(m).ok())
+    }
+
+    /// Where the leader's chart is: `{"song":…,"spot":{"block":…,"fraction":…}}`.
+    pub fn leader_scroll_json(&self) -> Option<String> {
+        self.lock()
+            .leader_scroll()
+            .map(|(song, spot)| serde_json::json!({"song": song, "spot": spot}).to_string())
+    }
+
+    /// The message that marks a place for everyone (`song_id` empty: clear it).
+    pub fn mark_message(&self, song_id: String, block: u32, fraction: f32, text: String) -> String {
+        let f = self.lock();
+        match song_id.parse() {
+            Ok(song) => f.mark_spot(
+                song,
+                gigcraft_live::Spot {
+                    block: block as usize,
+                    fraction,
+                },
+                &text,
+            ),
+            Err(_) => f.clear_mark(),
+        }
     }
 }
 

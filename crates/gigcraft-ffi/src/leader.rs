@@ -3,7 +3,7 @@
 //! Bonjour (the system's mDNS service) and calls `pump` a few times a second.
 
 use crate::{Core, CoreError};
-use gigcraft_live::{Leader, LeaderEvent, LeaderOut, Snapshot};
+use gigcraft_live::{Leader, LeaderEvent, LeaderOut, Snapshot, Spot};
 use gigcraft_live_net::{LiveServer, NetEvent};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
@@ -105,6 +105,40 @@ impl LeaderCore {
         serde_json::to_string(&lock(&self.leader).members()).unwrap_or_else(|_| "[]".into())
     }
 
+    /// The leader's chart is at section `block`, `fraction` of the way in:
+    /// followers who follow the scrolling go there (sent only on real moves).
+    pub fn scroll(&self, song_id: String, block: u32, fraction: f32) {
+        let Ok(song) = song_id.parse() else { return };
+        let spot = Spot {
+            block: block as usize,
+            fraction,
+        };
+        let outs = lock(&self.leader).scroll(song, spot);
+        let _ = self.carry_out(outs);
+    }
+
+    /// Mark a place for the whole band (`song_id` empty: clear the mark).
+    pub fn set_mark(&self, song_id: String, block: u32, fraction: f32, text: String) -> String {
+        let mark = song_id.parse().ok().map(|song| {
+            (
+                song,
+                Spot {
+                    block: block as usize,
+                    fraction,
+                },
+            )
+        });
+        let outs = lock(&self.leader).set_mark(mark.map(|(s, p)| (s, p, text.as_str())));
+        self.carry_out(outs)
+    }
+
+    /// The band's mark (`gigcraft_live::Mark` as JSON), if one is set.
+    pub fn mark_json(&self) -> Option<String> {
+        lock(&self.leader)
+            .mark()
+            .and_then(|m| serde_json::to_string(m).ok())
+    }
+
     /// End the session: tell everyone and stop serving.
     pub fn stop(&self) {
         let outs = lock(&self.leader).stop("The leader ended the session");
@@ -136,6 +170,7 @@ impl LeaderCore {
                     LeaderEvent::Left(m) => serde_json::json!({"type": "left", "name": m.name}),
                     LeaderEvent::ReadyChanged(m) => serde_json::json!({"type": "ready", "name": m.name, "ready": m.ready}),
                     LeaderEvent::Cue(c) => serde_json::json!({"type": "cue", "from": c.from, "text": c.text}),
+                    LeaderEvent::Mark(m) => serde_json::json!({"type": "mark", "mark": m}),
                     LeaderEvent::Rejected { reason, .. } => serde_json::json!({"type": "rejected", "reason": reason}),
                 }),
             }

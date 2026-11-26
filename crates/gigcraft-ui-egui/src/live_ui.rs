@@ -7,7 +7,7 @@
 
 use crate::{GigCraftApp, chart_view};
 use gigcraft_live::{
-    ConnId, Cue, Follower, FollowerEvent, Leader, LeaderEvent, LeaderOut, Slot, Snapshot,
+    ConnId, Cue, Follower, FollowerEvent, Leader, LeaderEvent, LeaderOut, Slot, Snapshot, Spot,
 };
 use serde_json::Value;
 
@@ -84,6 +84,175 @@ pub(crate) struct LiveUi {
     /// Latest cue and when it arrived (egui time).
     banner: Option<(Cue, f64)>,
     log: Vec<String>,
+    /// Following: do not follow the leader's scrolling.
+    pub(crate) own_scrolling: bool,
+    /// Where this device's chart is (for "Mark here").
+    pub(crate) view: ChartPos,
+    /// A new band mark: scroll there once.
+    pub(crate) jump: Option<Spot>,
+}
+
+/// Where a chart view is: block tops, height, scroll offset.
+#[derive(Debug, Default, Clone)]
+pub(crate) struct ChartPos {
+    pub(crate) song: Option<gigcraft_model::SongId>,
+    pub(crate) tops: Vec<f32>,
+    pub(crate) content: f32,
+    pub(crate) offset: f32,
+    /// The leader's spot last applied (following).
+    applied: Option<Spot>,
+}
+
+impl ChartPos {
+    fn spot(&self) -> Spot {
+        Spot::at(self.offset, &self.tops, self.content)
+    }
+}
+
+/// The band's mark for `song`, ready for the chart view.
+pub(crate) fn band_mark(
+    app: &GigCraftApp,
+    song: gigcraft_model::SongId,
+) -> Option<(usize, f32, String)> {
+    let mark = match &app.live.mode {
+        Mode::Leading { leader, .. } => leader.mark(),
+        Mode::Following { follower, .. } => follower.mark(),
+        Mode::Off => None,
+    }?;
+    if mark.song != song {
+        return None;
+    }
+    let label = if mark.text.is_empty() {
+        tr!("From here – {name}", name = mark.from)
+    } else {
+        format!("{} – {}", mark.text, mark.from)
+    };
+    Some((mark.spot.block, mark.spot.fraction, label))
+}
+
+/// After a frame of a chart view: remember where it is and, when leading,
+/// tell the band.
+pub(crate) fn chart_shown(
+    app: &mut GigCraftApp,
+    song: gigcraft_model::SongId,
+    tops: &[f32],
+    content: f32,
+    offset: f32,
+    time: f64,
+) {
+    let applied = app
+        .live
+        .view
+        .applied
+        .filter(|_| app.live.view.song == Some(song));
+    app.live.view = ChartPos {
+        song: Some(song),
+        tops: tops.to_vec(),
+        content,
+        offset,
+        applied,
+    };
+    if let Mode::Leading { leader, .. } = &mut app.live.mode {
+        let outs = leader.scroll(song, app.live.view.spot());
+        carry_out(app, outs, time);
+    }
+}
+
+/// Where this device's chart should scroll to this frame: a new band mark
+/// (once), or the leader's position when following it.
+pub(crate) fn scroll_target(app: &mut GigCraftApp, song: gigcraft_model::SongId) -> Option<f32> {
+    let view = &app.live.view;
+    if view.song != Some(song) || view.tops.is_empty() {
+        return None;
+    }
+    if let Some(spot) = app.live.jump.take() {
+        return if spot.is_top() {
+            Some(0.0)
+        } else {
+            spot.offset(&view.tops, view.content)
+        };
+    }
+    let Mode::Following { follower, .. } = &app.live.mode else {
+        return None;
+    };
+    if app.live.own_scrolling {
+        return None;
+    }
+    let (s, spot) = follower.leader_scroll()?;
+    if s != song || view.applied == Some(spot) {
+        return None;
+    }
+    app.live.view.applied = Some(spot);
+    if spot.is_top() {
+        return Some(0.0);
+    }
+    spot.offset(&app.live.view.tops, app.live.view.content)
+}
+
+/// Mark where this device's chart is, for the whole band.
+fn mark_here(app: &mut GigCraftApp, time: f64) {
+    let Some(song) = app.live.view.song else {
+        return;
+    };
+    let spot = app.live.view.spot();
+    match &mut app.live.mode {
+        Mode::Leading { leader, .. } => {
+            let outs = leader.set_mark(Some((song, spot, "")));
+            carry_out(app, outs, time);
+        }
+        Mode::Following { follower, .. } => {
+            let msg = follower.mark_spot(song, spot, "");
+            if let Some(io) = app.hooks.live.as_mut() {
+                io.send_to_leader(msg);
+            }
+        }
+        Mode::Off => {}
+    }
+}
+
+fn clear_mark(app: &mut GigCraftApp, time: f64) {
+    match &mut app.live.mode {
+        Mode::Leading { leader, .. } => {
+            let outs = leader.set_mark(None);
+            carry_out(app, outs, time);
+        }
+        Mode::Following { follower, .. } => {
+            let msg = follower.clear_mark();
+            if let Some(io) = app.hooks.live.as_mut() {
+                io.send_to_leader(msg);
+            }
+        }
+        Mode::Off => {}
+    }
+}
+
+/// "Mark here" and "Clear mark", for the stage and follow views.
+pub(crate) fn mark_buttons(app: &mut GigCraftApp, ui: &mut egui::Ui, time: f64) {
+    if matches!(app.live.mode, Mode::Off) {
+        return;
+    }
+    if ui
+        .button(tr!("Mark here"))
+        .on_hover_text(tr!(
+            "Mark the place at the top of your chart for the whole band, e.g. where a rehearsal goes on"
+        ))
+        .clicked()
+    {
+        mark_here(app, time);
+    }
+    let has_mark = match &app.live.mode {
+        Mode::Leading { leader, .. } => leader.mark().is_some(),
+        Mode::Following { follower, .. } => follower.mark().is_some(),
+        Mode::Off => false,
+    };
+    if has_mark
+        && ui
+            .button(tr!("Clear mark"))
+            .on_hover_text(tr!("Remove the mark for everyone"))
+            .clicked()
+    {
+        clear_mark(app, time);
+    }
 }
 
 impl LiveUi {
@@ -156,6 +325,12 @@ fn carry_out(app: &mut GigCraftApp, outs: Vec<LeaderOut>, time: f64) {
                 LeaderEvent::Left(m) => log(app, tr!("{name} left", name = member_label(&m))),
                 LeaderEvent::ReadyChanged(_) => {}
                 LeaderEvent::Cue(cue) => app.live.banner = Some((cue, time)),
+                LeaderEvent::Mark(mark) => {
+                    if let Some(m) = mark {
+                        log(app, tr!("{name} marked a place", name = m.from));
+                        app.live.jump = Some(m.spot);
+                    }
+                }
                 LeaderEvent::Rejected { conn, reason } => {
                     log(app, format!("#{conn}: {reason}"));
                 }
@@ -287,7 +462,17 @@ fn follower_event(app: &mut GigCraftApp, e: FollowerEvent, time: f64) {
                 send_own_presets(app, time);
             }
         }
-        FollowerEvent::Roster => {}
+        FollowerEvent::Roster | FollowerEvent::Scrolled => {}
+        FollowerEvent::Marked => {
+            let mark = match &app.live.mode {
+                Mode::Following { follower, .. } => follower.mark().cloned(),
+                _ => None,
+            };
+            if let Some(m) = mark {
+                log(app, tr!("{name} marked a place", name = m.from));
+                app.live.jump = Some(m.spot);
+            }
+        }
         FollowerEvent::Cue(cue) => app.live.banner = Some((cue, time)),
         FollowerEvent::Ended { reason } => {
             log(app, tr!("Session ended: {reason}", reason = reason));
@@ -764,8 +949,23 @@ pub(crate) fn follow_view(app: &mut GigCraftApp, ui: &mut egui::Ui) {
         });
         ui.add_space(4.0);
         cue_buttons(app, ui, time);
+        ui.horizontal(|ui| {
+            mark_buttons(app, ui, time);
+            ui.separator();
+            let mut follow = !app.live.own_scrolling;
+            if ui
+                .checkbox(&mut follow, tr!("Scroll with the leader"))
+                .on_hover_text(tr!(
+                    "Your chart moves to where the leader's chart is; off: scroll yourself"
+                ))
+                .changed()
+            {
+                app.live.own_scrolling = !follow;
+            }
+        });
         ui.add_space(6.0);
     });
+    let mut shown = None;
     egui::CentralPanel::default().show(ui, |ui| {
         cue_banner(&mut app.live, ui, time, size);
         let Some(s) = &snap else {
@@ -822,14 +1022,28 @@ pub(crate) fn follow_view(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                         .as_deref()
                         .map(|src| gigcraft_chordpro::parse(src, song.semitones))
                 });
-                egui::ScrollArea::vertical()
-                    .auto_shrink(false)
-                    .show(ui, |ui| match parsed {
-                        Some(p) => chart_view::show(ui, &p.chart, size),
-                        None => {
-                            ui.label(tr!("No chart yet."));
-                        }
-                    });
+                let mut area = egui::ScrollArea::vertical().auto_shrink(false);
+                if let Some(o) = scroll_target(app, song.song) {
+                    area = area.vertical_scroll_offset(o);
+                }
+                let opts = chart_view::Options {
+                    highlight: None,
+                    lyrics_only: false,
+                    mark: band_mark(app, song.song),
+                };
+                let out = area.show(ui, |ui| match parsed {
+                    Some(p) => chart_view::show_with(ui, &p.chart, size, opts),
+                    None => {
+                        ui.label(tr!("No chart yet."));
+                        Vec::new()
+                    }
+                });
+                shown = Some((
+                    song.song,
+                    out.inner,
+                    out.content_size.y,
+                    out.state.clamped_offset().y,
+                ));
             }
             Some(Slot::Break { label, minutes }) => {
                 ui.vertical_centered(|ui| {
@@ -856,6 +1070,9 @@ pub(crate) fn follow_view(app: &mut GigCraftApp, ui: &mut egui::Ui) {
             }
         }
     });
+    if let Some((song, tops, content, offset)) = shown {
+        chart_shown(app, song, &tops, content, offset, time);
+    }
     if toggle_ready {
         let msg = match &mut app.live.mode {
             Mode::Following { follower, .. } => {
