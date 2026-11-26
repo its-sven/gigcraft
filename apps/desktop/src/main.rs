@@ -29,6 +29,8 @@ fn parse_args() -> Result<Start, String> {
             "--live" => start.live = true,
             "--show-help" => start.help = true,
             "--show-live" => start.show_live = true,
+            "--screen2" => start.screen2 = Some(value("--screen2")?),
+            "--play" => start.play = true,
             "--join" => start.join = Some(value("--join")?),
             "-h" | "--help" => {
                 return Err(

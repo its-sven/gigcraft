@@ -68,30 +68,49 @@ struct ChartView: View {
     let chart: Chart
     /// The size the user picked; larger accessibility text sizes scale it up.
     let baseSize: Double
+    /// The section the backing track is in (marked with an amber bar).
+    var highlight: Int?
+    /// Lyrics without chords (singers, audience screens).
+    var lyricsOnly = false
+    /// Leave room on the left for the section marker (stage views).
+    var followsTrack = false
 
-    init(chart: Chart, fontSize: Double) {
+    init(chart: Chart, fontSize: Double, highlight: Int? = nil, lyricsOnly: Bool = false, followsTrack: Bool = false) {
         self.chart = chart
         self.baseSize = fontSize
+        self.highlight = highlight
+        self.lyricsOnly = lyricsOnly
+        self.followsTrack = followsTrack
     }
 
     private var fontSize: Double { scaled(baseSize) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: fontSize * 0.3) {
-            ForEach(Array(chart.blocks.enumerated()), id: \.offset) { _, block in
-                if let label = block.label {
-                    Text(label)
-                        .font(.system(size: fontSize * 0.8, weight: .bold))
-                        .italic(block.kind == "chorus_recall")
-                        .padding(.top, fontSize * 0.4)
-                        .accessibilityAddTraits(.isHeader)
+            ForEach(Array(chart.blocks.enumerated()), id: \.offset) { index, block in
+                VStack(alignment: .leading, spacing: fontSize * 0.3) {
+                    if let label = block.label {
+                        Text(label)
+                            .font(.system(size: fontSize * 0.8, weight: .bold))
+                            .italic(block.kind == "chorus_recall")
+                            .padding(.top, fontSize * 0.4)
+                            .accessibilityAddTraits(.isHeader)
+                    }
+                    VStack(alignment: .leading, spacing: fontSize * 0.25) {
+                        ForEach(Array(block.lines.enumerated()), id: \.offset) { _, line in
+                            lineView(line)
+                        }
+                    }
+                    .padding(.leading, block.kind == "chorus" ? fontSize : 0)
                 }
-                VStack(alignment: .leading, spacing: fontSize * 0.25) {
-                    ForEach(Array(block.lines.enumerated()), id: \.offset) { _, line in
-                        lineView(line)
+                .padding(.leading, followsTrack ? 14 : 0)
+                .overlay(alignment: .leading) {
+                    if highlight == index {
+                        RoundedRectangle(cornerRadius: 2).fill(Color.accentColor).frame(width: 4)
+                            .accessibilityHidden(true)
                     }
                 }
-                .padding(.leading, block.kind == "chorus" ? fontSize : 0)
+                .id(index)
             }
         }
     }
@@ -103,6 +122,8 @@ struct ChartView: View {
             Spacer().frame(height: fontSize * 0.4).accessibilityHidden(true)
         case .comment(let text):
             Text(text).font(.system(size: fontSize * 0.85)).italic().foregroundStyle(.secondary)
+        case .lyrics(let segments) where lyricsOnly:
+            Text(segments.map(\.text).joined().trimmingCharacters(in: .whitespaces)).font(.system(size: fontSize))
         case .lyrics(let segments):
             let hasChords = segments.contains { $0.chord != nil }
             FlowLayout {

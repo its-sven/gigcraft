@@ -30,9 +30,9 @@
 |---|---|
 | <img src="docs/img/phone-live-viewer.png" alt="Phone browser following the leader: song, key, gig note, chords, up next, Cue and Ready buttons" width="300"> | <img src="docs/img/desktop-live-follower.png" alt="Desktop app following a leader: current song with chart, Ready, quick cues, leave" width="480"> |
 
-| Help (F1) and tooltips everywhere | |
+| Help (F1) and tooltips everywhere | Second screen: the chart follows the backing track |
 |---|---|
-| <img src="docs/img/desktop-help.png" alt="Help window with topics: getting started, songs and charts, setlists, on stage, MIDI devices, playing together, import, keyboard shortcuts, language" width="480"> | |
+| <img src="docs/img/desktop-help.png" alt="Help window with topics: getting started, songs and charts, setlists, on stage, MIDI devices, playing together, import, keyboard shortcuts, language" width="480"> | <img src="docs/img/ipad-screen2.png" alt="External display view: large chart on black, scrolled to verse 2 as the backing track reaches it" width="400"> |
 
 **Deutsch** – the interface follows the system language, or pick one in the app:
 
@@ -56,6 +56,7 @@
 - **Live sessions**: one device leads the show; band members follow on the same Wi-Fi – in any browser via QR code, or in GigCraft (desktop, iPad, iPhone) with their own chart and their own pedal presets. Ready status and cues ("last chorus") for everyone. Nothing leaves the local network.
 - **Backing tracks and click** (desktop, iPad, iPhone): audio files per song with volume, pan, mute and output pair (click to the in-ears on outputs 3/4), click with count-in, Play/Stop in perform mode; the next song loads in the background.
 - **Look**: calm, modern surfaces with a light touch of stage gear – an amber LED accent, values like key, tempo and position in small display readouts, status lights; light and dark follow the system, the stage views are dark.
+- **Second screen and following the track**: a window for a monitor or projector (desktop) or an external display (iPad, AirPlay/HDMI) shows the current song large, chart or lyrics only; with section start times the chart follows the backing track.
 - **Help and tooltips**: a help window (F1) and a tooltip on every control on the desktop, a help sheet on iOS.
 - **Languages and accessibility**: English and German (more languages are one catalog file each); screen readers on the desktop (AccessKit: VoiceOver, Narrator, Orca) and VoiceOver on iOS, where a chart line is read as one sentence with its chords after it; larger text sizes scale the charts.
 - **Automation**: every action is a command – from the CLI, as MCP tools for AI agents, or from the apps. Undo/redo for everything; deleting moves to the library's trash.

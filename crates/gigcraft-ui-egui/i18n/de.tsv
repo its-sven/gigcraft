@@ -410,3 +410,16 @@
 	Looking for leaders on this network…	Suche Leader in diesem Netzwerk…
 	Follow this leader	Diesem Leader folgen
 	Or enter the address the leader's screen shows:	Oder gib die Adresse ein, die der Bildschirm des Leaders zeigt:
+	Section start times	Startzeiten der Abschnitte
+	When the backing track reaches a section, perform mode scrolls to it and marks it. Leave empty for sections you do not need.	Erreicht der Backing-Track einen Abschnitt, scrollt der Auftritt dorthin und markiert ihn. Abschnitte ohne Bedarf einfach leer lassen.
+	{section}: “{value}” is not a time like 1:23	{section}: „{value}“ ist keine Zeit wie 1:23
+	Screen 2	Bildschirm 2
+	Screen 2: chart	Bildschirm 2: Chart
+	Screen 2: lyrics	Bildschirm 2: Lyrics
+	Off	Aus
+	Chart with chords (band)	Chart mit Akkorden (Band)
+	Lyrics only (singers, audience)	Nur Lyrics (Gesang, Publikum)
+	A second window for a monitor or projector: drag it there and make it full screen	Ein zweites Fenster für Monitor oder Beamer: dorthin ziehen und auf Vollbild schalten
+	GigCraft – Screen 2	GigCraft – Bildschirm 2
+	With section start times (song editor), the chart follows the backing track and marks the current section.	Mit Startzeiten der Abschnitte (Song-Editor) folgt der Chart dem Backing-Track und markiert den laufenden Abschnitt.
+	Screen 2 opens a second window for a monitor or projector – the chart for the band or lyrics only for singers and the audience.	Bildschirm 2 öffnet ein zweites Fenster für Monitor oder Beamer – den Chart für die Band oder nur die Lyrics für Gesang und Publikum.

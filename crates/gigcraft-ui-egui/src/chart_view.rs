@@ -31,12 +31,31 @@ impl Cache {
 }
 
 pub(crate) fn show(ui: &mut egui::Ui, chart: &Chart, size: f32) {
+    show_with(ui, chart, size, Options::default());
+}
+
+/// How to draw a chart.
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct Options {
+    /// Mark this block (the section the backing track is in).
+    pub highlight: Option<usize>,
+    /// Lyrics without chords (singers, audience screens).
+    pub lyrics_only: bool,
+}
+
+/// Draw `chart`; returns the top of each block, relative to where the chart starts.
+pub(crate) fn show_with(ui: &mut egui::Ui, chart: &Chart, size: f32, opts: Options) -> Vec<f32> {
+    let mut tops = Vec::with_capacity(chart.blocks.len());
     if chart.blocks.is_empty() {
         ui.label(egui::RichText::new(tr!("No chart yet.")).weak());
-        return;
+        return tops;
     }
+    let origin = ui.cursor().top();
     let chord_color = ui.visuals().hyperlink_color;
-    for block in &chart.blocks {
+    let accent = crate::theme::pal(ui).accent;
+    for (bi, block) in chart.blocks.iter().enumerate() {
+        let top = ui.cursor().top();
+        tops.push(top - origin);
         if let Some(label) = &block.label {
             ui.add_space(size * 0.4);
             let text = egui::RichText::new(label).size(size * 0.8).strong();
@@ -65,6 +84,10 @@ pub(crate) fn show(ui: &mut egui::Ui, chart: &Chart, size: f32) {
                                 t = t.strong();
                             }
                             ui.label(t.weak());
+                        }
+                        ChartLine::Lyrics { segments } if opts.lyrics_only => {
+                            let text: String = segments.iter().map(|s| s.text.as_str()).collect();
+                            ui.label(egui::RichText::new(text.trim()).size(size));
                         }
                         ChartLine::Lyrics { segments } => {
                             let any_chord = segments.iter().any(|s| s.chord.is_some());
@@ -95,5 +118,15 @@ pub(crate) fn show(ui: &mut egui::Ui, chart: &Chart, size: f32) {
                 }
             });
         });
+        if opts.highlight == Some(bi) {
+            let bottom = ui.cursor().top();
+            let x = ui.min_rect().left() - 6.0;
+            ui.painter().rect_filled(
+                egui::Rect::from_min_max(egui::pos2(x, top), egui::pos2(x + 3.0, bottom)),
+                2.0,
+                accent,
+            );
+        }
     }
+    tops
 }

@@ -82,7 +82,7 @@ pub(crate) fn pal(ui: &egui::Ui) -> Palette {
     palette(ui.visuals().dark_mode)
 }
 
-fn visuals(dark: bool) -> Visuals {
+pub(crate) fn visuals(dark: bool) -> Visuals {
     let p = palette(dark);
     let mut v = if dark {
         Visuals::dark()

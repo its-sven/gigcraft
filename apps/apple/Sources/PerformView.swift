@@ -8,6 +8,7 @@ struct PerformView: View {
     @FocusState private var focused: Bool
     @State private var breakEnds: Date?
     @State private var startedAt = Date()
+    @AppStorage("gc.stage.lyricsOnly") private var stageLyricsOnly = false
 
     var body: some View {
         let st = model.performState ?? [:]
@@ -76,6 +77,17 @@ struct PerformView: View {
             }
             transport(st)
             Spacer()
+            if UIApplication.shared.connectedScenes.contains(where: { $0.session.role == .windowExternalDisplayNonInteractive }) {
+                Menu {
+                    Picker("Screen 2", selection: $stageLyricsOnly) {
+                        Text("Chart with chords (band)").tag(false)
+                        Text("Lyrics only (singers, audience)").tag(true)
+                    }
+                } label: {
+                    Label("Screen 2", systemImage: "rectangle.on.rectangle")
+                }
+                .accessibilityHint("What the external display shows")
+            }
             Button("Panic", role: .destructive) { model.perform("panic") }
             Button("Exit") { model.stopPerform() }.bold()
         }
@@ -117,7 +129,10 @@ struct PerformView: View {
         let parts = cur["part_names"] as? [String] ?? []
         let part = st["part"] as? Int ?? 0
         let index = st["index"] as? Int ?? 0
-        return ScrollView {
+        let chart = model.chart(songId, transpose: semis)
+        let section = chart.flatMap { model.playingSection(songId: songId, chart: $0) }
+        return ScrollViewReader { proxy in
+        ScrollView {
             VStack(alignment: .leading, spacing: 10) {
                 HStack(alignment: .center, spacing: 12) {
                     Text(cur["title"] as? String ?? "").font(.system(size: scaled(size * 1.6), weight: .bold))
@@ -141,13 +156,18 @@ struct PerformView: View {
                 if let n = cur["gig_notes"] as? String, !n.isEmpty {
                     Text(n).font(.system(size: size)).foregroundStyle(.orange)
                 }
-                if let chart = model.chart(songId, transpose: semis), !chart.blocks.isEmpty {
-                    ChartView(chart: chart, fontSize: size)
+                if let chart, !chart.blocks.isEmpty {
+                    ChartView(chart: chart, fontSize: size, highlight: section, followsTrack: true)
                 } else if let pdf = model.attachments(songId).first(where: { $0.kind == "pdf" }) {
                     PDFKitView(url: pdf.url).frame(minHeight: 900)
                 }
             }
             .padding()
+        }
+        // Follow the backing track: scroll when it enters the next section.
+        .onChange(of: section) { _, new in
+            if let new { withAnimation(.easeInOut(duration: 0.4)) { proxy.scrollTo(new, anchor: .top) } }
+        }
         }
     }
 

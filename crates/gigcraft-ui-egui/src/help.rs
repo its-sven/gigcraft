@@ -251,6 +251,12 @@ fn page(app: &mut GigCraftApp, ui: &mut egui::Ui, topic: Topic) {
                     ),
                     tr!("Breaks show a countdown."),
                     tr!(
+                        "With section start times (song editor), the chart follows the backing track and marks the current section."
+                    ),
+                    tr!(
+                        "Screen 2 opens a second window for a monitor or projector – the chart for the band or lyrics only for singers and the audience."
+                    ),
+                    tr!(
                         "Songs with backing tracks or a click show Play next to the setlist name; the files of the next song load in the background."
                     ),
                     tr!("PANIC sends all notes off to every device."),

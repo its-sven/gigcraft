@@ -15,6 +15,7 @@ mod perform;
 mod rig_ui;
 mod setlist_view;
 mod song_view;
+mod stage_display;
 mod theme;
 
 use gigcraft_commands::{Engine, Outcome};
@@ -93,6 +94,10 @@ pub struct Start {
     pub help: bool,
     /// Open the Live window (without starting or joining).
     pub show_live: bool,
+    /// Open screen 2: "chart" or "lyrics".
+    pub screen2: Option<String>,
+    /// Press Play once the first song's backing tracks are loaded.
+    pub play: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -135,6 +140,7 @@ pub struct GigCraftApp {
     live: live_ui::LiveUi,
     help: help::HelpUi,
     audio: audio_ui::AudioUi,
+    stage: stage_display::StageUi,
 }
 
 impl GigCraftApp {
@@ -167,6 +173,7 @@ impl GigCraftApp {
             live: live_ui::LiveUi::default(),
             help: help::HelpUi::default(),
             audio: audio_ui::AudioUi::default(),
+            stage: stage_display::StageUi::default(),
         };
         if let Some(storage) = cc.storage {
             if let Some(lang) = storage.get_string(LANGUAGE_KEY) {
@@ -213,6 +220,12 @@ impl GigCraftApp {
         if start.show_live {
             app.live.open = true;
         }
+        app.stage.mode = match start.screen2.as_deref() {
+            Some("chart") => stage_display::Mode::Chart,
+            Some("lyrics") => stage_display::Mode::Lyrics,
+            _ => stage_display::Mode::Off,
+        };
+        app.audio.autoplay = start.play;
         app
     }
 
@@ -789,6 +802,7 @@ impl eframe::App for GigCraftApp {
         audio_ui::pump(self, ui.ctx());
         live_ui::window(self, ui.ctx(), time);
         help::window(self, ui.ctx());
+        stage_display::show(self, ui.ctx());
         self.paste_window(ui.ctx());
         if self.live.following() {
             live_ui::follow_view(self, ui);

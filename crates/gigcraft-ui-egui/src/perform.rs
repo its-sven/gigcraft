@@ -25,6 +25,30 @@ pub(crate) struct PerformUi {
     break_until: Option<f64>,
     started_at: Option<f64>,
     last_sent: Vec<String>,
+    /// Where each chart section starts (from the last frame), for following the track.
+    block_tops: Vec<f32>,
+    /// The section the view last scrolled to for the backing track.
+    auto_block: Option<usize>,
+}
+
+/// The chart block the backing track is in: the last section marker at or
+/// before `pos`, matched to a block by its label ("Chorus", "Verse: 2").
+pub(crate) fn section_at(
+    song: &gigcraft_model::Song,
+    chart: &gigcraft_chordpro::Chart,
+    pos: f64,
+) -> Option<usize> {
+    let norm = |s: &str| s.trim().to_lowercase();
+    let marker = song
+        .markers
+        .iter()
+        .filter(|m| m.at_secs <= pos)
+        .max_by(|a, b| a.at_secs.total_cmp(&b.at_secs))?;
+    let want = norm(&marker.name);
+    chart
+        .blocks
+        .iter()
+        .position(|b| b.label.as_deref().is_some_and(|l| norm(l) == want))
 }
 
 impl PerformUi {
@@ -229,6 +253,8 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
             ui.separator();
             let current_song = st["current"]["song"].as_str().and_then(|s| s.parse().ok());
             crate::audio_ui::transport(app, ui, current_song);
+            ui.separator();
+            crate::stage_display::picker(app, ui);
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui
                     .button(tr!("Exit"))
@@ -248,6 +274,9 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
         });
     });
     let live_summary = app.live.summary();
+    let audio_pos = crate::audio_ui::position(app);
+    let mut new_tops: Option<Vec<f32>> = None;
+    let mut new_auto: Option<usize> = None;
     egui::Panel::bottom("perform-bottom").show(ui, |ui| {
         ui.add_space(6.0);
         ui.horizontal(|ui| {
@@ -404,13 +433,30 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                         _ => 0,
                     };
                     let chart = app.chart_cache.get(lib, id, semis);
+                    let highlight = audio_pos
+                        .zip(lib.song(id))
+                        .and_then(|(pos, s)| section_at(s, &chart.chart, pos));
+                    // Follow the backing track: scroll once when it enters a new section.
+                    let follow = match highlight {
+                        Some(b) if p.auto_block != Some(b) => {
+                            p.block_tops.get(b).map(|t| (t - size * 0.5).max(0.0))
+                        }
+                        _ => None,
+                    };
                     let mut area = egui::ScrollArea::vertical().auto_shrink(false);
-                    if let Some(o) = p.pending_scroll {
+                    if let Some(o) = p.pending_scroll.or(follow) {
                         area = area.vertical_scroll_offset(o);
                     }
-                    let out = area.show(ui, |ui| chart_view::show(ui, &chart.chart, size));
+                    let opts = chart_view::Options {
+                        highlight,
+                        lyrics_only: false,
+                    };
+                    let out =
+                        area.show(ui, |ui| chart_view::show_with(ui, &chart.chart, size, opts));
                     new_scroll = Some(out.state.clamped_offset().y);
                     view_height = out.inner_rect.height();
+                    new_tops = Some(out.inner);
+                    new_auto = highlight;
                 }
             }
             Some("break") => {
@@ -445,6 +491,10 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
 
     if let Some(p) = app.perform.as_mut() {
         p.pending_scroll = None;
+        if let Some(t) = new_tops {
+            p.block_tops = t;
+        }
+        p.auto_block = new_auto;
         if let Some(s) = new_scroll {
             p.scroll = s;
         }
@@ -461,4 +511,32 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
     // Keep the "on stage" clock running.
     ui.ctx()
         .request_repaint_after(std::time::Duration::from_secs(1));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_track_position_picks_the_section() {
+        let chart = gigcraft_chordpro::parse(
+            "{start_of_verse: 1}\n[G]a\n{end_of_verse}\n{start_of_chorus}\n[C]b\n{end_of_chorus}\n{start_of_verse: 2}\n[G]c\n{end_of_verse}\n",
+            0,
+        )
+        .chart;
+        let labels: Vec<_> = chart.blocks.iter().map(|b| b.label.clone()).collect();
+        let mut song = gigcraft_model::Song::new("Test");
+        let at = |name: &str, s: f64| gigcraft_model::Marker {
+            name: name.into(),
+            at_secs: s,
+            end_secs: None,
+        };
+        let verse2 = labels[2].clone().unwrap();
+        song.markers = vec![at(" chorus ", 30.0), at(&verse2, 60.0), at("Solo", 90.0)];
+        assert_eq!(section_at(&song, &chart, 10.0), None);
+        assert_eq!(section_at(&song, &chart, 30.0), Some(1));
+        assert_eq!(section_at(&song, &chart, 75.0), Some(2));
+        // A marker with no matching section shows nothing.
+        assert_eq!(section_at(&song, &chart, 95.0), None);
+    }
 }

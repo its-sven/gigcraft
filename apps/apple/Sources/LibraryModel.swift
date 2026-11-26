@@ -52,6 +52,13 @@ final class LibraryModel {
     }
 
     private(set) var core: Core?
+
+    /// The app's model, for scenes SwiftUI does not create (external display).
+    nonisolated(unsafe) static weak var current: LibraryModel?
+
+    init() {
+        Self.current = self
+    }
     /// MIDI devices and pedals.
     let rig = RigBridge()
     /// Following a band leader (live session).
@@ -439,5 +446,23 @@ extension LibraryModel {
         let devices = Set(rig.deviceNames)
         let actions = (parts[snap.part]["actions"] as? [[String: Any]] ?? []).filter { devices.contains($0["device"] as? String ?? "") }
         if !actions.isEmpty { rig.sendPart(actions) }
+    }
+}
+
+extension LibraryModel {
+    /// The chart block the backing track is in: the last section start time at
+    /// or before the position, matched to a block by its label.
+    func playingSection(songId: String, chart: Chart) -> Int? {
+        guard let status = audio.status, status.playing, !status.countingIn, status.songId == songId,
+              let rec = songRecord(songId) else { return nil }
+        let markers = (rec.song["markers"] as? [[String: Any]] ?? [])
+            .compactMap { m -> (String, Double)? in
+                guard let name = m["name"] as? String, let at = m["at_secs"] as? Double else { return nil }
+                return (name, at)
+            }
+            .filter { $0.1 <= status.positionSecs }
+        guard let current = markers.max(by: { $0.1 < $1.1 }) else { return nil }
+        let want = current.0.trimmingCharacters(in: .whitespaces).lowercased()
+        return chart.blocks.firstIndex { ($0.label ?? "").trimmingCharacters(in: .whitespaces).lowercased() == want }
     }
 }

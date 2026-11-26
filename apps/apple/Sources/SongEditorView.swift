@@ -51,6 +51,9 @@ struct SongEditorView: View {
     @State private var clickOn = false
     @State private var countIn = 0
     @State private var clickVolume = 0.0
+    /// Start time ("m:ss") per chart section; other markers kept as they are.
+    @State private var sectionTimes: [String: String] = [:]
+    @State private var otherMarkers: [[String: Any]] = []
     @State private var issues: [String] = []
     @State private var loaded = false
 
@@ -141,10 +144,24 @@ struct SongEditorView: View {
                         ForEach(unused, id: \.self) { f in Button(f) { tracks.append(TrackDraft(file: f)) } }
                     }
                 }
+                if !tracks.isEmpty || clickOn {
+                    let labels = sectionLabels()
+                    if !labels.isEmpty {
+                        Text("Section start times").font(.subheadline.weight(.semibold)).padding(.top, 4)
+                        ForEach(labels, id: \.self) { label in
+                            LabeledContent(label) {
+                                TextField("m:ss", text: Binding(get: { sectionTimes[label] ?? "" }, set: { sectionTimes[label] = $0 }))
+                                    .keyboardType(.numbersAndPunctuation)
+                                    .multilineTextAlignment(.trailing)
+                                    .frame(maxWidth: 90)
+                            }
+                        }
+                    }
+                }
             } header: {
                 Text("Backing tracks and click")
             } footer: {
-                Text("In perform mode, Play starts the tracks and the click together (key P or a footswitch). The iPad plays in stereo.")
+                Text("In perform mode, Play starts the tracks and the click together (key P or a footswitch). With section start times, the chart follows the backing track. The iPad plays in stereo.")
             }
             Section("Chart (ChordPro)") {
                 TextEditor(text: $chart)
@@ -203,6 +220,14 @@ struct SongEditorView: View {
             clickVolume = click["volume_db"] as? Double ?? 0
         }
         audioFiles = model.attachments(songId).filter { $0.kind == "audio" }.map(\.file)
+        let labels = Set(previewChart(source: rec.chart).blocks.compactMap(\.label))
+        for m in s["markers"] as? [[String: Any]] ?? [] {
+            if let name = m["name"] as? String, labels.contains(name), let at = m["at_secs"] as? Double {
+                sectionTimes[name] = Self.clockText(at)
+            } else {
+                otherMarkers.append(m)
+            }
+        }
         parts = (s["parts"] as? [[String: Any]] ?? []).map { p in
             var d = PartDraft(name: p["name"] as? String ?? "", notes: p["notes"] as? String ?? "")
             for a in p["actions"] as? [[String: Any]] ?? [] {
@@ -228,6 +253,15 @@ struct SongEditorView: View {
         if t.isEmpty { fields["tempo_bpm"] = NSNull() } else if let v = Double(t) { fields["tempo_bpm"] = v } else { issues = [String(localized: "Tempo is not a number")]; return }
         let c = capo.trimmingCharacters(in: .whitespaces)
         if c.isEmpty { fields["capo"] = NSNull() } else if let v = Int(c) { fields["capo"] = v } else { issues = [String(localized: "Capo is not a number")]; return }
+        var markers = otherMarkers
+        for (label, text) in sectionTimes where !text.trimmingCharacters(in: .whitespaces).isEmpty {
+            guard let at = Self.parseClock(text) else {
+                issues = [String(localized: "\(label): “\(text)” is not a time like 1:23")]
+                return
+            }
+            markers.append(["name": label, "at_secs": at])
+        }
+        fields["markers"] = markers.sorted { ($0["at_secs"] as? Double ?? 0) < ($1["at_secs"] as? Double ?? 0) }
         fields["tracks"] = tracks.map { t -> [String: Any] in
             ["file": t.file, "label": t.label, "role": t.role, "gain_db": t.gainDb, "pan": t.pan, "bus": t.bus, "mute": t.mute]
         }
@@ -248,5 +282,28 @@ struct SongEditorView: View {
             return
         }
         if result.isEmpty { dismiss() } else { issues = result }
+    }
+
+    private func sectionLabels() -> [String] {
+        var seen: [String] = []
+        for block in previewChart(source: chart).blocks where block.kind != "chorus_recall" {
+            if let l = block.label, !seen.contains(l) { seen.append(l) }
+        }
+        return seen
+    }
+
+    static func clockText(_ secs: Double) -> String {
+        let m = Int(secs) / 60
+        let s = secs - Double(m * 60)
+        return abs(s - s.rounded()) < 0.05 ? String(format: "%d:%02d", m, Int(s.rounded())) : String(format: "%d:%04.1f", m, s)
+    }
+
+    /// Seconds from "1:23", "1:23.5" or "83".
+    static func parseClock(_ text: String) -> Double? {
+        let t = text.trimmingCharacters(in: .whitespaces).replacingOccurrences(of: ",", with: ".")
+        let parts = t.split(separator: ":", omittingEmptySubsequences: false)
+        if parts.count == 2, let m = Double(parts[0]), let s = Double(parts[1]), m >= 0, (0..<60).contains(s) { return m * 60 + s }
+        if parts.count == 1, let v = Double(t), v >= 0, v.isFinite { return v }
+        return nil
     }
 }

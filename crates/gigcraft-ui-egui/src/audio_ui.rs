@@ -55,6 +55,8 @@ pub(crate) struct AudioUi {
     decoded_rx: Receiver<(PathBuf, Result<Clip, String>)>,
     /// Test click running (rig window).
     testing: bool,
+    /// Press Play once the next song is loaded (`--play`).
+    pub(crate) autoplay: bool,
 }
 
 impl Default for AudioUi {
@@ -74,6 +76,7 @@ impl Default for AudioUi {
             decoded_tx,
             decoded_rx,
             testing: false,
+            autoplay: false,
         }
     }
 }
@@ -207,6 +210,9 @@ fn load(app: &mut GigCraftApp, id: SongId) {
                     Ok(_) => {
                         app.audio.loaded = Some(key);
                         app.audio.length_secs = length;
+                        if std::mem::take(&mut app.audio.autoplay) {
+                            toggle(app);
+                        }
                     }
                     Err(e) => app.message = Some((e.to_string(), true)),
                 }
@@ -336,6 +342,13 @@ pub(crate) fn toggle(app: &mut GigCraftApp) {
             c.play(count_in)
         };
     }
+}
+
+/// Position of the playing song's tracks (not during the count-in).
+pub(crate) fn position(app: &mut GigCraftApp) -> Option<f64> {
+    status(app)
+        .filter(|s| s.state == PlayState::Playing && !s.counting_in)
+        .map(|s| s.position_secs)
 }
 
 /// PANIC: stop the audio too.

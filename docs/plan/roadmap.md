@@ -97,7 +97,7 @@ Order matters: each step is usable on its own.
 | 2 Followers with own charts/presets, ready, cues | done on desktop and iOS (iOS as follower only; iOS leading open) |
 | 3 Audio engine | engine and hosts done: desktop (cpal, ADR-0012) and iOS (AVAudioEngine through a real-time C function, ADR-0014), wired into perform mode and both song editors; multichannel outputs on iOS, cue slots, speed/pitch open |
 | 4 MIDI clock/MTC, timed MIDI, macros, MIDI files | open |
-| 5 Timed lyrics, PDF timestamps, external display | open |
+| 5 Timed lyrics, PDF timestamps, external display | section start times: the chart follows the backing track and marks the section (desktop, iOS); second screen: desktop window, iOS external display (AirPlay/HDMI), chart or lyrics only; line-level timing and PDF page timestamps open |
 | 6 Variants, history, queue, backups, settings export | open |
 | 7 Web build (wasm) | open (the UI crate keeps network and audio behind hooks so it can build for the web) |
 

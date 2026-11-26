@@ -2,9 +2,10 @@
 
 use crate::{GigCraftApp, chart_view};
 use gigcraft_model::{
-    ClickSettings, MidiAction, MidiMessage, Part, SongId, Track, TrackRole, format_duration,
+    ClickSettings, Marker, MidiAction, MidiMessage, Part, SongId, Track, TrackRole, format_duration,
 };
 use serde_json::{Value, json};
+use std::collections::BTreeMap;
 
 /// A program change shown as editable fields.
 #[derive(Debug, Clone, Default)]
@@ -43,6 +44,10 @@ pub(crate) struct Draft {
     click: ClickSettings,
     /// Audio attachments that can become tracks.
     audio_files: Vec<String>,
+    /// Start time ("m:ss") per chart section label, for following the track.
+    section_times: BTreeMap<String, String>,
+    /// Markers that are not section starts, kept as they are.
+    other_markers: Vec<Marker>,
     issues: Vec<String>,
 }
 
@@ -95,6 +100,12 @@ impl Draft {
             tracks: s.tracks.clone(),
             click_on: s.click.as_ref().is_some_and(|c| c.enabled),
             click: s.click.clone().unwrap_or_default(),
+            section_times: s
+                .markers
+                .iter()
+                .map(|m| (m.name.clone(), clock_text(m.at_secs)))
+                .collect(),
+            other_markers: Vec::new(),
             audio_files: s
                 .attachments
                 .iter()
@@ -179,6 +190,7 @@ impl Draft {
             "notes": self.notes,
             "parts": serde_json::to_value(parts).unwrap_or(Value::Null),
             "tracks": serde_json::to_value(&self.tracks).unwrap_or(Value::Null),
+            "markers": serde_json::to_value(self.markers()?).unwrap_or(Value::Null),
             "click": if self.click_on {
                 serde_json::to_value(ClickSettings { enabled: true, ..self.click.clone() }).unwrap_or(Value::Null)
             } else {
@@ -555,6 +567,57 @@ fn kind_label(kind: gigcraft_model::AttachmentKind) -> &'static str {
     }
 }
 
+/// "1:23" for 83.0 s, "1:23.5" for 83.5 s.
+fn clock_text(secs: f64) -> String {
+    let whole = secs.max(0.0);
+    let m = (whole / 60.0).floor();
+    let s = whole - m * 60.0;
+    if (s - s.round()).abs() < 0.05 {
+        format!("{}:{:02}", m as u64, s.round() as u64)
+    } else {
+        format!("{}:{:04.1}", m as u64, s)
+    }
+}
+
+/// Seconds from "1:23", "1:23.5" or "83".
+fn parse_clock(text: &str) -> Option<f64> {
+    let t = text.trim().replace(',', ".");
+    let (m, s) = match t.split_once(':') {
+        Some((m, s)) => (m.trim().parse::<f64>().ok()?, s.trim().parse::<f64>().ok()?),
+        None => (0.0, t.parse::<f64>().ok()?),
+    };
+    let v = m * 60.0 + s;
+    let ok =
+        v.is_finite() && v >= 0.0 && m >= 0.0 && (!t.contains(':') || (0.0..60.0).contains(&s));
+    ok.then_some(v)
+}
+
+impl Draft {
+    /// Section start times as markers, plus the markers this editor does not show.
+    fn markers(&self) -> Result<Vec<Marker>, String> {
+        let mut out = self.other_markers.clone();
+        for (label, text) in &self.section_times {
+            if text.trim().is_empty() {
+                continue;
+            }
+            let at = parse_clock(text).ok_or_else(|| {
+                tr!(
+                    "{section}: “{value}” is not a time like 1:23",
+                    section = label,
+                    value = text
+                )
+            })?;
+            out.push(Marker {
+                name: label.clone(),
+                at_secs: at,
+                end_secs: None,
+            });
+        }
+        out.sort_by(|a, b| a.at_secs.total_cmp(&b.at_secs));
+        Ok(out)
+    }
+}
+
 /// Output pair of a bus: bus 0 → "1/2", bus 1 → "3/4".
 fn bus_label(bus: u32) -> String {
     format!("{}/{}", bus * 2 + 1, bus * 2 + 2)
@@ -690,4 +753,80 @@ fn tracks_editor(ui: &mut egui::Ui, draft: &mut Draft) {
             );
         }
     });
+    if draft.tracks.is_empty() && !draft.click_on {
+        return;
+    }
+    // Section start times: perform mode follows the backing track through the chart.
+    let labels: Vec<String> = gigcraft_chordpro::parse(&draft.chart, 0)
+        .chart
+        .blocks
+        .iter()
+        .filter(|b| b.kind != gigcraft_chordpro::BlockKind::ChorusRecall)
+        .filter_map(|b| b.label.clone())
+        .fold(Vec::new(), |mut v, l| {
+            if !v.contains(&l) {
+                v.push(l);
+            }
+            v
+        });
+    if labels.is_empty() {
+        return;
+    }
+    ui.add_space(4.0);
+    ui.label(tr!("Section start times"))
+        .on_hover_text(tr!("When the backing track reaches a section, perform mode scrolls to it and marks it. Leave empty for sections you do not need."));
+    egui::Grid::new("section-times")
+        .num_columns(4)
+        .spacing([10.0, 4.0])
+        .show(ui, |ui| {
+            for (i, label) in labels.iter().enumerate() {
+                ui.label(label);
+                let text = draft.section_times.entry(label.clone()).or_default();
+                ui.add(
+                    egui::TextEdit::singleline(text)
+                        .hint_text("m:ss")
+                        .desired_width(60.0),
+                );
+                if i % 2 == 1 {
+                    ui.end_row();
+                }
+            }
+        });
+    // Markers whose names are no longer chart sections stay untouched.
+    let keep: Vec<String> = draft
+        .section_times
+        .keys()
+        .filter(|k| !labels.contains(k))
+        .cloned()
+        .collect();
+    for k in keep {
+        if let Some(text) = draft.section_times.remove(&k)
+            && let Some(at) = parse_clock(&text)
+        {
+            draft.other_markers.push(Marker {
+                name: k,
+                at_secs: at,
+                end_secs: None,
+            });
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn section_times_round_trip() {
+        assert_eq!(parse_clock("1:23"), Some(83.0));
+        assert_eq!(parse_clock("1:23,5"), Some(83.5));
+        assert_eq!(parse_clock(" 83 "), Some(83.0));
+        assert_eq!(parse_clock("0:00"), Some(0.0));
+        assert_eq!(parse_clock("1:75"), None);
+        assert_eq!(parse_clock("-5"), None);
+        assert_eq!(parse_clock("x"), None);
+        assert_eq!(clock_text(83.0), "1:23");
+        assert_eq!(clock_text(83.5), "1:23.5");
+        assert_eq!(clock_text(207.4), "3:27.4");
+    }
 }

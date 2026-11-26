@@ -21,6 +21,16 @@
         }
       }
     },
+    "%@: “%@” is not a time like 1:23": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@: „%@“ ist keine Zeit wie 1:23"
+          }
+        }
+      }
+    },
     "%lld min": {
       "localizations": {
         "de": {
@@ -491,6 +501,16 @@
         }
       }
     },
+    "Chart with chords (band)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chart mit Akkorden (Band)"
+          }
+        }
+      }
+    },
     "Charts are written in ChordPro: chords in square brackets right before the syllable, e.g. [G]Lanterns on the [C]water.": {
       "localizations": {
         "de": {
@@ -557,6 +577,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Click-Lautstärke"
+          }
+        }
+      }
+    },
+    "Connect an external display (AirPlay or HDMI): it shows the current song large – the chart or lyrics only (Screen 2 in perform mode). With section start times, the chart follows the backing track.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließe einen externen Bildschirm an (AirPlay oder HDMI): Er zeigt den aktuellen Song groß – den Chart oder nur die Lyrics (Bildschirm 2 im Auftritt). Mit Startzeiten der Abschnitte folgt der Chart dem Backing-Track."
           }
         }
       }
@@ -891,12 +921,12 @@
         }
       }
     },
-    "In perform mode, Play starts the tracks and the click together (key P or a footswitch). The iPad plays in stereo.": {
+    "In perform mode, Play starts the tracks and the click together (key P or a footswitch). With section start times, the chart follows the backing track. The iPad plays in stereo.": {
       "localizations": {
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Im Auftritt startet Abspielen die Spuren und den Click gemeinsam (Taste P oder Fußschalter). Das iPad spielt in Stereo."
+            "value": "Im Auftritt startet Abspielen die Spuren und den Click gemeinsam (Taste P oder Fußschalter). Mit Startzeiten der Abschnitte folgt der Chart dem Backing-Track. Das iPad spielt in Stereo."
           }
         }
       }
@@ -1117,6 +1147,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Suche Leader in diesem Netzwerk…"
+          }
+        }
+      }
+    },
+    "Lyrics only (singers, audience)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nur Lyrics (Gesang, Publikum)"
           }
         }
       }
@@ -1621,6 +1661,16 @@
         }
       }
     },
+    "Screen 2": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bildschirm 2"
+          }
+        }
+      }
+    },
     "Search songs": {
       "localizations": {
         "de": {
@@ -1637,6 +1687,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bereich"
+          }
+        }
+      }
+    },
+    "Section start times": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Startzeiten der Abschnitte"
           }
         }
       }
@@ -2131,6 +2191,16 @@
         }
       }
     },
+    "What the external display shows": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was der externe Bildschirm zeigt"
+          }
+        }
+      }
+    },
     "Without the app, band members can open the address in Safari.": {
       "localizations": {
         "de": {
@@ -2251,6 +2321,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Verbindung verloren"
+          }
+        }
+      }
+    },
+    "m:ss": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "m:ss"
           }
         }
       }
