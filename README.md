@@ -8,11 +8,15 @@
 
 ## Screenshots
 
-*Current state (2026-11-25). Demo content: songs written for GigCraft.*
+*Current state (2026-11-26). Demo content: songs written for GigCraft.*
 
 | Perform mode on iPad | Setlist editing on iPad |
 |---|---|
 | <img src="docs/img/ipad-perform.png" alt="Perform mode on iPad: song title, key, gig note, chords above lyrics, Previous/Next, up next and the pedal's current preset" width="400"> | <img src="docs/img/ipad-setlist-editor.png" alt="Setlist on iPad in edit mode: two sets, a break, keys per song, reorder handles, add songs" width="400"> |
+
+| iPhone: stage view | iPhone: song view with auto-scroll |
+|---|---|
+| <img src="docs/img/iphone-perform.png" alt="Stage view on iPhone: setlist name, song counter, Play, track position, auto-scroll and menu in two rows, big chart, up next, wide Previous/Next buttons" width="300"> | <img src="docs/img/iphone-song.png" alt="Song view on iPhone: title, artist, readouts for key, tempo, length and scroll speed, chart scrolling by itself, pause and more menu at the top" width="300"> |
 
 | Perform mode on the desktop | Song editor with live preview |
 |---|---|
@@ -51,7 +55,8 @@
 - **Setlists** with several sets, breaks, key/tempo/note per gig, optional songs, the same song twice, running times; share as text.
 - **Perform mode**: big type, parts, gig notes, chart in the gig key, break countdown, "up next"; Bluetooth page turners and keyboards; MIDI footswitches via MIDI Learn; panic; screen stays on (iOS).
 - **Rig**: song parts send presets to MIDI devices; MIDI clock at the song's tempo for delays, drum machines and loopers; the TC-Helicon Play Acoustic/Electric is driven by stepping with its own buttons when it ignores Program Change (read-only, never writes settings); a simulated pedal for rehearsing without hardware.
-- **Import/export**: ChordPro, OnSong, OpenSong, chords-over-lyrics text, BandHelper TSV, CSV, Cuebook libraries, Ultimate Guitar links and shared playlists (as setlists); ChordPro, TSV and setlist text out.
+- **Import/export**: one import for ChordPro, OnSong, OpenSong, chords-over-lyrics text, BandHelper TSV, CSV, Cuebook libraries, web links (`.webloc`, `.url`), Ultimate Guitar tab links and shared playlists (as setlists) – paste, drop or pick a file. Ultimate Guitar songs get title, artist, key, capo and tuning and keep their link (charts are never copied); ChordPro, TSV and setlist text out.
+- **Auto-scroll**: the chart scrolls as fast as the song is long, faster or slower in steps, by key or footswitch; scroll by hand at any time.
 - **Sync** through any shared folder (iCloud Drive, Nextcloud, Syncthing): changes from other devices appear within seconds; conflicting saves are caught instead of overwriting.
 - **Live sessions**: one device – computer, iPad or iPhone – leads the show; band members follow on the same Wi-Fi – in any browser via QR code, or in GigCraft (desktop, iPad, iPhone) with their own chart and their own pedal presets. Ready status and cues ("last chorus") for everyone. Nothing leaves the local network.
 - **Backing tracks and click** (desktop, iPad, iPhone): audio files per song with volume, pan, mute and output pair (click to the in-ears on outputs 3/4), click with count-in, Play/Stop in perform mode; the next song loads in the background.

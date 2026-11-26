@@ -251,6 +251,9 @@ fn page(app: &mut GigCraftApp, ui: &mut egui::Ui, topic: Topic) {
                     ),
                     tr!("Breaks show a countdown."),
                     tr!(
+                        "Auto-scroll (key S, or a footswitch) moves the chart by itself: as fast as the song is long, slower or faster with − and +. Scrolling by hand moves it on from there."
+                    ),
+                    tr!(
                         "With section start times (song editor), the chart follows the backing track and marks the current section."
                     ),
                     tr!(
@@ -333,7 +336,10 @@ fn page(app: &mut GigCraftApp, ui: &mut egui::Ui, topic: Topic) {
                         "Import file… reads ChordPro, OnSong, OpenSong, text with chords over the lyrics, BandHelper exports (TSV), CSV and Cuebook libraries."
                     ),
                     tr!(
-                        "Paste… takes a song or Ultimate Guitar links; for links, GigCraft stores the link, not the chart."
+                        "Paste… takes a song, Ultimate Guitar tab links or a playlist link. For each tab GigCraft makes a song with title, artist, key and capo and keeps the link – never the chart. A small UG in the song list marks songs with their link."
+                    ),
+                    tr!(
+                        "Web links saved as files (.webloc, .url) and pages saved from the browser work with Import file… too, or drop them on the window."
                     ),
                     tr!(
                         "Copy as text in a setlist, and the command line, export songs and setlists."

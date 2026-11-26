@@ -113,6 +113,10 @@ pub fn state(text: &str) -> String {
 /// Fixed English texts looked up at run time (from the core, or from tables
 /// like the quick cues); the catalogs must translate them.
 pub const CORE_TEXTS: &[&str] = &[
+    // gigcraft-commands import messages
+    "GigCraft cannot read this file. It reads ChordPro, OnSong, OpenSong, plain text, BandHelper and CSV files, Cuebook libraries, web links and saved Ultimate Guitar pages.",
+    "GigCraft imports Ultimate Guitar tab and playlist links. Other links can be added to a song in its editor.",
+    "This web page has no Ultimate Guitar playlist or tab. Copy its link and paste it instead.",
     // gigcraft-rig device states
     "not connected",
     "connecting",
@@ -136,6 +140,7 @@ pub const CORE_TEXTS: &[&str] = &[
     "Panic",
     "Exit perform mode",
     "Play/stop backing tracks",
+    "Start/stop auto-scroll",
     // quick cues (live_ui::QUICK_CUES)
     "Last chorus",
     "Chorus again",

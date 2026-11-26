@@ -7,7 +7,6 @@ struct RootView: View {
     @State private var importing = false
     @State private var pasting = false
     @State private var pasteText = ""
-    @State private var importMessage: String?
     @State private var joiningLive = false
     @State private var showingHelp = false
 
@@ -24,15 +23,28 @@ struct RootView: View {
                 switch model.section {
                 case .songs:
                     List(model.songs, id: \.id, selection: $model.selectedSong) { song in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(song.title).font(.headline)
-                            Text([song.artist, song.key.map { String(localized: "Key \($0)") } ?? "", song.duration ?? ""]
-                                .filter { !$0.isEmpty }.joined(separator: " · "))
-                                .font(.caption).foregroundStyle(.secondary)
+                        HStack(alignment: .firstTextBaseline) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(song.title).font(.headline)
+                                Text([song.artist, song.key.map { String(localized: "Key \($0)") } ?? "", song.duration ?? ""]
+                                    .filter { !$0.isEmpty }.joined(separator: " · "))
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }
+                            Spacer(minLength: 4)
+                            if song.ultimateGuitar != nil {
+                                Image(systemName: "link")
+                                    .font(.caption)
+                                    .foregroundStyle(Color("ChordColor"))
+                                    .accessibilityLabel("Has its Ultimate Guitar link")
+                            }
                         }
                         .tag(song.id)
                     }
                     .searchable(text: $model.query, prompt: "Search songs")
+                    .dropDestination(for: URL.self) { urls, _ in
+                        importDropped(urls)
+                        return !urls.isEmpty
+                    }
                 case .setlists:
                     List(model.setlists, selection: $model.selectedSetlist) { row in
                         VStack(alignment: .leading, spacing: 2) {
@@ -71,9 +83,15 @@ struct RootView: View {
                 }
                 ToolbarItem(placement: .bottomBar) {
                     Menu {
-                        Button("Import file…") { importing = true }
-                        Button("Paste song or links…") { pasteText = UIPasteboard.general.string ?? ""; pasting = true }
+                        Button { importClipboard() } label: {
+                            Label("Import from clipboard", systemImage: "doc.on.clipboard")
+                        }
+                        Button { importing = true } label: { Label("Import file…", systemImage: "doc") }
+                        Button { pasteText = UIPasteboard.general.string ?? ""; pasting = true } label: {
+                            Label("Paste song or links…", systemImage: "text.badge.plus")
+                        }
                     } label: { Label("Import", systemImage: "square.and.arrow.down") }
+                    .accessibilityHint("Songs, Ultimate Guitar links and playlists, files")
                 }
             }
         } detail: {
@@ -111,8 +129,9 @@ struct RootView: View {
         .fullScreenCover(isPresented: Binding(get: { model.live.active }, set: { if !$0 { model.live.leave() } })) {
             FollowView().environment(model)
         }
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.data, .text, .json, .commaSeparatedText, .tabSeparatedText]) { result in
-            if case .success(let url) = result { importMessage = model.importFile(url) }
+        // Any file: GigCraft says what it cannot read.
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.item]) { result in
+            if case .success(let url) = result { Task { await model.importFile(url) } }
         }
         .sheet(isPresented: $pasting) {
             NavigationStack {
@@ -124,20 +143,14 @@ struct RootView: View {
                         ToolbarItem(placement: .cancellationAction) { Button("Cancel") { pasting = false } }
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Import") {
-                                if let playlist = ugPlaylistLink(text: pasteText) {
-                                    pasting = false
-                                    Task { importMessage = await model.importPlaylist(playlist) }
-                                } else {
-                                    importMessage = model.importText(pasteText); pasting = false
-                                }
+                                let text = pasteText
+                                pasting = false
+                                Task { await model.importText(text) }
                             }.bold()
                         }
                     }
             }
         }
-        .alert("Import", isPresented: Binding(get: { importMessage != nil }, set: { if !$0 { importMessage = nil } })) {
-            Button("OK") { importMessage = nil }
-        } message: { Text(importMessage ?? "") }
         .fullScreenCover(isPresented: Binding(get: { model.performState != nil }, set: { if !$0 { model.stopPerform() } })) {
             PerformView().environment(model)
         }
@@ -145,9 +158,70 @@ struct RootView: View {
             if let id { editingSong = id; model.editRequest = nil }
         }
         .overlay(alignment: .bottom) {
+            if let notice = model.notice, model.errorMessage == nil, !notice.isEmpty {
+                Button { model.notice = nil } label: {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint)
+                        Text(notice).multilineTextAlignment(.leading)
+                        Spacer(minLength: 0)
+                    }
+                    .font(.footnote)
+                    .padding(10)
+                    .frame(maxWidth: 520)
+                    .background(.regularMaterial, in: .rect(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+                .padding()
+                .accessibilityHint("Tap to close")
+                .task(id: notice) {
+                    try? await Task.sleep(for: .seconds(5))
+                    if model.notice == notice { model.notice = nil }
+                }
+            }
             if let message = model.errorMessage {
-                Text(message).font(.footnote).padding(8).background(.red.opacity(0.85), in: .rect(cornerRadius: 8))
-                    .foregroundStyle(.white).padding()
+                Button { model.clearError() } label: {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                        Text(message).multilineTextAlignment(.leading)
+                        Spacer(minLength: 0)
+                        Image(systemName: "xmark").font(.caption.bold()).padding(.top, 2)
+                    }
+                    .font(.footnote)
+                    .padding(10)
+                    .frame(maxWidth: 520)
+                    .background(.red.opacity(0.9), in: .rect(cornerRadius: 10))
+                    .foregroundStyle(.white)
+                }
+                .buttonStyle(.plain)
+                .padding()
+                .accessibilityHint("Tap to close")
+                // Gone by itself after a few seconds.
+                .task(id: message) {
+                    try? await Task.sleep(for: .seconds(6))
+                    if model.errorMessage == message { model.clearError() }
+                }
+            }
+        }
+    }
+}
+
+extension RootView {
+    /// One tap after copying a link (in the Ultimate Guitar app: Share → Copy link).
+    private func importClipboard() {
+        let text = UIPasteboard.general.url?.absoluteString ?? UIPasteboard.general.string ?? ""
+        if text.contains("://") {
+            Task { await model.importText(text) }
+        } else {
+            pasteText = text
+            pasting = true
+        }
+    }
+
+    /// Links dragged from Safari, files from the Files app.
+    private func importDropped(_ urls: [URL]) {
+        Task {
+            for url in urls {
+                if url.isFileURL { await model.importFile(url) } else { await model.importText(url.absoluteString) }
             }
         }
     }
@@ -215,8 +289,9 @@ struct RigSection: View {
                 Text("While tracks play").tag("while_playing")
             }
             .accessibilityHint("Tempo sync for delays and loopers")
-            HStack {
-                ForEach(["next", "previous", "next_song", "previous_song"], id: \.self) { action in
+            // Wraps on narrow screens (iPhone).
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), alignment: .leading)], alignment: .leading) {
+                ForEach(["next", "previous", "next_song", "previous_song", "auto_scroll"], id: \.self) { action in
                     Button {
                         rig.learn(rig.learningFor == action ? nil : action)
                     } label: {

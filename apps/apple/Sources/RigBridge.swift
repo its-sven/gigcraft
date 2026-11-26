@@ -177,6 +177,7 @@ final class RigBridge {
         case "previous": String(localized: "Previous")
         case "next_song": String(localized: "Next song")
         case "previous_song": String(localized: "Previous song")
+        case "auto_scroll": String(localized: "Auto-scroll")
         default: action.replacingOccurrences(of: "_", with: " ")
         }
     }

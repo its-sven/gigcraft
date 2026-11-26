@@ -243,6 +243,9 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
         if let Some(c) = song.capo.filter(|c| *c > 0) {
             facts.push((tr!("Capo"), c.to_string()));
         }
+        if let Some(t) = song.custom.get("Tuning") {
+            facts.push((tr!("Tuning"), t.clone()));
+        }
         if let Some(d) = song.duration_secs {
             facts.push((tr!("Length"), format_duration(d)));
         }
@@ -297,7 +300,19 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
     if !song.links.is_empty() {
         ui.horizontal_wrapped(|ui| {
             for l in &song.links {
-                ui.hyperlink_to(l.label.clone().unwrap_or_else(|| l.url.clone()), &l.url);
+                let label = l.label.clone().unwrap_or_else(|| l.url.clone());
+                let r = ui
+                    .button(tr!("Open {label}", label = label))
+                    .on_hover_text(&l.url);
+                if r.clicked() {
+                    ui.ctx().open_url(egui::OpenUrl::new_tab(&l.url));
+                }
+                r.context_menu(|ui| {
+                    if ui.button(tr!("Copy link")).clicked() {
+                        ui.ctx().copy_text(l.url.clone());
+                        ui.close();
+                    }
+                });
             }
         });
     }

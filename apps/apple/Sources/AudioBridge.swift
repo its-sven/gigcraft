@@ -130,7 +130,7 @@ final class AudioBridge {
         readySong = nil
         work.async { [weak self] in
             var problem: String?
-            do { _ = try audio.loadSong(core: core, songId: current) } catch { problem = error.localizedDescription }
+            do { _ = try audio.loadSong(core: core, songId: current) } catch { problem = LibraryModel.describe(error) }
             if let next { try? audio.preload(core: core, songId: next) }
             DispatchQueue.main.async {
                 guard let self, self.wanted == current else { return }

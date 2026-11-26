@@ -519,3 +519,109 @@ fn an_ultimate_guitar_playlist_becomes_a_setlist() {
         Err(CommandError::InvalidParams(_))
     ));
 }
+
+fn ug_page(data: &str) -> String {
+    format!(
+        "<!DOCTYPE html><html><head><title>x</title></head><body><div class=\"js-store\" data-content=\"{}\"></div></body></html>",
+        data.replace('&', "&amp;").replace('"', "&quot;")
+    )
+}
+
+#[test]
+fn one_import_takes_links_shortcuts_and_pages() {
+    let (d, mut e) = engine();
+    let tab = "https://tabs.ultimate-guitar.com/tab/the-demo-band/harbour-lights-chords-10";
+    // A share message pasted as text: one song, the link kept, its page to load.
+    let r = run(
+        &mut e,
+        "import.text",
+        json!({"text": format!("Harbour Lights chords by The Demo Band on Ultimate Guitar\n{tab}")}),
+    )
+    .result;
+    assert_eq!(r["kind"], "links");
+    let id = r["first_song"].as_str().unwrap().to_string();
+    assert_eq!(r["fetch"][0]["url"], tab);
+    let song = run(&mut e, "song.get", json!({"id": id})).result["song"].clone();
+    assert_eq!(song["links"][0]["url"], tab);
+
+    // The page fills in what the link cannot say.
+    let data = r#"{"store":{"page":{"data":{
+        "tab":{"song_name":"Harbour Lights (Live)","artist_name":"The Demo Band","type":"Chords","tonality_name":"Em"},
+        "tab_view":{"meta":{"capo":3,"tuning":{"name":"Half Step Down"}}}}}}}"#;
+    let r = run(
+        &mut e,
+        "import.ultimate_guitar_details",
+        json!({"id": id, "html": ug_page(data)}),
+    )
+    .result;
+    assert_eq!(r["changed"], true);
+    let song = run(&mut e, "song.get", json!({"id": id})).result["song"].clone();
+    assert_eq!(song["title"], "Harbour Lights (Live)");
+    assert_eq!(song["key"], "Em");
+    assert_eq!(song["capo"], 3);
+    assert_eq!(song["custom"]["Tuning"], "Half Step Down");
+    assert_eq!(song["links"][0]["label"], "Ultimate Guitar (Chords)");
+
+    // A title the user typed stays.
+    run(
+        &mut e,
+        "song.update",
+        json!({"id": id, "fields": {"title": "Harbour"}}),
+    );
+    run(
+        &mut e,
+        "import.ultimate_guitar_details",
+        json!({"id": id, "html": ug_page(data)}),
+    );
+    assert_eq!(
+        run(&mut e, "song.get", json!({"id": id})).result["song"]["title"],
+        "Harbour"
+    );
+
+    // A .webloc for the same tab finds the song instead of adding it again.
+    let webloc = d.path().join("Harbour Lights.webloc");
+    std::fs::write(
+        &webloc,
+        format!("<?xml version=\"1.0\"?><plist version=\"1.0\"><dict><key>URL</key><string>{tab}</string></dict></plist>"),
+    )
+    .unwrap();
+    let r = run(
+        &mut e,
+        "import.file",
+        json!({"path": webloc.display().to_string()}),
+    )
+    .result;
+    assert_eq!(r["existing"][0], id.as_str());
+    assert_eq!(e.library().songs().len(), 1);
+
+    // A playlist link: the app loads the page, nothing changes yet.
+    let r = run(
+        &mut e,
+        "import.text",
+        json!({"text": "https://www.ultimate-guitar.com/user/playlist/shared?h=abc"}),
+    )
+    .result;
+    assert_eq!(r["kind"], "fetch_playlist");
+
+    // A saved playlist page becomes a setlist.
+    let list = r#"{"store":{"page":{"data":{"playlist":{"name":"Friday","items":[
+        {"id":2,"tab":{"song_name":"Night Ferry","artist_name":"Anna Beispiel","tab_url":"https://tabs.ultimate-guitar.com/tab/anna-beispiel/night-ferry-chords-11"}}]}}}}}"#;
+    let html = d.path().join("Friday.html");
+    std::fs::write(&html, ug_page(list)).unwrap();
+    let r = run(
+        &mut e,
+        "import.file",
+        json!({"path": html.display().to_string()}),
+    )
+    .result;
+    assert_eq!(r["kind"], "playlist");
+    assert_eq!(r["created"], 1);
+
+    // A file nobody can read says what can be read.
+    let pdf = d.path().join("x.bin");
+    std::fs::write(&pdf, [0u8, 159, 146, 150, 1, 2, 3]).unwrap();
+    let err = e
+        .run("import.file", &json!({"path": pdf.display().to_string()}))
+        .unwrap_err();
+    assert!(err.to_string().contains("ChordPro"), "{err}");
+}

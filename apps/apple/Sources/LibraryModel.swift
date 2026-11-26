@@ -69,6 +69,10 @@ final class LibraryModel {
     let leader = LiveLeader()
     private(set) var libraryName = ""
     private(set) var errorMessage: String?
+    /// A short note after an import or backup (shown at the bottom, goes by itself).
+    var notice: String?
+    /// The chart scrolls by itself (song view and stage view).
+    var autoScrolling = false
     var section: Section = .songs
     var query = "" { didSet { refreshSongs() } }
     private(set) var songs: [SongSummary] = []
@@ -96,8 +100,13 @@ final class LibraryModel {
     func load() {
         guard core == nil else { return }
         rig.onAction = { [weak self] action in
-            guard let self, self.performState != nil else { return }
-            self.perform(action)
+            guard let self else { return }
+            if self.performState != nil {
+                self.perform(action)
+            } else if action == "auto_scroll" {
+                // A footswitch while practising a song.
+                self.autoScrolling.toggle()
+            }
         }
         live.onPartChanged = { [weak self] in self?.sendOwnPresetsForLive() }
         audio.onPlayingChanged = { [weak self] playing in self?.rig.playback(playing) }
@@ -129,7 +138,7 @@ final class LibraryModel {
             backUp(auto: true)
             return true
         } catch {
-            errorMessage = "\(error)"
+            errorMessage = Self.describe(error)
             return false
         }
     }
@@ -222,7 +231,7 @@ final class LibraryModel {
             let out = try core.run(command: command, paramsJson: String(decoding: data, as: UTF8.self))
             return try JSONSerialization.jsonObject(with: Data(out.utf8)) as? [String: Any]
         } catch {
-            errorMessage = "\(error)"
+            errorMessage = Self.describe(error)
             return nil
         }
     }
@@ -256,52 +265,109 @@ final class LibraryModel {
         return id
     }
 
-    /// Import a picked file (ChordPro, OnSong, OpenSong, text, BandHelper TSV, CSV, Cuebook library).
-    func importFile(_ url: URL) -> String? {
+    /// Import a picked or dropped file: charts, libraries, web shortcuts
+    /// (.webloc, .url) and saved Ultimate Guitar pages.
+    @MainActor
+    func importFile(_ url: URL) async {
         let scoped = url.startAccessingSecurityScopedResource()
         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-        return importResult(run("import.file", ["path": url.path(percentEncoded: false)]))
+        await handleImport(run("import.file", ["path": url.path(percentEncoded: false)]))
     }
 
-    /// Import pasted text: a song, or Ultimate Guitar links.
-    func importText(_ text: String) -> String? {
-        if text.contains("ultimate-guitar.com/") {
-            guard let out = run("import.ultimate_guitar", ["links": text]), let r = out["result"] as? [String: Any] else { return nil }
+    /// Import text: a song, Ultimate Guitar tab links or a shared playlist link.
+    @MainActor
+    func importText(_ text: String) async {
+        await handleImport(run("import.text", ["text": text]))
+    }
+
+    /// What an import made, whatever it was; the result goes to `notice`.
+    @MainActor
+    private func handleImport(_ out: [String: Any]?) async {
+        guard let r = out?["result"] as? [String: Any] else { return }
+        switch r["kind"] as? String {
+        case "fetch_playlist":
+            notice = String(localized: "Loading the playlist…")
+            notice = await importPlaylist(r["url"] as? String ?? "")
+        case "playlist":
+            notice = playlistResult(r)
+        case "links":
             refreshSongs(); bump()
-            let n = (r["created"] as? [Any])?.count ?? 0
-            return String(localized: "\(n) songs added with their Ultimate Guitar links.")
+            if let first = r["first_song"] as? String { selectedSong = first; section = .songs }
+            fetchDetails(r)
+            let created = (r["created"] as? [Any])?.count ?? 0
+            let existing = (r["existing"] as? [Any])?.count ?? 0
+            var parts: [String] = []
+            if created > 0 { parts.append(String(localized: "\(created) songs added with their Ultimate Guitar links.")) }
+            if existing > 0 { parts.append(String(localized: "\(existing) already in the library.")) }
+            notice = parts.joined(separator: " ")
+        default:
+            notice = importResult(r)
         }
-        return importResult(run("import.text", ["text": text]))
     }
 
     /// A shared Ultimate Guitar playlist: load the page once, make a setlist of it.
-    func importPlaylist(_ url: String) async -> String {
+    @MainActor
+    func importPlaylist(_ url: String) async -> String? {
         guard let pageURL = URL(string: url) else { return String(localized: "That is not a link.") }
-        var request = URLRequest(url: pageURL, timeoutInterval: 20)
-        // The mobile site, as Safari on the iPhone would get it.
+        switch await Self.loadPage(pageURL) {
+        case .failure(let message):
+            return String(localized: "Could not load the playlist: \(message)")
+        case .success(let html):
+            guard let out = run("import.ultimate_guitar_playlist", ["html": html, "url": url]),
+                  let r = out["result"] as? [String: Any] else { return nil }
+            return playlistResult(r)
+        }
+    }
+
+    private func playlistResult(_ r: [String: Any]) -> String {
+        refreshSongs(); refreshSetlists(); bump()
+        if let id = r["setlist"] as? String { selectedSetlist = id; section = .setlists }
+        fetchDetails(r)
+        let name = r["name"] as? String ?? ""
+        let songs = r["songs"] as? Int ?? 0
+        let created = r["created"] as? Int ?? 0
+        return String(localized: "Setlist “\(name)”: \(songs) songs, \(created) new in the library.")
+    }
+
+    /// Load the new songs' tab pages one after the other and fill in title,
+    /// artist, key, capo and tuning (never the tab itself).
+    private func fetchDetails(_ r: [String: Any]) {
+        let items: [(String, URL)] = (r["fetch"] as? [[String: Any]] ?? []).compactMap { f in
+            guard let song = f["song"] as? String,
+                  let url = (f["url"] as? String).flatMap(URL.init(string:)) else { return nil }
+            return (song, url)
+        }
+        guard !items.isEmpty, let core else { return }
+        Task { @MainActor in
+            for (song, url) in items {
+                guard case .success(let html) = await Self.loadPage(url),
+                      let data = try? JSONSerialization.data(withJSONObject: ["id": song, "html": html]),
+                      let out = try? core.run(command: "import.ultimate_guitar_details", paramsJson: String(decoding: data, as: UTF8.self)),
+                      out.contains("\"changed\":true") else { continue }
+                refreshSongs(); refreshSetlists(); bump()
+            }
+        }
+    }
+
+    enum PageResult { case success(String), failure(String) }
+
+    /// A web page as Safari on the iPhone would get it.
+    static func loadPage(_ url: URL) async -> PageResult {
+        var request = URLRequest(url: url, timeoutInterval: 20)
         request.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
                          forHTTPHeaderField: "User-Agent")
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-                return String(localized: "Could not load the playlist (HTTP \(http.statusCode)).")
+                return .failure("HTTP \(http.statusCode)")
             }
-            let html = String(decoding: data, as: UTF8.self)
-            guard let out = run("import.ultimate_guitar_playlist", ["html": html, "url": url]),
-                  let r = out["result"] as? [String: Any] else { return errorMessage ?? String(localized: "No songs found in that playlist.") }
-            refreshSongs(); refreshSetlists(); bump()
-            if let id = r["setlist"] as? String { selectedSetlist = id; section = .setlists }
-            let name = r["name"] as? String ?? ""
-            let songs = r["songs"] as? Int ?? 0
-            let created = r["created"] as? Int ?? 0
-            return String(localized: "Setlist “\(name)”: \(songs) songs, \(created) new in the library.")
+            return .success(String(decoding: data, as: UTF8.self))
         } catch {
-            return String(localized: "Could not load the playlist: \(error.localizedDescription)")
+            return .failure(error.localizedDescription)
         }
     }
 
-    private func importResult(_ out: [String: Any]?) -> String? {
-        guard let r = out?["result"] as? [String: Any] else { return nil }
+    private func importResult(_ r: [String: Any]) -> String {
         refreshSongs(); refreshSetlists(); bump()
         if let first = r["first_song"] as? String { selectedSong = first; section = .songs }
         let warnings = (r["warnings"] as? [Any])?.count ?? 0
@@ -408,6 +474,7 @@ final class LibraryModel {
         rig.playback(false)
         performState = nil
         performSetlist = nil
+        autoScrolling = false
         lastSent = []
     }
 
@@ -419,6 +486,10 @@ final class LibraryModel {
                 audio.stop()
             case "playback":
                 if let core { audio.toggle(core: core) }
+            case "auto_scroll":
+                autoScrolling.toggle()
+            case "show":
+                autoScrolling = false
             default:
                 break
             }
@@ -471,6 +542,10 @@ final class LibraryModel {
         }
         launchEdit = defaults.bool(forKey: "gcEdit")
         if launchEdit, section == .songs { editRequest = selectedSong }
+        // `-gcAutoScroll YES`: start auto-scroll (tests, screenshots).
+        if defaults.bool(forKey: "gcAutoScroll") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.autoScrolling = true }
+        }
         // `-gcJoin 192.168.1.20:8787 -gcName Anna`: follow a live leader.
         if let address = defaults.string(forKey: "gcJoin") {
             _ = live.join(address: address, name: defaults.string(forKey: "gcName") ?? "iPad", instrument: defaults.string(forKey: "gcInstrument") ?? "")
@@ -526,4 +601,18 @@ extension LibraryModel {
             DispatchQueue.main.async { done?(path) }
         }
     }
+}
+
+extension LibraryModel {
+    /// A sentence for the musician, not the error value
+    /// (`Failed(code: "rejected", message: …)` → the message).
+    static func describe(_ error: Error) -> String {
+        if case let CoreError.Failed(_, message) = error {
+            // Core messages are English; the known ones have a translation.
+            return Bundle.main.localizedString(forKey: message, value: message, table: nil)
+        }
+        return error.localizedDescription
+    }
+
+    func clearError() { errorMessage = nil }
 }

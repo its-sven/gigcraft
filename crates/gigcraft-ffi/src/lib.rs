@@ -41,6 +41,11 @@ pub struct SongSummary {
     pub key: Option<String>,
     pub tempo_bpm: Option<f64>,
     pub duration: Option<String>,
+    /// The song's Ultimate Guitar link, if it has one.
+    pub ultimate_guitar: Option<String>,
+    pub capo: Option<u8>,
+    /// A tuning other than standard ("Half Step Down").
+    pub tuning: Option<String>,
 }
 
 #[derive(Debug, Clone, uniffi::Record)]
@@ -139,6 +144,13 @@ impl Core {
                 key: s.key.clone(),
                 tempo_bpm: s.tempo_bpm,
                 duration: s.duration_secs.map(format_duration),
+                ultimate_guitar: s
+                    .links
+                    .iter()
+                    .find(|l| gigcraft_formats::ultimate_guitar::is_ultimate_guitar(&l.url))
+                    .map(|l| l.url.clone()),
+                capo: s.capo.filter(|c| *c > 0),
+                tuning: s.custom.get("Tuning").cloned(),
             })
             .collect()
     }

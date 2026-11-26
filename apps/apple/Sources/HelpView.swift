@@ -33,6 +33,7 @@ struct HelpView: View {
         Topic(id: 3, title: "On stage", icon: "music.mic", points: [
             "Tap the right third of the screen for next, the left third for previous; or use the buttons at the bottom.",
             "Bluetooth page turners and keyboards work right away: arrow keys, space and page up/down.",
+            "Auto-scroll (the arrow button, key S or a footswitch) moves the chart as fast as the song is long; slower and faster are in the … menu. Touch the chart to pause; it goes on from where you leave it.",
             "Next goes part by part, then to the next song; each part sends its presets.",
             "When a part has the name of a section (Chorus, or Verse for Verse: 2), it starts with its presets as the backing track reaches that section.",
             "The screen stays on while you perform. Panic sends all notes off.",
@@ -53,8 +54,8 @@ struct HelpView: View {
             "On a shared venue Wi-Fi, better use the band's own router or a phone hotspot – no internet needed.",
         ]),
         Topic(id: 6, title: "Import, sync and safety", icon: "arrow.triangle.2.circlepath", points: [
-            "Import reads ChordPro, OnSong, OpenSong, text with chords over the lyrics, BandHelper exports, CSV and Cuebook libraries; paste takes a song or Ultimate Guitar links.",
-            "Ultimate Guitar playlists: share the playlist (in the UG app: My Tabs > Playlists > Share > Copy Link), paste the link with Paste… – GigCraft loads the page once and makes a setlist in that order, with title, artist and link per song. The charts stay on Ultimate Guitar: open the link, or paste a chart's text to keep it in GigCraft.",
+            "Import reads ChordPro, OnSong, OpenSong, text with chords over the lyrics, BandHelper exports, CSV, Cuebook libraries, saved web links and pages; paste takes a song, Ultimate Guitar tab links or a playlist link. You can also drag links from Safari or files onto the song list.",
+            "Ultimate Guitar: in the UG app or Safari, share a tab or playlist and copy the link, then Import > Import from clipboard. Each tab becomes a song with title, artist, key, capo and the link; a playlist becomes a setlist in its order. The charts stay on Ultimate Guitar – Open on Ultimate Guitar is in the song view – or paste a chart's text to keep it in GigCraft.",
             "Use the same folder in iCloud Drive or Nextcloud on every device: changes appear within seconds, and GigCraft asks before overwriting a song changed elsewhere.",
             "Deleted songs and setlists go to the library's trash; Undo brings back every change.",
         ]),

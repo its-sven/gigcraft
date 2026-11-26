@@ -27,7 +27,7 @@ final class LiveLeader: NSObject, NetServiceDelegate {
         do {
             urls = try leader.start()
         } catch {
-            self.error = error.localizedDescription
+            self.error = LibraryModel.describe(error)
             return
         }
         core = leader

@@ -173,6 +173,10 @@ pub struct GigCraftApp {
     backups: Vec<std::sync::mpsc::Receiver<BackupDone>>,
     /// A playlist page being loaded: (its address, the answer).
     playlist_fetch: Option<(String, std::sync::mpsc::Receiver<Result<String, String>>)>,
+    /// Tab pages still to load for song details: (song id, address).
+    details_queue: std::collections::VecDeque<(String, String)>,
+    /// The tab page being loaded now.
+    details_fetch: Option<(String, std::sync::mpsc::Receiver<Result<String, String>>)>,
 }
 
 impl GigCraftApp {
@@ -208,6 +212,8 @@ impl GigCraftApp {
             stage: stage_display::StageUi::default(),
             backups: Vec::new(),
             playlist_fetch: None,
+            details_queue: std::collections::VecDeque::new(),
+            details_fetch: None,
         };
         if let Some(storage) = cc.storage {
             if let Some(lang) = storage.get_string(LANGUAGE_KEY) {
@@ -474,7 +480,7 @@ impl GigCraftApp {
             }
             Err(e) => {
                 self.last_error = Some(e.code());
-                self.message = Some((e.to_string(), true));
+                self.message = Some((i18n::dynamic(&e.to_string()), true));
                 None
             }
         }
@@ -694,7 +700,7 @@ impl GigCraftApp {
                     && ui
                         .small_button(tr!("Import file…"))
                         .on_hover_text(tr!(
-                            "ChordPro, OnSong, OpenSong, text, BandHelper TSV, CSV, Cuebook"
+                            "ChordPro, OnSong, OpenSong, text, BandHelper TSV, CSV, Cuebook, web links (.webloc, .url) and saved Ultimate Guitar pages. You can also drop files on the window."
                         ))
                         .clicked()
                     && let Some(path) = self.hooks.pick_file.as_ref().and_then(|p| p())
@@ -703,7 +709,7 @@ impl GigCraftApp {
                 }
                 if ui
                     .small_button(tr!("Paste…"))
-                    .on_hover_text(tr!("Chords over lyrics, ChordPro or Ultimate Guitar links"))
+                    .on_hover_text(tr!("A song, Ultimate Guitar links or a shared playlist link"))
                     .clicked()
                 {
                     self.paste = Some(String::new());
@@ -724,17 +730,58 @@ impl GigCraftApp {
                 egui::ScrollArea::vertical()
                     .auto_shrink(false)
                     .show(ui, |ui| {
+                        let p = theme::pal(ui);
                         for song in engine.library().search(&self.query) {
                             let selected = self.song == Some(song.id);
-                            let mut text = egui::RichText::new(&song.title);
-                            if selected {
-                                text = text.strong();
+                            // Title, then artist and key small; "UG" when the
+                            // song has its Ultimate Guitar link.
+                            let mut job = egui::text::LayoutJob::default();
+                            let body = egui::TextStyle::Body.resolve(ui.style());
+                            let small = egui::TextStyle::Small.resolve(ui.style());
+                            job.append(
+                                &song.title,
+                                0.0,
+                                egui::TextFormat::simple(
+                                    body,
+                                    if selected {
+                                        p.text
+                                    } else {
+                                        ui.visuals().text_color()
+                                    },
+                                ),
+                            );
+                            let has_ug = song.links.iter().any(|l| {
+                                gigcraft_formats::ultimate_guitar::is_ultimate_guitar(&l.url)
+                            });
+                            if has_ug {
+                                job.append(
+                                    "  UG",
+                                    0.0,
+                                    egui::TextFormat::simple(small.clone(), p.chord),
+                                );
                             }
-                            let r = ui.selectable_label(selected, text);
-                            let r = if song.artist.is_empty() {
-                                r
+                            let sub: Vec<String> = [
+                                song.artist.clone(),
+                                song.key
+                                    .clone()
+                                    .map(|k| tr!("Key {key}", key = k))
+                                    .unwrap_or_default(),
+                            ]
+                            .into_iter()
+                            .filter(|s| !s.is_empty())
+                            .collect();
+                            if !sub.is_empty() {
+                                job.append(
+                                    &format!("\n{}", sub.join(" · ")),
+                                    0.0,
+                                    egui::TextFormat::simple(small, ui.visuals().weak_text_color()),
+                                );
+                            }
+                            let r = ui.selectable_label(selected, job);
+                            let r = if has_ug {
+                                r.on_hover_text(tr!("Has its Ultimate Guitar link"))
                             } else {
-                                r.on_hover_text(&song.artist)
+                                r
                             };
                             if r.clicked() {
                                 pick_song = Some(song.id);
@@ -798,21 +845,114 @@ impl GigCraftApp {
         }
     }
 
+    /// A file picked or dropped: charts, libraries, web shortcuts, saved pages.
     fn import_path(&mut self, path: PathBuf) {
-        // A playlist page saved from the browser.
-        let html = path
-            .extension()
-            .and_then(|e| e.to_str())
-            .is_some_and(|e| e.eq_ignore_ascii_case("html") || e.eq_ignore_ascii_case("htm"));
-        if html {
-            match std::fs::read_to_string(&path) {
-                Ok(page) => self.import_playlist(&page, ""),
-                Err(e) => self.message = Some((e.to_string(), true)),
+        if let Some(out) = self.run("import.file", json!({"path": path.display().to_string()})) {
+            self.after_any_import(&out.result);
+        }
+    }
+
+    /// Pasted text: a song, tab links or a playlist link.
+    fn import_text(&mut self, text: &str) -> bool {
+        match self.run("import.text", json!({"text": text})) {
+            Some(out) => {
+                self.after_any_import(&out.result);
+                true
             }
+            None => false,
+        }
+    }
+
+    /// What an import made, whatever it was.
+    fn after_any_import(&mut self, r: &Value) {
+        match r["kind"].as_str() {
+            Some("fetch_playlist") => {
+                let url = r["url"].as_str().unwrap_or_default().to_string();
+                if let Some(fetch) = &self.hooks.fetch_page {
+                    let rx = fetch(url.clone());
+                    self.playlist_fetch = Some((url, rx));
+                    self.notify(tr!("Loading the playlist…"));
+                }
+            }
+            Some("playlist") => self.after_playlist(r),
+            Some("links") => {
+                let n = r["created"].as_array().map_or(0, Vec::len);
+                let skipped = r["skipped_existing"].as_u64().unwrap_or(0);
+                let mut text = if n > 0 {
+                    trn!(
+                        n,
+                        "{n} song added with its Ultimate Guitar link.",
+                        "{n} songs added with their Ultimate Guitar links."
+                    )
+                } else {
+                    String::new()
+                };
+                if skipped > 0 {
+                    if !text.is_empty() {
+                        text.push(' ');
+                    }
+                    text.push_str(&trn!(
+                        skipped,
+                        "{n} was already in the library.",
+                        "{n} were already in the library."
+                    ));
+                }
+                self.notify(text);
+                if let Some(id) = r["first_song"].as_str().and_then(|s| s.parse().ok()) {
+                    self.song = Some(id);
+                    self.view = View::Songs;
+                }
+                self.queue_details(r);
+            }
+            _ => self.after_import(r),
+        }
+    }
+
+    /// Load the new songs' tab pages one by one for title, artist, key, capo.
+    fn queue_details(&mut self, r: &Value) {
+        if self.hooks.fetch_page.is_none() {
             return;
         }
-        if let Some(out) = self.run("import.file", json!({"path": path.display().to_string()})) {
-            self.after_import(&out.result);
+        for f in r["fetch"].as_array().into_iter().flatten() {
+            if let (Some(song), Some(url)) = (f["song"].as_str(), f["url"].as_str()) {
+                self.details_queue
+                    .push_back((song.to_string(), url.to_string()));
+            }
+        }
+    }
+
+    fn poll_details(&mut self, ctx: &egui::Context) {
+        if self.details_fetch.is_none() {
+            let Some((song, url)) = self.details_queue.pop_front() else {
+                return;
+            };
+            let Some(fetch) = &self.hooks.fetch_page else {
+                self.details_queue.clear();
+                return;
+            };
+            self.details_fetch = Some((song, fetch(url)));
+        }
+        let Some((song, rx)) = self.details_fetch.take() else {
+            return;
+        };
+        match rx.try_recv() {
+            Ok(Ok(html)) => {
+                // Quietly: a page without details just leaves the song as it is.
+                if let Some(engine) = self.engine.as_mut() {
+                    let _ = engine.run(
+                        "import.ultimate_guitar_details",
+                        &json!({"id": song, "html": html}),
+                    );
+                }
+                ctx.request_repaint();
+            }
+            Ok(Err(_)) | Err(std::sync::mpsc::TryRecvError::Disconnected) => {
+                ctx.request_repaint();
+            }
+            Err(std::sync::mpsc::TryRecvError::Empty) => {
+                self.details_fetch = Some((song, rx));
+                ctx.request_repaint_after(std::time::Duration::from_millis(200));
+            }
         }
     }
 
@@ -824,7 +964,11 @@ impl GigCraftApp {
         ) else {
             return;
         };
-        let r = &out.result;
+        self.after_playlist(&out.result);
+    }
+
+    fn after_playlist(&mut self, r: &Value) {
+        self.queue_details(r);
         self.notify(tr!(
             "Setlist “{name}”: {songs} songs, {new} new in the library.",
             name = r["name"].as_str().unwrap_or_default(),
@@ -889,13 +1033,13 @@ impl GigCraftApp {
             return;
         };
         let mut open = true;
-        let mut action = None;
+        let mut action = false;
         egui::Window::new(tr!("Paste songs"))
             .open(&mut open)
             .default_width(520.0)
             .show(ctx, |ui| {
                 ui.label(tr!(
-                    "Paste a song (ChordPro or chords over lyrics) or Ultimate Guitar links."
+                    "Paste a song (ChordPro or chords over lyrics), Ultimate Guitar tab links or a shared Ultimate Guitar playlist link."
                 ));
                 ui.add(
                     egui::TextEdit::multiline(&mut text)
@@ -904,58 +1048,20 @@ impl GigCraftApp {
                         .desired_width(f32::INFINITY),
                 );
                 ui.horizontal(|ui| {
-                    if ui.button(tr!("Import song")).on_hover_text(tr!("Add the pasted song to the library")).clicked() {
-                        action = Some("import.text");
-                    }
-                    if ui.button(tr!("Add Ultimate Guitar links")).on_hover_text(tr!("Create a song for each link, with the link attached (charts are not copied)")).clicked() {
-                        action = Some("import.ultimate_guitar");
+                    if ui
+                        .add(theme::primary(tr!("Import")))
+                        .on_hover_text(tr!(
+                            "GigCraft sees what it is: a song, tab links (one song each, with title, artist, key and capo) or a playlist (a setlist)"
+                        ))
+                        .clicked()
+                    {
+                        action = true;
                     }
                 });
-                ui.small(tr!("An Ultimate Guitar playlist: in the app or on the website, share the playlist, copy its link and paste it here – GigCraft makes a setlist from it."));
+                ui.small(tr!("Charts are never copied from Ultimate Guitar: each song keeps the link, so the tab is one click away."));
             });
-        match action {
-            Some("import.text") => {
-                if let Some(out) = self.run("import.text", json!({"text": text})) {
-                    self.after_import(&out.result);
-                    return;
-                }
-            }
-            Some(_)
-                if gigcraft_formats::ultimate_guitar::links_in_text(&text).is_empty()
-                    && let Some(url) =
-                        gigcraft_formats::ultimate_guitar::page_link_in_text(&text) =>
-            {
-                // A shared playlist: load the page once, in the background.
-                if let Some(fetch) = &self.hooks.fetch_page {
-                    let rx = fetch(url.clone());
-                    self.playlist_fetch = Some((url, rx));
-                    self.notify(tr!("Loading the playlist…"));
-                    return;
-                }
-            }
-            Some(_) => {
-                if let Some(out) = self.run("import.ultimate_guitar", json!({"links": text})) {
-                    let n = out.result["created"].as_array().map_or(0, Vec::len);
-                    let mut text = trn!(
-                        n,
-                        "{n} song added with its Ultimate Guitar link.",
-                        "{n} songs added with their Ultimate Guitar links."
-                    );
-                    if let Some(skipped) =
-                        out.result["skipped_existing"].as_u64().filter(|s| *s > 0)
-                    {
-                        text.push(' ');
-                        text.push_str(&trn!(
-                            skipped,
-                            "{n} was already in the library.",
-                            "{n} were already in the library."
-                        ));
-                    }
-                    self.notify(text);
-                    return;
-                }
-            }
-            None => {}
+        if action && self.import_text(&text) {
+            return;
         }
         if open {
             self.paste = Some(text);
@@ -1033,6 +1139,21 @@ impl eframe::App for GigCraftApp {
         live_ui::pump(self, ui.ctx(), time);
         self.poll_backups();
         self.poll_playlist(ui.ctx());
+        self.poll_details(ui.ctx());
+        // Files dropped on the window: import each.
+        let dropped: Vec<PathBuf> = ui.ctx().input(|i| {
+            i.raw
+                .dropped_files
+                .iter()
+                .map(|f| f.path().to_path_buf())
+                .filter(|p| !p.as_os_str().is_empty())
+                .collect()
+        });
+        if self.engine.is_some() {
+            for path in dropped {
+                self.import_path(path);
+            }
+        }
         audio_ui::pump(self, ui.ctx());
         live_ui::window(self, ui.ctx(), time);
         help::window(self, ui.ctx());

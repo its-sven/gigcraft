@@ -132,6 +132,101 @@ pub fn links_in_text(text: &str) -> Vec<UgLink> {
     unique(candidates.filter_map(parse_link))
 }
 
+/// What a tab page says about its song (never the tab text itself).
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct TabDetails {
+    pub title: String,
+    pub artist: String,
+    /// The key the tab is written in ("Em").
+    pub key: Option<String>,
+    pub capo: Option<u8>,
+    /// "E A D G B E", "Half Step Down"…
+    pub tuning: Option<String>,
+    /// "Chords", "Tabs"…
+    pub kind: String,
+    /// The tab's own address, if the page names it.
+    pub url: Option<String>,
+}
+
+/// Read a tab page's song details from the data it embeds. `None` if the page
+/// has none (layout changed, not a tab page). The tab content is not read.
+#[must_use]
+pub fn parse_tab_html(html: &str) -> Option<TabDetails> {
+    if html.len() > MAX_HTML_BYTES {
+        return None;
+    }
+    let data = embedded_data(html)?;
+    let page = data.pointer("/store/page/data")?;
+    let tab = page.get("tab")?;
+    let text = |v: Option<&Value>| {
+        v.and_then(Value::as_str)
+            .map(|s| unescape_html(s.trim()))
+            .filter(|s| !s.is_empty())
+    };
+    let title = text(tab.get("song_name"))?;
+    let meta = page.pointer("/tab_view/meta");
+    let capo = meta
+        .and_then(|m| m.get("capo"))
+        .and_then(|c| {
+            c.as_u64()
+                .or_else(|| c.as_str().and_then(|s| s.trim().parse().ok()))
+        })
+        .and_then(|c| u8::try_from(c).ok())
+        .filter(|c| *c > 0 && *c <= 12);
+    let tuning = meta.and_then(|m| m.get("tuning")).and_then(|t| {
+        text(t.get("name"))
+            .or_else(|| text(t.get("value")))
+            .or_else(|| text(Some(t)))
+    });
+    Some(TabDetails {
+        title,
+        artist: text(tab.get("artist_name")).unwrap_or_default(),
+        key: text(tab.get("tonality_name")).or_else(|| text(meta.and_then(|m| m.get("tonality")))),
+        capo,
+        tuning,
+        kind: text(tab.get("type")).unwrap_or_default(),
+        url: text(tab.get("tab_url"))
+            .or_else(|| canonical_link(html))
+            .filter(|u| parse_link(u).is_some()),
+    })
+}
+
+/// The page's own address (`<link rel="canonical">` or `og:url`).
+fn canonical_link(html: &str) -> Option<String> {
+    for (marker, attr) in [
+        ("rel=\"canonical\"", "href=\""),
+        ("property=\"og:url\"", "content=\""),
+    ] {
+        let Some(at) = html.find(marker) else {
+            continue;
+        };
+        let tag_start = html[..at].rfind('<')?;
+        let tag_end = at + html[at..].find('>')?;
+        let tag = &html[tag_start..tag_end];
+        if let Some(i) = tag.find(attr) {
+            let rest = &tag[i + attr.len()..];
+            if let Some(end) = rest.find('"') {
+                return Some(unescape_html(&rest[..end]));
+            }
+        }
+    }
+    None
+}
+
+/// The link in a saved web shortcut: macOS `.webloc` (a property list) or a
+/// Windows `.url` file.
+#[must_use]
+pub fn link_in_shortcut(text: &str) -> Option<String> {
+    if let Some(line) = text.lines().find(|l| l.trim_start().starts_with("URL=")) {
+        return Some(line.trim_start()["URL=".len()..].trim().to_string());
+    }
+    let at = text.find("<key>URL</key>")?;
+    let rest = &text[at..];
+    let start = rest.find("<string>")? + "<string>".len();
+    let end = rest[start..].find("</string>")? + start;
+    Some(unescape_html(rest[start..end].trim()))
+}
+
 /// The first Ultimate Guitar link in `text` that is not a tab – a shared
 /// playlist (`https://www.ultimate-guitar.com/user/playlist/shared?h=…`) or
 /// another page that lists tabs. The app loads it once and reads it with
@@ -522,6 +617,48 @@ mod tests {
         format!(
             "<html><head><title>{title}</title></head><body><div class=\"js-store\" data-content=\"{escaped}\"></div></body></html>"
         )
+    }
+
+    #[test]
+    fn reads_tab_details_but_not_the_tab() {
+        let data = r#"{"store":{"page":{"data":{
+          "tab":{"song_name":"Harbour Lights","artist_name":"The Demo Band","type":"Chords","tonality_name":"G"},
+          "tab_view":{"meta":{"capo":2,"tuning":{"name":"Standard","value":"E A D G B E"}},
+                      "wiki_tab":{"content":"[ch]G[/ch] secret words"}}}}}}"#;
+        let d = parse_tab_html(&page(data, "x")).unwrap();
+        assert_eq!(d.title, "Harbour Lights");
+        assert_eq!(d.artist, "The Demo Band");
+        assert_eq!(d.key.as_deref(), Some("G"));
+        assert_eq!(d.capo, Some(2));
+        assert_eq!(d.tuning.as_deref(), Some("Standard"));
+        assert_eq!(d.kind, "Chords");
+        assert_eq!(d.url, None);
+        let saved = format!(
+            "<link rel=\"canonical\" href=\"https://tabs.ultimate-guitar.com/tab/the-demo-band/harbour-lights-chords-7\">{}",
+            page(data, "x")
+        );
+        assert_eq!(
+            parse_tab_html(&saved).unwrap().url.as_deref(),
+            Some("https://tabs.ultimate-guitar.com/tab/the-demo-band/harbour-lights-chords-7")
+        );
+        assert!(parse_tab_html("<html>no data</html>").is_none());
+        let none = r#"{"store":{"page":{"data":{"tab":{"song_name":"X","capo":"0"},"tab_view":{"meta":{"capo":"0"}}}}}}"#;
+        assert_eq!(parse_tab_html(&page(none, "x")).unwrap().capo, None);
+    }
+
+    #[test]
+    fn reads_web_shortcuts() {
+        let webloc = "<?xml version=\"1.0\"?><plist><dict><key>URL</key><string>https://tabs.ultimate-guitar.com/tab/a/b-chords-1?x=1&amp;y=2</string></dict></plist>";
+        assert_eq!(
+            link_in_shortcut(webloc).as_deref(),
+            Some("https://tabs.ultimate-guitar.com/tab/a/b-chords-1?x=1&y=2")
+        );
+        let url = "[InternetShortcut]\r\nURL=https://www.ultimate-guitar.com/user/playlist/shared?h=Q\r\n";
+        assert_eq!(
+            link_in_shortcut(url).as_deref(),
+            Some("https://www.ultimate-guitar.com/user/playlist/shared?h=Q")
+        );
+        assert_eq!(link_in_shortcut("just text"), None);
     }
 
     #[test]

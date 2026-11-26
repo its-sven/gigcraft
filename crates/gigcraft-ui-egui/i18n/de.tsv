@@ -450,3 +450,26 @@
 	An Ultimate Guitar playlist: in the app or on the website, share the playlist, copy its link and paste it here – GigCraft makes a setlist from it.	Eine Ultimate-Guitar-Playlist: in der App oder auf der Website die Playlist teilen, den Link kopieren und hier einfügen – GigCraft macht eine Setliste daraus.
 	Loading the playlist…	Lade die Playlist…
 	Ultimate Guitar playlists: share the playlist (in the UG app: My Tabs > Playlists > Share > Copy Link), paste the link with Paste… – GigCraft loads the page once and makes a setlist in that order, with title, artist and link per song. The charts stay on Ultimate Guitar: open the link, or paste a chart's text to keep it in GigCraft.	Ultimate-Guitar-Playlists: Playlist teilen (in der UG-App: My Tabs > Playlists > Teilen > Link kopieren), den Link über Einfügen… einfügen – GigCraft lädt die Seite einmal und legt eine Setliste in dieser Reihenfolge an, mit Titel, Interpret und Link pro Song. Die Charts bleiben bei Ultimate Guitar: Link öffnen, oder den Text eines Charts einfügen, um ihn in GigCraft zu haben.
+	A song, Ultimate Guitar links or a shared playlist link	Ein Song, Ultimate-Guitar-Links oder ein geteilter Playlist-Link
+	Charts are never copied from Ultimate Guitar: each song keeps the link, so the tab is one click away.	Von Ultimate Guitar werden keine Charts kopiert: Jeder Song behält den Link, der Tab ist einen Klick entfernt.
+	ChordPro, OnSong, OpenSong, text, BandHelper TSV, CSV, Cuebook, web links (.webloc, .url) and saved Ultimate Guitar pages. You can also drop files on the window.	ChordPro, OnSong, OpenSong, Text, BandHelper TSV, CSV, Cuebook, Web-Links (.webloc, .url) und gespeicherte Ultimate-Guitar-Seiten. Du kannst Dateien auch aufs Fenster ziehen.
+	GigCraft sees what it is: a song, tab links (one song each, with title, artist, key and capo) or a playlist (a setlist)	GigCraft erkennt selbst, was es ist: ein Song, Tab-Links (je ein Song mit Titel, Interpret, Tonart und Kapo) oder eine Playlist (eine Setlist)
+	Import	Importieren
+	Paste a song (ChordPro or chords over lyrics), Ultimate Guitar tab links or a shared Ultimate Guitar playlist link.	Füge einen Song (ChordPro oder Akkorde über Text), Ultimate-Guitar-Tab-Links oder einen geteilten Ultimate-Guitar-Playlist-Link ein.
+	GigCraft cannot read this file. It reads ChordPro, OnSong, OpenSong, plain text, BandHelper and CSV files, Cuebook libraries, web links and saved Ultimate Guitar pages.	Diese Datei kann GigCraft nicht lesen. Es liest ChordPro, OnSong, OpenSong, Text, BandHelper- und CSV-Dateien, Cuebook-Bibliotheken, Web-Links und gespeicherte Ultimate-Guitar-Seiten.
+	GigCraft imports Ultimate Guitar tab and playlist links. Other links can be added to a song in its editor.	GigCraft importiert Ultimate-Guitar-Tab- und Playlist-Links. Andere Links kannst du im Editor eines Songs hinzufügen.
+	This web page has no Ultimate Guitar playlist or tab. Copy its link and paste it instead.	Diese Webseite enthält keine Ultimate-Guitar-Playlist und keinen Tab. Kopiere stattdessen ihren Link und füge ihn ein.
+	Copy link	Link kopieren
+	Has its Ultimate Guitar link	Hat seinen Ultimate-Guitar-Link
+	Open {label}	{label} öffnen
+	Tuning	Stimmung
+	Start/stop auto-scroll	Auto-Scroll starten/stoppen
+	Auto-scroll	Auto-Scroll
+	Scroll faster	Schneller scrollen
+	Scroll slower	Langsamer scrollen
+	Speed	Tempo
+	Stop scrolling	Scrollen stoppen
+	The chart scrolls by itself, as fast as the song is long (key S). Scroll by hand at any time.	Das Chart scrollt von selbst, passend zur Songlänge (Taste S). Von Hand scrollen geht jederzeit.
+	Auto-scroll (key S, or a footswitch) moves the chart by itself: as fast as the song is long, slower or faster with − and +. Scrolling by hand moves it on from there.	Auto-Scroll (Taste S oder ein Fußschalter) bewegt das Chart von selbst: so schnell, wie der Song lang ist, mit − und + langsamer oder schneller. Von Hand gescrollt geht es von dort weiter.
+	Paste… takes a song, Ultimate Guitar tab links or a playlist link. For each tab GigCraft makes a song with title, artist, key and capo and keeps the link – never the chart. A small UG in the song list marks songs with their link.	Einfügen… nimmt einen Song, Ultimate-Guitar-Tab-Links oder einen Playlist-Link. Für jeden Tab legt GigCraft einen Song mit Titel, Interpret, Tonart und Kapo an und behält den Link – nie das Chart. Ein kleines UG in der Songliste zeigt Songs mit Link.
+	Web links saved as files (.webloc, .url) and pages saved from the browser work with Import file… too, or drop them on the window.	Als Datei gespeicherte Web-Links (.webloc, .url) und im Browser gespeicherte Seiten gehen auch mit Datei importieren… – oder zieh sie aufs Fenster.

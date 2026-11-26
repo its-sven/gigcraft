@@ -100,6 +100,7 @@ Order matters: each step is usable on its own.
 | 5 Timed lyrics, PDF timestamps, external display | section start times: the chart follows the backing track and marks the section (desktop, iOS); second screen: desktop window, iOS external display (AirPlay/HDMI), chart or lyrics only; line-level timing and PDF page timestamps open |
 | 6 Variants, history, queue, backups, settings export | backups done (daily ZIP outside the library, keep 14, back up now; desktop and iOS); settings export/import done (desktop); variants, history, queue open |
 | 7 Web build (wasm) | open (the UI crate keeps network and audio behind hooks so it can build for the web) |
+| 8 From rehearsals (0.2.3) | done: one import for text, links, web shortcuts and saved pages; Ultimate Guitar details (title, artist, key, capo, tuning, never the chart) and the link kept and shown; auto-scroll (stage view everywhere, song view on iOS; key S, footswitch); iPhone layouts for the song and stage views; readable, closable error messages |
 
 Also done along the way: help window (F1) and tooltips on every control (desktop), help sheet (iOS); the design pass (amber LED accent, display readouts, status LEDs, app icon).
 
@@ -116,6 +117,12 @@ Also done along the way: help window (F1) and tooltips on every control (desktop
 5. Timed lyrics and PDF timestamps; external display.
 6. Song variants, history, queue; scheduled backups; settings export.
 7. Web build (wasm) for editing and viewing.
+
+### Wanted for later (from rehearsals)
+
+- **Scroll sync in a live session:** every device shows the same position of the chart as the leader (opt-in per follower).
+- **Notes at a place in the chart, per device:** a musician's own remarks pinned to a line, kept only on that device (or in a personal layer), not in the shared song.
+- **Rehearsal marker for everyone:** mark a place ("from here", "bar 17") during rehearsal and every device in the session shows it.
 
 ## Phase 3: Band organisation
 

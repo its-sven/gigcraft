@@ -9,6 +9,8 @@ struct PerformView: View {
     @State private var breakEnds: Date?
     @State private var startedAt = Date()
     @AppStorage("gc.stage.lyricsOnly") private var stageLyricsOnly = false
+    @AppStorage("gc.scroll.factor") private var scrollFactor = 1.0
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         let st = model.performState ?? [:]
@@ -65,6 +67,7 @@ struct PerformView: View {
         .onKeyPress(.pageUp) { model.perform("previous"); return .handled }
         .onKeyPress(.escape) { model.stopPerform(); return .handled }
         .onKeyPress("p") { model.perform("playback"); return .handled }
+        .onKeyPress("s") { model.perform("auto_scroll"); return .handled }
         .onAppear {
             focused = true
             UIApplication.shared.isIdleTimerDisabled = true
@@ -78,54 +81,116 @@ struct PerformView: View {
     }
 
     private func header(_ st: [String: Any]) -> some View {
-        HStack {
-            Text(st["name"] as? String ?? "").bold()
-            let position = ((st["index"] as? Int) ?? 0) + 1
-            let count = st["count"] as? Int ?? 0
-            Readout(label: "Song", value: "\(position)/\(count)", size: 15)
-                .accessibilityLabel("Item \(position) of \(count)")
-            TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                let s = Int(ctx.date.timeIntervalSince(startedAt))
-                Readout(label: "On stage", value: String(format: "%d:%02d", s / 60, s % 60), size: 15)
-            }
-            transport(st)
-            if model.leader.active {
-                Readout(label: "Band", value: "\(model.leader.readyCount)/\(model.leader.roster.count)", size: 15)
-                    .accessibilityLabel("\(model.leader.readyCount) of \(model.leader.roster.count) band members ready")
-            }
-            Spacer()
-            if UIApplication.shared.connectedScenes.contains(where: { $0.session.role == .windowExternalDisplayNonInteractive }) {
-                Menu {
-                    Picker("Screen 2", selection: $stageLyricsOnly) {
-                        Text("Chart with chords (band)").tag(false)
-                        Text("Lyrics only (singers, audience)").tag(true)
+        let name = st["name"] as? String ?? ""
+        let position = ((st["index"] as? Int) ?? 0) + 1
+        let count = st["count"] as? Int ?? 0
+        let song = Readout(label: "Song", value: "\(position)/\(count)", size: 15)
+            .accessibilityLabel("Item \(position) of \(count)")
+        return Group {
+            if sizeClass == .compact {
+                // iPhone: two rows, the rest behind "…".
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text(name).bold().lineLimit(1)
+                        Spacer()
+                        Button("Exit") { model.stopPerform() }.bold()
                     }
-                } label: {
-                    Label("Screen 2", systemImage: "rectangle.on.rectangle")
+                    HStack(spacing: 8) {
+                        song
+                        transport(st, compact: true)
+                        band
+                        Spacer(minLength: 4)
+                        scrollButton
+                        moreMenu
+                    }
                 }
-                .accessibilityHint("What the external display shows")
+            } else {
+                HStack {
+                    Text(name).bold().lineLimit(1)
+                    song
+                    TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                        let s = Int(ctx.date.timeIntervalSince(startedAt))
+                        Readout(label: "On stage", value: String(format: "%d:%02d", s / 60, s % 60), size: 15)
+                    }
+                    transport(st, compact: false)
+                    band
+                    Spacer()
+                    scrollButton
+                    if model.autoScrolling {
+                        Readout(label: "Scroll", value: "\(Int(scrollFactor * 100))%", size: 15)
+                    }
+                    moreMenu
+                    Button("Panic", role: .destructive) { model.perform("panic") }
+                    Button("Exit") { model.stopPerform() }.bold()
+                }
             }
-            Button("Panic", role: .destructive) { model.perform("panic") }
-            Button("Exit") { model.stopPerform() }.bold()
         }
         .padding(.horizontal).padding(.vertical, 8)
     }
 
+    @ViewBuilder private var band: some View {
+        if model.leader.active {
+            Readout(label: "Band", value: "\(model.leader.readyCount)/\(model.leader.roster.count)", size: 15)
+                .accessibilityLabel("\(model.leader.readyCount) of \(model.leader.roster.count) band members ready")
+        }
+    }
+
+    private var scrollButton: some View {
+        Button { model.perform("auto_scroll") } label: {
+            Label(model.autoScrolling ? "Stop scrolling" : "Auto-scroll",
+                  systemImage: model.autoScrolling ? "pause.circle.fill" : "arrow.down.circle")
+                .labelStyle(.iconOnly)
+        }
+        .buttonStyle(StageButtonStyle(prominent: model.autoScrolling))
+        .accessibilityHint("The chart scrolls by itself, as fast as the song is long (key S). Touch the chart to pause.")
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            Section("Auto-scroll") {
+                Button { scrollFactor = AutoScrollSpeed.step(scrollFactor, up: false) } label: {
+                    Label("Scroll slower", systemImage: "tortoise")
+                }
+                Button { scrollFactor = AutoScrollSpeed.step(scrollFactor, up: true) } label: {
+                    Label("Scroll faster", systemImage: "hare")
+                }
+            }
+            if UIApplication.shared.connectedScenes.contains(where: { $0.session.role == .windowExternalDisplayNonInteractive }) {
+                Picker(selection: $stageLyricsOnly) {
+                    Text("Chart with chords (band)").tag(false)
+                    Text("Lyrics only (singers, audience)").tag(true)
+                } label: {
+                    Label("Screen 2", systemImage: "rectangle.on.rectangle")
+                }
+            }
+            Section {
+                Button(role: .destructive) { model.perform("panic") } label: {
+                    Label("Panic: all notes off, stop", systemImage: "exclamationmark.octagon")
+                }
+            }
+        } label: {
+            Label("More", systemImage: "ellipsis.circle").labelStyle(.iconOnly).font(.title3)
+        }
+        .accessibilityLabel("More")
+    }
+
     /// Play/stop and position, for songs with backing tracks or a click.
     @ViewBuilder
-    private func transport(_ st: [String: Any]) -> some View {
+    private func transport(_ st: [String: Any], compact: Bool) -> some View {
         let songId = (st["current"] as? [String: Any])?["song"] as? String
         let audio = model.audio
         if let songId, audio.loadingSong == songId {
             ProgressView().controlSize(.small)
-            Text("Loading backing tracks…").font(.caption).foregroundStyle(.secondary)
+            if !compact { Text("Loading backing tracks…").font(.caption).foregroundStyle(.secondary) }
         } else if let songId, audio.readySong == songId {
             let status = audio.status
             let playing = status?.playing ?? false
             Button { model.perform("playback") } label: {
                 Label(playing ? "Stop" : "Play", systemImage: playing ? "stop.fill" : "play.fill")
+                    .labelStyle(AdaptiveLabelStyle(iconOnly: compact))
             }
             .buttonStyle(StageButtonStyle(prominent: !playing))
+            .accessibilityLabel(playing ? "Stop" : "Play")
             .accessibilityHint("Start or stop the backing tracks and click (key P)")
             if let status {
                 Readout(label: "Track", value: status.countingIn ? String(localized: "count-in") : clock(status.positionSecs, status.lengthSecs), size: 15)
@@ -180,6 +245,11 @@ struct PerformView: View {
                 }
             }
             .padding()
+            .background(AutoScrollDriver(running: Binding(get: { model.autoScrolling }, set: { model.autoScrolling = $0 })) { content, visible in
+                AutoScrollSpeed.pointsPerSecond(content: content, visible: visible,
+                                                lengthSecs: AutoScrollSpeed.seconds(model.song(songId)?.duration),
+                                                fontSize: scaled(size), factor: scrollFactor)
+            })
         }
         // Follow the backing track: scroll when it enters the next section.
         .onChange(of: section) { _, new in
@@ -217,20 +287,48 @@ struct PerformView: View {
             default: return String(localized: "Up next: (missing song)")
             }
         }()
-        return HStack(spacing: 16) {
-            Button { model.perform("previous") } label: { Label("Previous", systemImage: "chevron.left").frame(minWidth: 120, minHeight: 34) }
-                .buttonStyle(StageButtonStyle())
-            Button { model.perform("next") } label: { Label("Next", systemImage: "chevron.right").frame(minWidth: 120, minHeight: 34) }
-                .buttonStyle(StageButtonStyle(prominent: true))
-            Text(nextText).font(.system(size: size * 0.8)).lineLimit(1)
-            Spacer()
-            if !model.rig.status.isEmpty {
-                Text(model.rig.status.joined(separator: "   ")).font(.caption).foregroundStyle(.secondary).lineLimit(1)
-            } else if !model.lastSent.isEmpty {
-                Text("Presets: \(model.lastSent.joined(separator: "; "))").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+        let compact = sizeClass == .compact
+        let buttons = HStack(spacing: compact ? 10 : 16) {
+            Button { model.perform("previous") } label: {
+                Label("Previous", systemImage: "chevron.left").frame(maxWidth: compact ? .infinity : nil, minHeight: 34).frame(minWidth: compact ? 0 : 120)
+            }
+            .buttonStyle(StageButtonStyle())
+            Button { model.perform("next") } label: {
+                Label("Next", systemImage: "chevron.right").frame(maxWidth: compact ? .infinity : nil, minHeight: 34).frame(minWidth: compact ? 0 : 120)
+            }
+            .buttonStyle(StageButtonStyle(prominent: true))
+        }
+        let status: String? = !model.rig.status.isEmpty ? model.rig.status.joined(separator: "   ")
+            : (!model.lastSent.isEmpty ? String(localized: "Presets: \(model.lastSent.joined(separator: "; "))") : nil)
+        return Group {
+            if compact {
+                // iPhone: what comes next above, wide buttons below.
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(nextText).font(.system(size: size * 0.7)).lineLimit(1)
+                    buttons
+                }
+            } else {
+                HStack(spacing: 16) {
+                    buttons
+                    Text(nextText).font(.system(size: size * 0.8)).lineLimit(1)
+                    Spacer()
+                    if let status { Text(status).font(.caption).foregroundStyle(.secondary).lineLimit(1) }
+                }
             }
         }
         .padding()
         .font(.system(size: size * 0.8))
+    }
+}
+
+/// Icon only on narrow screens, icon and title otherwise.
+struct AdaptiveLabelStyle: LabelStyle {
+    let iconOnly: Bool
+    func makeBody(configuration: Configuration) -> some View {
+        if iconOnly {
+            configuration.icon
+        } else {
+            HStack(spacing: 6) { configuration.icon; configuration.title }
+        }
     }
 }

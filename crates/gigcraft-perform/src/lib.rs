@@ -38,10 +38,12 @@ pub enum Action {
     Exit,
     /// Start or stop the current song's backing tracks and click.
     Playback,
+    /// Start or stop scrolling the chart by itself (UI).
+    AutoScroll,
 }
 
 impl Action {
-    pub const ALL: [Action; 10] = [
+    pub const ALL: [Action; 11] = [
         Action::Next,
         Action::Previous,
         Action::NextSong,
@@ -52,6 +54,7 @@ impl Action {
         Action::Panic,
         Action::Exit,
         Action::Playback,
+        Action::AutoScroll,
     ];
 
     /// Human-readable name.
@@ -68,6 +71,7 @@ impl Action {
             Action::Panic => "Panic",
             Action::Exit => "Exit perform mode",
             Action::Playback => "Play/stop backing tracks",
+            Action::AutoScroll => "Start/stop auto-scroll",
         }
     }
 }
@@ -95,6 +99,8 @@ pub enum Effect {
     Exit,
     /// Start or stop the backing tracks (the platform's audio engine).
     Playback,
+    /// Start or stop auto-scroll (the platform's chart view).
+    AutoScroll,
     /// Already at the start or end; nothing changed.
     Edge,
 }
@@ -264,6 +270,7 @@ impl Show {
                 Action::Panic => vec![Effect::Panic],
                 Action::Exit => vec![Effect::Exit],
                 Action::Playback => vec![Effect::Playback],
+                Action::AutoScroll => vec![Effect::AutoScroll],
                 _ => vec![Effect::Edge],
             };
         }
@@ -316,6 +323,7 @@ impl Show {
             Action::Panic => vec![Effect::Panic],
             Action::Exit => vec![Effect::Exit],
             Action::Playback => vec![Effect::Playback],
+            Action::AutoScroll => vec![Effect::AutoScroll],
         }
     }
 
