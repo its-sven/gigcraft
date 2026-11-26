@@ -65,6 +65,8 @@ final class LibraryModel {
     let live = LiveFollower()
     /// Backing tracks and click.
     let audio = AudioBridge()
+    /// Leading a live session from this device.
+    let leader = LiveLeader()
     private(set) var libraryName = ""
     private(set) var errorMessage: String?
     var section: Section = .songs

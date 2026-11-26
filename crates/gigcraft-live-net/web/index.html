@@ -155,6 +155,7 @@ function connect() {
   ws.onopen = () => ws.send(JSON.stringify({ type: "join", protocol: 1, name: me.name, instrument: me.instrument }));
   ws.onmessage = ev => { try { onMessage(JSON.parse(ev.data)); } catch (e) { console.warn(e); } };
   ws.onclose = () => {
+    welcomed = false;
     setStatus(false, T.offline);
     if (wantOpen) setTimeout(connect, 2000);
   };
@@ -171,6 +172,8 @@ function onMessage(m) {
     case "welcome":
       setStatus(true);
       me.id = m.member;
+      welcomed = true;
+      for (const p of pending.splice(0)) ws.send(JSON.stringify(p));
       $("leader").textContent = "♪ " + m.leader;
       break;
     case "state": {
@@ -324,7 +327,12 @@ function tick() {
 }
 setInterval(tick, 500);
 
-function send(obj) { if (ws && ws.readyState === 1) ws.send(JSON.stringify(obj)); }
+// Messages sent before the leader welcomed us wait here (a tap on Ready while connecting).
+let pending = [], welcomed = false;
+function send(obj) {
+  if (ws && ws.readyState === 1 && welcomed) ws.send(JSON.stringify(obj));
+  else pending.push(obj);
+}
 
 $("go").onclick = () => {
   const name = $("name").value.trim();

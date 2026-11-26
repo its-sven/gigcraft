@@ -44,7 +44,7 @@ struct HelpView: View {
             "Learn: tap an action, then press the footswitch.",
         ]),
         Topic(id: 5, title: "Playing together", icon: "person.3", points: [
-            "A band leader on a computer starts Live… → Start live session and gets an address.",
+            "The band leader starts Live → Start live session – on a computer, iPad or iPhone – and gets an address and a QR code.",
             "Follow (antenna icon) lists the leaders on your network – or enter the address. You see the leader's song with your own chart, and your own presets go to your devices.",
             "Ready tells the leader you are ready for this song; Cue sends a short message to every screen.",
             "Without the app, band members can open the address in Safari.",

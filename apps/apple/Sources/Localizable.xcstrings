@@ -41,6 +41,16 @@
         }
       }
     },
+    "%lld of %lld band members ready": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld von %lld in der Band bereit"
+          }
+        }
+      }
+    },
     "%lld semitones": {
       "localizations": {
         "de": {
@@ -221,16 +231,6 @@
         }
       }
     },
-    "A band leader on a computer starts Live… → Start live session and gets an address.": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ein Bandleader startet am Computer Live… → Live-Sitzung starten und bekommt eine Adresse."
-          }
-        }
-      }
-    },
     "Add": {
       "localizations": {
         "de": {
@@ -407,6 +407,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Backing-Tracks und Click"
+          }
+        }
+      }
+    },
+    "Band": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band"
+          }
+        }
+      }
+    },
+    "Band leader": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bandleader"
+          }
+        }
+      }
+    },
+    "Band members follow your setlist on their phones, tablets or computers – on the same Wi-Fi, no app needed.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Band folgt deiner Setliste auf Handy, Tablet oder Computer – im selben WLAN, ohne App."
+          }
+        }
+      }
+    },
+    "Band members open this address on the same Wi-Fi:": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Band öffnet diese Adresse im selben WLAN:"
           }
         }
       }
@@ -603,24 +643,6 @@
     },
     "Count-in: %lld bars": {
       "localizations": {
-        "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Count-in: %lld bar"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Count-in: %lld bars"
-                }
-              }
-            }
-          }
-        },
         "de": {
           "variations": {
             "plural": {
@@ -634,6 +656,24 @@
                 "stringUnit": {
                   "state": "translated",
                   "value": "Vorzähler: %lld Takte"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Count-in: %lld bar"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Count-in: %lld bars"
                 }
               }
             }
@@ -741,6 +781,16 @@
         }
       }
     },
+    "End live session": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live-Sitzung beenden"
+          }
+        }
+      }
+    },
     "Entry": {
       "localizations": {
         "de": {
@@ -792,6 +842,7 @@
       }
     },
     "Follow a band leader's setlist on the same Wi-Fi": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -802,6 +853,7 @@
       }
     },
     "Follow a leader": {
+      "extractionState": "stale",
       "localizations": {
         "de": {
           "stringUnit": {
@@ -1031,6 +1083,26 @@
         }
       }
     },
+    "Lead the band": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Band anführen"
+          }
+        }
+      }
+    },
+    "Lead the band or follow a band leader on the same Wi-Fi": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Band anführen oder einem Bandleader im selben WLAN folgen"
+          }
+        }
+      }
+    },
     "Leader's address": {
       "localizations": {
         "de": {
@@ -1117,6 +1189,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Bibliothek"
+          }
+        }
+      }
+    },
+    "Live": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live"
           }
         }
       }
@@ -1287,6 +1369,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kein Chart. Bearbeite den Song, um einen anzulegen, oder hänge ein PDF an."
+          }
+        }
+      }
+    },
+    "No network found. Connect to a Wi-Fi or a router.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Netzwerk gefunden. Verbinde dich mit einem WLAN oder Router."
           }
         }
       }
@@ -1581,6 +1673,16 @@
         }
       }
     },
+    "QR code of the address": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR-Code der Adresse"
+          }
+        }
+      }
+    },
     "Ready": {
       "localizations": {
         "de": {
@@ -1831,6 +1933,16 @@
         }
       }
     },
+    "Start live session": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Live-Sitzung starten"
+          }
+        }
+      }
+    },
     "Start or stop the backing tracks and click (key P)": {
       "localizations": {
         "de": {
@@ -1957,6 +2069,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Das TC-Helicon Play Acoustic wird über seine eigenen Tasten geschaltet, GigCraft ändert also nie seine Einstellungen. Schalte das simulierte Pedal aus, um das echte zu nutzen."
+          }
+        }
+      }
+    },
+    "The band leader starts Live → Start live session – on a computer, iPad or iPhone – and gets an address and a QR code.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Der Bandleader startet Live → Live-Sitzung starten – am Computer, iPad oder iPhone – und bekommt eine Adresse und einen QR-Code."
           }
         }
       }

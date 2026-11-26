@@ -63,8 +63,8 @@ struct RootView: View {
                     Button { showingSettings = true } label: { Label("Library", systemImage: "folder") }
                 }
                 ToolbarItem(placement: .bottomBar) {
-                    Button { joiningLive = true } label: { Label("Follow a leader", systemImage: "antenna.radiowaves.left.and.right") }
-                        .accessibilityHint("Follow a band leader's setlist on the same Wi-Fi")
+                    Button { joiningLive = true } label: { Label("Live", systemImage: "antenna.radiowaves.left.and.right") }
+                        .accessibilityHint("Lead the band or follow a band leader on the same Wi-Fi")
                 }
                 ToolbarItem(placement: .bottomBar) {
                     Button { showingHelp = true } label: { Label("Help", systemImage: "questionmark.circle") }
@@ -101,6 +101,12 @@ struct RootView: View {
         .sheet(isPresented: $showingSettings) { LibrarySettingsView() }
         .sheet(isPresented: $joiningLive) { JoinLiveView() }
         .onAppear { if UserDefaults.standard.bool(forKey: "gcShowJoin") { joiningLive = true } }
+        .onAppear {
+            // `-gcLead YES`: start leading a live session (tests, screenshots).
+            if UserDefaults.standard.bool(forKey: "gcLead"), let core = model.core {
+                model.leader.start(name: UserDefaults.standard.string(forKey: "gcName") ?? "", library: core)
+            }
+        }
         .sheet(isPresented: $showingHelp) { HelpView() }
         .fullScreenCover(isPresented: Binding(get: { model.live.active }, set: { if !$0 { model.live.leave() } })) {
             FollowView().environment(model)

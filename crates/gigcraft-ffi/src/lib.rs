@@ -12,9 +12,11 @@ use std::sync::{Arc, Mutex, MutexGuard};
 uniffi::setup_scaffolding!();
 
 mod audio;
+mod leader;
 pub mod realtime;
 
 pub use audio::{AudioCore, AudioStatus};
+pub use leader::LeaderCore;
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum CoreError {

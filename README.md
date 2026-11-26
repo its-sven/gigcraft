@@ -53,7 +53,7 @@
 - **Rig**: song parts send presets to MIDI devices; the TC-Helicon Play Acoustic/Electric is driven by stepping with its own buttons when it ignores Program Change (read-only, never writes settings); a simulated pedal for rehearsing without hardware.
 - **Import/export**: ChordPro, OnSong, OpenSong, chords-over-lyrics text, BandHelper TSV, CSV, Cuebook libraries, Ultimate Guitar links and playlists; ChordPro, TSV and setlist text out.
 - **Sync** through any shared folder (iCloud Drive, Nextcloud, Syncthing): changes from other devices appear within seconds; conflicting saves are caught instead of overwriting.
-- **Live sessions**: one device leads the show; band members follow on the same Wi-Fi – in any browser via QR code, or in GigCraft (desktop, iPad, iPhone) with their own chart and their own pedal presets. Ready status and cues ("last chorus") for everyone. Nothing leaves the local network.
+- **Live sessions**: one device – computer, iPad or iPhone – leads the show; band members follow on the same Wi-Fi – in any browser via QR code, or in GigCraft (desktop, iPad, iPhone) with their own chart and their own pedal presets. Ready status and cues ("last chorus") for everyone. Nothing leaves the local network.
 - **Backing tracks and click** (desktop, iPad, iPhone): audio files per song with volume, pan, mute and output pair (click to the in-ears on outputs 3/4), click with count-in, Play/Stop in perform mode; the next song loads in the background.
 - **Look**: calm, modern surfaces with a light touch of stage gear – an amber LED accent, values like key, tempo and position in small display readouts, status lights; light and dark follow the system, the stage views are dark.
 - **Second screen and following the track**: a window for a monitor or projector (desktop) or an external display (iPad, AirPlay/HDMI) shows the current song large, chart or lyrics only; with section start times the chart follows the backing track.
@@ -91,7 +91,9 @@ cargo xtask apple                 # core as XCFramework + Swift bindings
 cd apps/apple && xcodegen && open GigCraft.xcodeproj
 ```
 
-For a device, copy `apps/apple/Config/Local.xcconfig.example` to `Local.xcconfig` and enter your team ID. On first start the app creates a demo library in its Documents folder (visible in the Files app).
+**iPhone and iPad without Xcode:** every push to `main` builds an unsigned `GigCraft-<build>.ipa` (GitHub → Actions → CI → the run → Artifacts; releases carry it too). Install it with [SideStore](https://sidestore.io) or [AltStore](https://altstore.io), which sign it with your own Apple ID; with a free Apple ID the app has to be refreshed every 7 days.
+
+For a device from Xcode, copy `apps/apple/Config/Local.xcconfig.example` to `Local.xcconfig` and enter your team ID. On first start the app creates a demo library in its Documents folder (visible in the Files app).
 
 A library is a plain folder: `songs/<name>/song.toml` + `chart.cho` (ChordPro), `setlists/<name>.toml`. Deleted items go to `.trash/`, nothing is ever hard-deleted.
 

@@ -28,3 +28,5 @@ apps/apple/build/
 
 # Local agent and editor state
 .claude/
+apps/apple/ipa/
+apps/apple/build-device/

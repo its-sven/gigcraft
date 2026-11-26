@@ -10,6 +10,54 @@ struct JoinLiveView: View {
     @AppStorage("gc.live.address") private var address = ""
     @State private var invalid = false
     @State private var browser = LeaderBrowser()
+    @State private var leaderCue = ""
+
+    /// Lead the band from this device.
+    @ViewBuilder
+    private var leadSection: some View {
+        let leader = model.leader
+        Section {
+            if leader.active {
+                HStack(alignment: .top, spacing: 16) {
+                    if let qr = leader.qrImage() {
+                        Image(uiImage: qr).interpolation(.none).resizable().frame(width: 150, height: 150)
+                            .accessibilityLabel("QR code of the address")
+                    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Band members open this address on the same Wi-Fi:").font(.callout)
+                        ForEach(leader.urls, id: \.self) { Text(verbatim: $0).font(.body.monospaced()).textSelection(.enabled) }
+                        if leader.urls.isEmpty { Text("No network found. Connect to a Wi-Fi or a router.").foregroundStyle(.orange) }
+                    }
+                }
+                ForEach(leader.roster) { m in
+                    HStack {
+                        LED(color: m.ready ? .ledGreen : .secondary)
+                        Text(m.instrument.isEmpty ? m.name : "\(m.name) (\(m.instrument))")
+                        Spacer()
+                        if m.ready { Text("ready").foregroundStyle(Color.ledGreen) }
+                    }
+                }
+                HStack {
+                    TextField("Cue to the band", text: $leaderCue)
+                    Button("Send") { leader.sendCue(leaderCue); leaderCue = "" }.disabled(leaderCue.isEmpty)
+                }
+                Button("End live session", role: .destructive) { leader.stop() }
+            } else {
+                Button {
+                    if let core = model.core { leader.start(name: name, library: core) }
+                } label: {
+                    Label("Start live session", systemImage: "dot.radiowaves.left.and.right")
+                }
+                .disabled(model.core == nil)
+            }
+        } header: {
+            Text("Lead the band")
+        } footer: {
+            if !leader.active {
+                Text("Band members follow your setlist on their phones, tablets or computers – on the same Wi-Fi, no app needed.")
+            }
+        }
+    }
 
     var body: some View {
         NavigationStack {
@@ -18,6 +66,8 @@ struct JoinLiveView: View {
                     TextField("Your name", text: $name).textContentType(.name)
                     TextField("Instrument", text: $instrument, prompt: Text("Bass, Drums, Vocals…"))
                 } header: { Text("You") }
+                leadSection
+                if !model.leader.active {
                 Section {
                     if browser.leaders.isEmpty {
                         HStack(spacing: 10) {
@@ -58,11 +108,12 @@ struct JoinLiveView: View {
                 } footer: {
                     Text("On the leader's computer: Live… → Start live session shows the address. You see the leader's song with your own chart, and your own presets are sent to your devices. Without GigCraft, band members can open the address in Safari instead.")
                 }
+                }
                 if invalid {
                     Text("That is not an address. Example: 192.168.1.20:8787").foregroundStyle(.red)
                 }
             }
-            .navigationTitle("Follow a leader")
+            .navigationTitle("Live")
             .onAppear { browser.start() }
             .onDisappear { browser.stop() }
             .toolbar {

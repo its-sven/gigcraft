@@ -68,7 +68,7 @@ Original plan:
 | 7 Import/export | done (`gigcraft-formats`); lossless zip export later (the library folder itself is lossless) |
 | 8 Folder sync with conflict detection | done; iOS folder choice with bookmark |
 | 9 Accessibility, DE/EN | done: German and English on desktop (craft-i18n catalog, checked by a test) and iOS (string catalog); screen readers via AccessKit (desktop) and VoiceOver labels, headings, chart lines read as sentences, Dynamic Type (iOS); a native-speaker review of the German and a VoiceOver session on a device are still open |
-| 10 Beta (TestFlight/SideStore, real gigs) | open – next |
+| 10 Beta (TestFlight/SideStore, real gigs) | CI builds an unsigned IPA for SideStore/AltStore on every push (artifact) and on v* tags (release); TestFlight and real gigs open |
 
 Open points found on the way: open-acoustic has no licence file (GigCraft uses only its documented protocol facts); whether the Play Acoustic numbers presets from 0 or 1 in Program Change must be checked on the hardware (the driver learns the offset at run time; the Cuebook importer assumes 1); text from the core (error messages, most rig notices) is still English.
 
@@ -94,7 +94,7 @@ Order matters: each step is usable on its own.
 | Item | State |
 |---|---|
 | 1 Live protocol, LAN transport, web viewer with QR code | done: `gigcraft-live` (no I/O), `gigcraft-live-net` (WebSocket + viewer on one port, Bonjour announcement and discovery), ADR-0013; MultipeerConnectivity open |
-| 2 Followers with own charts/presets, ready, cues | done on desktop and iOS (iOS as follower only; iOS leading open) |
+| 2 Followers with own charts/presets, ready, cues | done on desktop and iOS; iPad/iPhone can lead too (same Rust server through `LeaderCore`, Bonjour through the system) |
 | 3 Audio engine | engine and hosts done: desktop (cpal, ADR-0012) and iOS (AVAudioEngine through a real-time C function, ADR-0014), wired into perform mode and both song editors; multichannel outputs on iOS, cue slots, speed/pitch open |
 | 4 MIDI clock/MTC, timed MIDI, macros, MIDI files | open |
 | 5 Timed lyrics, PDF timestamps, external display | section start times: the chart follows the backing track and marks the section (desktop, iOS); second screen: desktop window, iOS external display (AirPlay/HDMI), chart or lyrics only; line-level timing and PDF page timestamps open |

@@ -26,6 +26,19 @@ struct PerformView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .overlay(alignment: .top) {
+                TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                    if let cue = model.leader.cue, ctx.date.timeIntervalSince(cue.at) < 8 {
+                        Text(verbatim: "\(cue.from): \(cue.text)")
+                            .font(.system(size: size * 1.1, weight: .bold))
+                            .foregroundStyle(.black)
+                            .padding()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .background(Color.accentColor, in: .rect(cornerRadius: 12))
+                            .padding()
+                    }
+                }
+            }
             .contentShape(Rectangle())
             .accessibilityAction(named: Text("Next")) { model.perform("next") }
             .accessibilityAction(named: Text("Previous")) { model.perform("previous") }
@@ -76,6 +89,10 @@ struct PerformView: View {
                 Readout(label: "On stage", value: String(format: "%d:%02d", s / 60, s % 60), size: 15)
             }
             transport(st)
+            if model.leader.active {
+                Readout(label: "Band", value: "\(model.leader.readyCount)/\(model.leader.roster.count)", size: 15)
+                    .accessibilityLabel("\(model.leader.readyCount) of \(model.leader.roster.count) band members ready")
+            }
             Spacer()
             if UIApplication.shared.connectedScenes.contains(where: { $0.session.role == .windowExternalDisplayNonInteractive }) {
                 Menu {

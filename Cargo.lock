@@ -1866,6 +1866,7 @@ dependencies = [
  "gigcraft-chordpro",
  "gigcraft-commands",
  "gigcraft-live",
+ "gigcraft-live-net",
  "gigcraft-model",
  "gigcraft-rig",
  "gigcraft-store",
