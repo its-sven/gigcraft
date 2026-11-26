@@ -242,6 +242,16 @@ struct PerformView: View {
                     ChartView(chart: chart, fontSize: size, highlight: section, followsTrack: true)
                 } else if let pdf = model.attachments(songId).first(where: { $0.kind == "pdf" }) {
                     PDFKitView(url: pdf.url).frame(minHeight: 900)
+                } else if let link = model.song(songId)?.ultimateGuitar, let url = URL(string: link) {
+                    // Imported from Ultimate Guitar: the chart is one tap away.
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("The chart is on Ultimate Guitar.").font(.system(size: size * 0.8)).foregroundStyle(.secondary)
+                        Link(destination: url) {
+                            Label("Open on Ultimate Guitar", systemImage: "safari").frame(minHeight: 34)
+                        }
+                        .buttonStyle(StageButtonStyle(prominent: true))
+                    }
+                    .padding(.top, 8)
                 }
             }
             .padding()

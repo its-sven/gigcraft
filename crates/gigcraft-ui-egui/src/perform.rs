@@ -526,6 +526,30 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                         auto_moved = Some(now);
                         ui.ctx().request_repaint();
                     }
+                    // Imported from Ultimate Guitar without a chart: one click away.
+                    let ug_link = lib.song(id).and_then(|s| {
+                        s.links
+                            .iter()
+                            .find(|l| gigcraft_formats::ultimate_guitar::is_ultimate_guitar(&l.url))
+                            .map(|l| l.url.clone())
+                    });
+                    if chart.chart.blocks.is_empty()
+                        && let Some(url) = ug_link
+                    {
+                        ui.add_space(8.0);
+                        ui.label(
+                            egui::RichText::new(tr!("The chart is on Ultimate Guitar."))
+                                .size(size * 0.8)
+                                .weak(),
+                        );
+                        if ui
+                            .add(crate::theme::primary(tr!("Open on Ultimate Guitar")))
+                            .on_hover_text(url.as_str())
+                            .clicked()
+                        {
+                            ui.ctx().open_url(egui::OpenUrl::new_tab(&url));
+                        }
+                    }
                     let mut area = egui::ScrollArea::vertical().auto_shrink(false);
                     if let Some(o) = p.pending_scroll.or(follow).or(auto) {
                         area = area.vertical_scroll_offset(o);

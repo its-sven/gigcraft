@@ -542,6 +542,10 @@ final class LibraryModel {
         }
         launchEdit = defaults.bool(forKey: "gcEdit")
         if launchEdit, section == .songs { editRequest = selectedSong }
+        // `-gcImportText <text>`: import as if pasted (tests).
+        if let text = defaults.string(forKey: "gcImportText") {
+            Task { @MainActor in await self.importText(text) }
+        }
         // `-gcAutoScroll YES`: start auto-scroll (tests, screenshots).
         if defaults.bool(forKey: "gcAutoScroll") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in self?.autoScrolling = true }

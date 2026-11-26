@@ -60,7 +60,11 @@ struct SongDetailView: View {
                 } else if let chart, !chart.blocks.isEmpty {
                     ChartView(chart: chart, fontSize: model.fontSize)
                 } else {
-                    Text("No chart. Edit the song to add one, or attach a PDF.").foregroundStyle(.secondary)
+                    if song?.ultimateGuitar != nil {
+                        Text("The chart is on Ultimate Guitar (button above). To have it here too, paste its text in the editor.").foregroundStyle(.secondary)
+                    } else {
+                        Text("No chart. Edit the song to add one, or attach a PDF.").foregroundStyle(.secondary)
+                    }
                 }
             }
             .padding()

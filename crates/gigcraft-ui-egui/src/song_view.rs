@@ -416,7 +416,21 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
         area = area.vertical_scroll_offset(o);
         ui.ctx().request_repaint();
     }
+    let has_ug = song
+        .links
+        .iter()
+        .any(|l| gigcraft_formats::ultimate_guitar::is_ultimate_guitar(&l.url));
     let out = area.show(ui, |ui| {
+        if chart.chart.blocks.is_empty() {
+            ui.label(
+                egui::RichText::new(if has_ug {
+                    tr!("The chart is on Ultimate Guitar (button above). To have it here too, paste its text in the editor.")
+                } else {
+                    tr!("No chart. Edit the song to add one, or attach a PDF.")
+                })
+                .weak(),
+            );
+        }
         chart_view::show(ui, &chart.chart, size);
     });
     app.song_scroll.after(
