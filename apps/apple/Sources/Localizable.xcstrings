@@ -701,6 +701,26 @@
         }
       }
     },
+    "Could not load the playlist (HTTP %lld).": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playlist konnte nicht geladen werden (HTTP %lld)."
+          }
+        }
+      }
+    },
+    "Could not load the playlist: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Playlist konnte nicht geladen werden: %@"
+          }
+        }
+      }
+    },
     "Could not save": {
       "localizations": {
         "de": {
@@ -1483,6 +1503,16 @@
         }
       }
     },
+    "No songs found in that playlist.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In dieser Playlist wurden keine Songs gefunden."
+          }
+        }
+      }
+    },
     "Note for this gig": {
       "localizations": {
         "de": {
@@ -1963,6 +1993,16 @@
         }
       }
     },
+    "Setlist “%@”: %lld songs, %lld new in the library.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Setliste „%@“: %lld Songs, %lld neu in der Bibliothek."
+          }
+        }
+      }
+    },
     "Setlists": {
       "localizations": {
         "de": {
@@ -2183,6 +2223,16 @@
         }
       }
     },
+    "That is not a link.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Das ist kein Link."
+          }
+        }
+      }
+    },
     "That is not an address. Example: 192.168.1.20:8787": {
       "localizations": {
         "de": {
@@ -2339,6 +2389,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Transposition"
+          }
+        }
+      }
+    },
+    "Ultimate Guitar playlists: share the playlist (in the UG app: My Tabs > Playlists > Share > Copy Link), paste the link with Paste… – GigCraft loads the page once and makes a setlist in that order, with title, artist and link per song. The charts stay on Ultimate Guitar: open the link, or paste a chart's text to keep it in GigCraft.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ultimate-Guitar-Playlists: Playlist teilen (in der UG-App: My Tabs > Playlists > Teilen > Link kopieren), den Link über Einfügen… einfügen – GigCraft lädt die Seite einmal und legt eine Setliste in dieser Reihenfolge an, mit Titel, Interpret und Link pro Song. Die Charts bleiben bei Ultimate Guitar: Link öffnen, oder den Text eines Charts einfügen, um ihn in GigCraft zu haben."
           }
         }
       }

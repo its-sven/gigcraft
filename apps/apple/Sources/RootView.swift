@@ -123,7 +123,14 @@ struct RootView: View {
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) { Button("Cancel") { pasting = false } }
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Import") { importMessage = model.importText(pasteText); pasting = false }.bold()
+                            Button("Import") {
+                                if let playlist = ugPlaylistLink(text: pasteText) {
+                                    pasting = false
+                                    Task { importMessage = await model.importPlaylist(playlist) }
+                                } else {
+                                    importMessage = model.importText(pasteText); pasting = false
+                                }
+                            }.bold()
                         }
                     }
             }

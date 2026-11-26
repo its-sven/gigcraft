@@ -54,6 +54,7 @@ struct HelpView: View {
         ]),
         Topic(id: 6, title: "Import, sync and safety", icon: "arrow.triangle.2.circlepath", points: [
             "Import reads ChordPro, OnSong, OpenSong, text with chords over the lyrics, BandHelper exports, CSV and Cuebook libraries; paste takes a song or Ultimate Guitar links.",
+            "Ultimate Guitar playlists: share the playlist (in the UG app: My Tabs > Playlists > Share > Copy Link), paste the link with Paste… – GigCraft loads the page once and makes a setlist in that order, with title, artist and link per song. The charts stay on Ultimate Guitar: open the link, or paste a chart's text to keep it in GigCraft.",
             "Use the same folder in iCloud Drive or Nextcloud on every device: changes appear within seconds, and GigCraft asks before overwriting a song changed elsewhere.",
             "Deleted songs and setlists go to the library's trash; Undo brings back every change.",
         ]),

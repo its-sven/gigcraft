@@ -445,3 +445,8 @@
 	Settings saved: {path}	Einstellungen gespeichert: {path}
 	Settings loaded	Einstellungen geladen
 	Not a GigCraft settings file: {error}	Keine GigCraft-Einstellungsdatei: {error}
+	Setlist “{name}”: {songs} songs, {new} new in the library.	Setliste „{name}“: {songs} Songs, {new} neu in der Bibliothek.
+	Could not load the playlist: {error}. Save the page in the browser and use Import file….	Playlist konnte nicht geladen werden: {error}. Speichere die Seite im Browser und nimm Datei importieren….
+	An Ultimate Guitar playlist: in the app or on the website, share the playlist, copy its link and paste it here – GigCraft makes a setlist from it.	Eine Ultimate-Guitar-Playlist: in der App oder auf der Website die Playlist teilen, den Link kopieren und hier einfügen – GigCraft macht eine Setliste daraus.
+	Loading the playlist…	Lade die Playlist…
+	Ultimate Guitar playlists: share the playlist (in the UG app: My Tabs > Playlists > Share > Copy Link), paste the link with Paste… – GigCraft loads the page once and makes a setlist in that order, with title, artist and link per song. The charts stay on Ultimate Guitar: open the link, or paste a chart's text to keep it in GigCraft.	Ultimate-Guitar-Playlists: Playlist teilen (in der UG-App: My Tabs > Playlists > Teilen > Link kopieren), den Link über Einfügen… einfügen – GigCraft lädt die Seite einmal und legt eine Setliste in dieser Reihenfolge an, mit Titel, Interpret und Link pro Song. Die Charts bleiben bei Ultimate Guitar: Link öffnen, oder den Text eines Charts einfügen, um ihn in GigCraft zu haben.

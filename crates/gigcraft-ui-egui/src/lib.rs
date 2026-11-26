@@ -53,6 +53,9 @@ struct SettingsFile {
     font_size: f32,
 }
 
+/// Loads a page on a worker; the answer arrives on the receiver.
+pub type FetchPage = Box<dyn Fn(String) -> std::sync::mpsc::Receiver<Result<String, String>>>;
+
 /// A save dialog: suggested file name → chosen path.
 pub type SaveDialog = Box<dyn Fn(&str) -> Option<PathBuf>>;
 
@@ -68,6 +71,8 @@ pub struct Hooks {
     pub pick_file: Option<Box<dyn Fn() -> Option<PathBuf>>>,
     /// Ask where to save a file (suggested name).
     pub save_file: Option<SaveDialog>,
+    /// Load a web page in the background (an Ultimate Guitar playlist the user shared).
+    pub fetch_page: Option<FetchPage>,
     /// MIDI ports (desktop).
     pub midi: Option<Box<dyn MidiIo>>,
     /// Local network for live sessions (desktop).
@@ -84,6 +89,7 @@ impl std::fmt::Debug for Hooks {
             .field("pick_folder", &self.pick_folder.is_some())
             .field("pick_file", &self.pick_file.is_some())
             .field("save_file", &self.save_file.is_some())
+            .field("fetch_page", &self.fetch_page.is_some())
             .field("midi", &self.midi.is_some())
             .field("live", &self.live.is_some())
             .field("audio", &self.audio.is_some())
@@ -165,6 +171,8 @@ pub struct GigCraftApp {
     stage: stage_display::StageUi,
     /// Backups running in the background: (manual?, result).
     backups: Vec<std::sync::mpsc::Receiver<BackupDone>>,
+    /// A playlist page being loaded: (its address, the answer).
+    playlist_fetch: Option<(String, std::sync::mpsc::Receiver<Result<String, String>>)>,
 }
 
 impl GigCraftApp {
@@ -199,6 +207,7 @@ impl GigCraftApp {
             audio: audio_ui::AudioUi::default(),
             stage: stage_display::StageUi::default(),
             backups: Vec::new(),
+            playlist_fetch: None,
         };
         if let Some(storage) = cc.storage {
             if let Some(lang) = storage.get_string(LANGUAGE_KEY) {
@@ -790,8 +799,65 @@ impl GigCraftApp {
     }
 
     fn import_path(&mut self, path: PathBuf) {
+        // A playlist page saved from the browser.
+        let html = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| e.eq_ignore_ascii_case("html") || e.eq_ignore_ascii_case("htm"));
+        if html {
+            match std::fs::read_to_string(&path) {
+                Ok(page) => self.import_playlist(&page, ""),
+                Err(e) => self.message = Some((e.to_string(), true)),
+            }
+            return;
+        }
         if let Some(out) = self.run("import.file", json!({"path": path.display().to_string()})) {
             self.after_import(&out.result);
+        }
+    }
+
+    /// An Ultimate Guitar playlist page → a setlist (and songs with their links).
+    fn import_playlist(&mut self, html: &str, url: &str) {
+        let Some(out) = self.run(
+            "import.ultimate_guitar_playlist",
+            json!({"html": html, "url": url}),
+        ) else {
+            return;
+        };
+        let r = &out.result;
+        self.notify(tr!(
+            "Setlist “{name}”: {songs} songs, {new} new in the library.",
+            name = r["name"].as_str().unwrap_or_default(),
+            songs = r["songs"],
+            new = r["created"]
+        ));
+        if let Some(id) = r["setlist"].as_str().and_then(|s| s.parse().ok()) {
+            self.setlist = Some(id);
+            self.view = View::Setlists;
+            self.setlist_ui = setlist_view::State::default();
+        }
+    }
+
+    fn poll_playlist(&mut self, ctx: &egui::Context) {
+        let Some((url, rx)) = self.playlist_fetch.take() else {
+            return;
+        };
+        match rx.try_recv() {
+            Ok(Ok(html)) => self.import_playlist(&html, &url),
+            Ok(Err(e)) => {
+                self.message = Some((
+                    tr!(
+                        "Could not load the playlist: {error}. Save the page in the browser and use Import file….",
+                        error = e
+                    ),
+                    true,
+                ));
+            }
+            Err(std::sync::mpsc::TryRecvError::Empty) => {
+                self.playlist_fetch = Some((url, rx));
+                ctx.request_repaint_after(std::time::Duration::from_millis(200));
+            }
+            Err(_) => {}
         }
     }
 
@@ -845,11 +911,25 @@ impl GigCraftApp {
                         action = Some("import.ultimate_guitar");
                     }
                 });
+                ui.small(tr!("An Ultimate Guitar playlist: in the app or on the website, share the playlist, copy its link and paste it here – GigCraft makes a setlist from it."));
             });
         match action {
             Some("import.text") => {
                 if let Some(out) = self.run("import.text", json!({"text": text})) {
                     self.after_import(&out.result);
+                    return;
+                }
+            }
+            Some(_)
+                if gigcraft_formats::ultimate_guitar::links_in_text(&text).is_empty()
+                    && let Some(url) =
+                        gigcraft_formats::ultimate_guitar::page_link_in_text(&text) =>
+            {
+                // A shared playlist: load the page once, in the background.
+                if let Some(fetch) = &self.hooks.fetch_page {
+                    let rx = fetch(url.clone());
+                    self.playlist_fetch = Some((url, rx));
+                    self.notify(tr!("Loading the playlist…"));
                     return;
                 }
             }
@@ -952,6 +1032,7 @@ impl eframe::App for GigCraftApp {
         rig_ui::window(self, ui.ctx(), time);
         live_ui::pump(self, ui.ctx(), time);
         self.poll_backups();
+        self.poll_playlist(ui.ctx());
         audio_ui::pump(self, ui.ctx());
         live_ui::window(self, ui.ctx(), time);
         help::window(self, ui.ctx());

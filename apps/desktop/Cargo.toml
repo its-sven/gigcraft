@@ -19,6 +19,7 @@ midir.workspace = true
 gigcraft-live-net.workspace = true
 gigcraft-audio.workspace = true
 gigcraft-audio-cpal.workspace = true
+ureq = { version = "3", default-features = false, features = ["rustls"] }
 
 [lints]
 workspace = true

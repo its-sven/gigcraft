@@ -274,6 +274,32 @@ final class LibraryModel {
         return importResult(run("import.text", ["text": text]))
     }
 
+    /// A shared Ultimate Guitar playlist: load the page once, make a setlist of it.
+    func importPlaylist(_ url: String) async -> String {
+        guard let pageURL = URL(string: url) else { return String(localized: "That is not a link.") }
+        var request = URLRequest(url: pageURL, timeoutInterval: 20)
+        // The mobile site, as Safari on the iPhone would get it.
+        request.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+                         forHTTPHeaderField: "User-Agent")
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+                return String(localized: "Could not load the playlist (HTTP \(http.statusCode)).")
+            }
+            let html = String(decoding: data, as: UTF8.self)
+            guard let out = run("import.ultimate_guitar_playlist", ["html": html, "url": url]),
+                  let r = out["result"] as? [String: Any] else { return errorMessage ?? String(localized: "No songs found in that playlist.") }
+            refreshSongs(); refreshSetlists(); bump()
+            if let id = r["setlist"] as? String { selectedSetlist = id; section = .setlists }
+            let name = r["name"] as? String ?? ""
+            let songs = r["songs"] as? Int ?? 0
+            let created = r["created"] as? Int ?? 0
+            return String(localized: "Setlist “\(name)”: \(songs) songs, \(created) new in the library.")
+        } catch {
+            return String(localized: "Could not load the playlist: \(error.localizedDescription)")
+        }
+    }
+
     private func importResult(_ out: [String: Any]?) -> String? {
         guard let r = out?["result"] as? [String: Any] else { return nil }
         refreshSongs(); refreshSetlists(); bump()

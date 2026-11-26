@@ -1,7 +1,7 @@
 use crate::params::Params;
 use crate::{CommandError, Engine, Tx};
 use gigcraft_formats as fmt;
-use gigcraft_model::{Link, SetlistId, Song, SongId};
+use gigcraft_model::{Entry, Link, Setlist, SetlistId, Song, SongEntry, SongId};
 use serde_json::{Value, json};
 
 /// Largest file read by `import.file` (the formats crate also checks).
@@ -77,6 +77,82 @@ pub(crate) fn run(
                 e.put_song(tx, song, Some(""))?;
             }
             Ok(json!({ "created": created, "skipped_existing": skipped }))
+        }
+        "import.ultimate_guitar_playlist" => {
+            // A shared playlist page (loaded by the app): one setlist in the
+            // playlist's order; songs already in the library (same link) are reused.
+            let html = p.str("html")?;
+            let source = p.opt_str("url")?.unwrap_or_default();
+            let playlist = fmt::ultimate_guitar::parse_playlist_html(html);
+            if playlist.links.is_empty() {
+                return Err(CommandError::InvalidParams(
+                    "no Ultimate Guitar tabs found on that page (is the playlist shared?)".into(),
+                ));
+            }
+            let mut ids = Vec::new();
+            let mut created = 0;
+            let mut existing = 0;
+            for link in &playlist.links {
+                let key = fmt::ultimate_guitar::link_key(&link.url);
+                let found = e
+                    .lib
+                    .songs()
+                    .iter()
+                    .find(|s| {
+                        s.links
+                            .iter()
+                            .any(|l| fmt::ultimate_guitar::link_key(&l.url) == key)
+                    })
+                    .map(|s| s.id);
+                if let Some(id) = found {
+                    existing += 1;
+                    ids.push(id);
+                    continue;
+                }
+                let mut song = Song::new(if link.title.is_empty() {
+                    "Untitled"
+                } else {
+                    &link.title
+                });
+                song.artist = link.artist.clone();
+                let label = if link.kind.is_empty() {
+                    "Ultimate Guitar".to_string()
+                } else {
+                    format!("Ultimate Guitar ({})", link.kind)
+                };
+                song.links.push(Link {
+                    url: link.url.clone(),
+                    label: Some(label),
+                });
+                ids.push(song.id);
+                created += 1;
+                e.put_song(tx, song, Some(""))?;
+            }
+            let name = if playlist.name.trim().is_empty() {
+                "Ultimate Guitar playlist".to_string()
+            } else {
+                playlist.name.trim().to_string()
+            };
+            let mut setlist = Setlist::new(name);
+            if !source.is_empty() {
+                setlist.notes = format!("Imported from {source}");
+            }
+            if let Some(set) = setlist.sets.first_mut() {
+                set.entries = ids
+                    .iter()
+                    .map(|id| Entry::Song(SongEntry::new(*id)))
+                    .collect();
+            }
+            let sid = setlist.id;
+            let setlist_name = setlist.name.clone();
+            e.put_setlist(tx, setlist)?;
+            Ok(json!({
+                "setlist": sid.to_string(),
+                "name": setlist_name,
+                "songs": ids.len(),
+                "created": created,
+                "existing": existing,
+            }))
         }
         "export.chordpro" => {
             let sid: SongId = p.id("id")?;

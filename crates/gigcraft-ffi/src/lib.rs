@@ -196,6 +196,16 @@ pub fn transposed_chart(source: String, semitones: i8) -> Chart {
     convert(gigcraft_chordpro::parse(&source, semitones))
 }
 
+/// A shared Ultimate Guitar playlist (or other page that lists tabs) in pasted
+/// text, when the text holds no tab links itself.
+#[uniffi::export]
+pub fn ug_playlist_link(text: String) -> Option<String> {
+    if !gigcraft_formats::ultimate_guitar::links_in_text(&text).is_empty() {
+        return None;
+    }
+    gigcraft_formats::ultimate_guitar::page_link_in_text(&text)
+}
+
 /// `ws://host:port/ws` for an address a person typed or scanned, if it is one.
 #[uniffi::export]
 pub fn live_ws_url(address: String) -> Option<String> {

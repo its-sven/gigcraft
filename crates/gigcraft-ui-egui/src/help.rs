@@ -340,6 +340,12 @@ fn page(app: &mut GigCraftApp, ui: &mut egui::Ui, topic: Topic) {
                     ),
                 ],
             );
+            para(
+                ui,
+                tr!(
+                    "Ultimate Guitar playlists: share the playlist (in the UG app: My Tabs > Playlists > Share > Copy Link), paste the link with Paste… – GigCraft loads the page once and makes a setlist in that order, with title, artist and link per song. The charts stay on Ultimate Guitar: open the link, or paste a chart's text to keep it in GigCraft."
+                ),
+            );
             heading(ui, tr!("Using several devices"));
             para(
                 ui,

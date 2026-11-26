@@ -132,6 +132,18 @@ pub fn links_in_text(text: &str) -> Vec<UgLink> {
     unique(candidates.filter_map(parse_link))
 }
 
+/// The first Ultimate Guitar link in `text` that is not a tab – a shared
+/// playlist (`https://www.ultimate-guitar.com/user/playlist/shared?h=…`) or
+/// another page that lists tabs. The app loads it once and reads it with
+/// [`parse_playlist_html`].
+#[must_use]
+pub fn page_link_in_text(text: &str) -> Option<String> {
+    text.split(|c: char| c.is_whitespace() || "<>\"'()[]{}".contains(c))
+        .filter(|t| t.starts_with("http://") || t.starts_with("https://"))
+        .find(|t| is_ultimate_guitar(t) && parse_link(t).is_none())
+        .map(str::to_string)
+}
+
 /// (lowercased host, path) of an http(s) URL.
 fn split_url(url: &str) -> Option<(String, &str)> {
     let lower_scheme = url
@@ -510,6 +522,20 @@ mod tests {
         format!(
             "<html><head><title>{title}</title></head><body><div class=\"js-store\" data-content=\"{escaped}\"></div></body></html>"
         )
+    }
+
+    #[test]
+    fn finds_the_playlist_link() {
+        let text = "look: https://www.ultimate-guitar.com/user/playlist/shared?h=Ab12 and https://tabs.ultimate-guitar.com/tab/x/y-chords-1";
+        assert_eq!(
+            page_link_in_text(text).as_deref(),
+            Some("https://www.ultimate-guitar.com/user/playlist/shared?h=Ab12")
+        );
+        assert_eq!(
+            page_link_in_text("https://tabs.ultimate-guitar.com/tab/x/y-chords-1"),
+            None
+        );
+        assert_eq!(page_link_in_text("https://example.com/playlist"), None);
     }
 
     #[test]

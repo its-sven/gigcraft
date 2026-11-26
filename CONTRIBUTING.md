@@ -12,7 +12,7 @@ GigCraft is built from public descriptions of what other apps do (see `docs/rese
 
 ## Licences of dependencies
 
-GigCraft is MIT OR Apache-2.0 and ships on app stores. Only permissive dependencies (MIT, Apache-2.0, BSD, Zlib, Unicode-3.0, MPL-2.0 used unmodified). No GPL/LGPL/AGPL.
+GigCraft is MIT OR Apache-2.0 and ships on app stores. Only permissive dependencies (MIT, Apache-2.0, BSD, ISC, Zlib, Unicode-3.0, CDLA-Permissive-2.0, MPL-2.0 used unmodified). No GPL/LGPL/AGPL.
 
 ## Translations
 

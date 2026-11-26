@@ -77,6 +77,7 @@ fn main() -> eframe::Result {
                 save_file: Some(Box::new(|name: &str| {
                     rfd::FileDialog::new().set_file_name(name).save_file()
                 })),
+                fetch_page: Some(Box::new(fetch_page)),
                 midi: Some(Box::new(midi_io::Midir::new())),
                 live: Some(Box::new(live_io::Net::default())),
                 audio: Some(Box::new(audio_io::Cpal::default())),
@@ -102,4 +103,33 @@ fn backup_dir() -> Option<PathBuf> {
             .map(|d| d.join("gigcraft"))
     };
     base.map(|b| b.join("Backups"))
+}
+
+/// Load a page on a worker thread (an Ultimate Guitar playlist the user
+/// shared). Asks for the mobile site, as a phone browser would.
+fn fetch_page(url: String) -> std::sync::mpsc::Receiver<Result<String, String>> {
+    let (tx, rx) = std::sync::mpsc::channel();
+    let _ = std::thread::Builder::new()
+        .name("gigcraft-fetch".into())
+        .spawn(move || {
+            let result = ureq::get(&url)
+                .header(
+                    "User-Agent",
+                    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+                )
+                .config()
+                .timeout_global(Some(std::time::Duration::from_secs(20)))
+                .build()
+                .call()
+                .map_err(|e| e.to_string())
+                .and_then(|mut r| {
+                    r.body_mut()
+                        .with_config()
+                        .limit(16 << 20)
+                        .read_to_string()
+                        .map_err(|e| e.to_string())
+                });
+            let _ = tx.send(result);
+        });
+    rx
 }

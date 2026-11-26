@@ -470,3 +470,52 @@ fn the_backing_track_switches_parts() {
         Err(CommandError::InvalidParams(_))
     ));
 }
+
+#[test]
+fn an_ultimate_guitar_playlist_becomes_a_setlist() {
+    let (_d, mut e) = engine();
+    // One song is already in the library with its link (keeps its id).
+    run(
+        &mut e,
+        "import.ultimate_guitar",
+        json!({"links": "https://tabs.ultimate-guitar.com/tab/the-demo-band/harbour-lights-chords-10"}),
+    );
+    let data = r#"{"store":{"page":{"data":{"playlist":{"name":"Friday Gig","items":[
+        {"id":1,"tab":{"song_name":"Harbour Lights","artist_name":"The Demo Band","tab_url":"https://tabs.ultimate-guitar.com/tab/the-demo-band/harbour-lights-chords-10"}},
+        {"id":2,"tab":{"song_name":"Night Ferry","artist_name":"Anna Beispiel","tab_url":"https://tabs.ultimate-guitar.com/tab/anna-beispiel/night-ferry-chords-11"}}
+    ]}}}}}"#;
+    let html = format!(
+        "<html><head><title>x</title></head><body><div class=\"js-store\" data-content=\"{}\"></div></body></html>",
+        data.replace('&', "&amp;").replace('"', "&quot;")
+    );
+    let r = run(
+        &mut e,
+        "import.ultimate_guitar_playlist",
+        json!({"html": html, "url": "https://www.ultimate-guitar.com/user/playlist/shared?h=abc"}),
+    )
+    .result;
+    assert_eq!(r["name"], "Friday Gig");
+    assert_eq!(r["songs"], 2);
+    assert_eq!(r["created"], 1);
+    assert_eq!(r["existing"], 1);
+    let sl = run(&mut e, "setlist.get", json!({"id": r["setlist"]})).result;
+    let titles: Vec<&str> = sl["sets"][0]["entries"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|x| x["title"].as_str().unwrap())
+        .collect();
+    assert_eq!(titles, ["Harbour Lights", "Night Ferry"]);
+    assert!(sl["notes"].as_str().unwrap().contains("playlist/shared"));
+    // One undo removes the whole import.
+    run(&mut e, "edit.undo", Value::Null);
+    assert!(e.run("setlist.get", &json!({"id": r["setlist"]})).is_err());
+    // An empty page is an error, not an empty setlist.
+    assert!(matches!(
+        e.run(
+            "import.ultimate_guitar_playlist",
+            &json!({"html": "<html></html>"})
+        ),
+        Err(CommandError::InvalidParams(_))
+    ));
+}
