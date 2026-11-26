@@ -438,3 +438,10 @@
 	Backup failed: {error}	Backup fehlgeschlagen: {error}
 	Backups	Backups
 	Once a day GigCraft saves each library as a ZIP file (Library > Open backups folder) and keeps the last 14; Library > Back up now… saves one wherever you like. To restore, unzip a backup and open its folder.	Einmal am Tag sichert GigCraft jede Bibliothek als ZIP-Datei (Bibliothek > Backup-Ordner öffnen) und behält die letzten 14; Bibliothek > Jetzt sichern… legt eines ab, wo du willst. Zum Wiederherstellen ein Backup entpacken und seinen Ordner öffnen.
+	Export settings…	Einstellungen exportieren…
+	Rig, footswitches, keys, language and text size as one file, for another computer	Rig, Fußschalter, Tasten, Sprache und Textgröße als eine Datei, für einen anderen Computer
+	Import settings…	Einstellungen importieren…
+	Load settings saved on another computer	Auf einem anderen Computer gespeicherte Einstellungen laden
+	Settings saved: {path}	Einstellungen gespeichert: {path}
+	Settings loaded	Einstellungen geladen
+	Not a GigCraft settings file: {error}	Keine GigCraft-Einstellungsdatei: {error}

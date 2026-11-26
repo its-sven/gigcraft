@@ -142,6 +142,7 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
     let mut new_config: Option<RigConfig> = None;
     let mut learn: Option<Option<Action>> = None;
     let mut test_preset: Option<(String, u8)> = None;
+    let mut settings_action: Option<bool> = None;
     egui::Window::new(tr!("Rig: devices, pedals and audio"))
         .open(&mut open)
         .default_width(640.0)
@@ -264,6 +265,25 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                 }
             });
             ui.separator();
+            ui.horizontal(|ui| {
+                if app.hooks.save_file.is_some()
+                    && ui
+                        .small_button(tr!("Export settings…"))
+                        .on_hover_text(tr!("Rig, footswitches, keys, language and text size as one file, for another computer"))
+                        .clicked()
+                {
+                    settings_action = Some(true);
+                }
+                if app.hooks.pick_file.is_some()
+                    && ui
+                        .small_button(tr!("Import settings…"))
+                        .on_hover_text(tr!("Load settings saved on another computer"))
+                        .clicked()
+                {
+                    settings_action = Some(false);
+                }
+            });
+            ui.separator();
             crate::theme::section(ui, tr!("MIDI footswitches and controllers"));
             ui.small(tr!(
                 "Click Learn, then press the switch or move the controller."
@@ -326,6 +346,11 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
         });
     app.rig_ui.open = open;
     let now = now_ms(time);
+    match settings_action {
+        Some(true) => app.export_settings(),
+        Some(false) => app.import_settings(now),
+        None => {}
+    }
     if let Some(cfg) = new_config {
         let outs = app.rig.set_config(cfg, now);
         let outputs = app.rig_ui.outputs.clone();

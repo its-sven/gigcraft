@@ -43,6 +43,19 @@ pub(crate) fn named(r: egui::Response, name: &str) -> egui::Response {
     r
 }
 
+/// This computer's settings as one file (moving to another computer).
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+struct SettingsFile {
+    gigcraft_settings: u32,
+    rig: RigConfig,
+    keymap: Keymap,
+    language: String,
+    font_size: f32,
+}
+
+/// A save dialog: suggested file name → chosen path.
+pub type SaveDialog = Box<dyn Fn(&str) -> Option<PathBuf>>;
+
 /// A finished backup: (made by hand?, the file or why it failed).
 type BackupDone = (bool, Result<Option<PathBuf>, String>);
 
@@ -53,6 +66,8 @@ pub struct Hooks {
     pub pick_folder: Option<Box<dyn Fn() -> Option<PathBuf>>>,
     /// Ask the user for a file (attachments, imports).
     pub pick_file: Option<Box<dyn Fn() -> Option<PathBuf>>>,
+    /// Ask where to save a file (suggested name).
+    pub save_file: Option<SaveDialog>,
     /// MIDI ports (desktop).
     pub midi: Option<Box<dyn MidiIo>>,
     /// Local network for live sessions (desktop).
@@ -68,6 +83,7 @@ impl std::fmt::Debug for Hooks {
         f.debug_struct("Hooks")
             .field("pick_folder", &self.pick_folder.is_some())
             .field("pick_file", &self.pick_file.is_some())
+            .field("save_file", &self.save_file.is_some())
             .field("midi", &self.midi.is_some())
             .field("live", &self.live.is_some())
             .field("audio", &self.audio.is_some())
@@ -336,6 +352,60 @@ impl GigCraftApp {
             });
         if spawned.is_ok() {
             self.backups.push(rx);
+        }
+    }
+
+    /// Save rig, keymap, language and text size to a file.
+    pub(crate) fn export_settings(&mut self) {
+        let Some(path) = self
+            .hooks
+            .save_file
+            .as_ref()
+            .and_then(|f| f("GigCraft-settings.json"))
+        else {
+            return;
+        };
+        let file = SettingsFile {
+            gigcraft_settings: 1,
+            rig: self.rig.config().clone(),
+            keymap: self.keymap.clone(),
+            language: self.language.store(),
+            font_size: self.font_size,
+        };
+        let result = serde_json::to_string_pretty(&file)
+            .map_err(|e| e.to_string())
+            .and_then(|text| std::fs::write(&path, text).map_err(|e| e.to_string()));
+        match result {
+            Ok(()) => self.notify(tr!("Settings saved: {path}", path = path.display())),
+            Err(e) => self.message = Some((e, true)),
+        }
+    }
+
+    /// Load settings saved by `export_settings`.
+    pub(crate) fn import_settings(&mut self, now: u64) {
+        let Some(path) = self.hooks.pick_file.as_ref().and_then(|f| f()) else {
+            return;
+        };
+        let parsed = std::fs::read_to_string(&path)
+            .map_err(|e| e.to_string())
+            .and_then(|t| serde_json::from_str::<SettingsFile>(&t).map_err(|e| e.to_string()));
+        match parsed {
+            Ok(file) => {
+                let outs = self.rig.set_config(file.rig, now);
+                rig_ui::handle(self, outs, now as f64 / 1000.0);
+                self.keymap = file.keymap;
+                self.language = i18n::Setting::parse(&file.language);
+                i18n::set(self.language.lang());
+                self.font_size = file.font_size.clamp(12.0, 48.0);
+                self.rig_dirty = true;
+                self.notify(tr!("Settings loaded"));
+            }
+            Err(e) => {
+                self.message = Some((
+                    tr!("Not a GigCraft settings file: {error}", error = e),
+                    true,
+                ));
+            }
         }
     }
 

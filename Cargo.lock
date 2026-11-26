@@ -2001,6 +2001,7 @@ dependencies = [
  "gigcraft-perform",
  "gigcraft-rig",
  "gigcraft-store",
+ "serde",
  "serde_json",
 ]
 

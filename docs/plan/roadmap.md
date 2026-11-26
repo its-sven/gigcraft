@@ -98,7 +98,7 @@ Order matters: each step is usable on its own.
 | 3 Audio engine | engine and hosts done: desktop (cpal, ADR-0012) and iOS (AVAudioEngine through a real-time C function, ADR-0014), wired into perform mode and both song editors; iOS uses every output of an audio interface (up to 8, rebuilt when one is plugged in); cue slots, speed/pitch open |
 | 4 MIDI clock/MTC, timed MIDI, macros, MIDI files | MIDI clock done (per device: always at the song tempo, or while tracks play with Start/Stop; desktop thread measured at < 0.3 ms deviation, iOS scheduled with CoreMIDI timestamps); parts (and their presets) follow the backing track by section name; MTC, free timed MIDI events, macros, MIDI file playback open |
 | 5 Timed lyrics, PDF timestamps, external display | section start times: the chart follows the backing track and marks the section (desktop, iOS); second screen: desktop window, iOS external display (AirPlay/HDMI), chart or lyrics only; line-level timing and PDF page timestamps open |
-| 6 Variants, history, queue, backups, settings export | backups done (daily ZIP outside the library, keep 14, back up now; desktop and iOS); variants, history, queue, settings export open |
+| 6 Variants, history, queue, backups, settings export | backups done (daily ZIP outside the library, keep 14, back up now; desktop and iOS); settings export/import done (desktop); variants, history, queue open |
 | 7 Web build (wasm) | open (the UI crate keeps network and audio behind hooks so it can build for the web) |
 
 Also done along the way: help window (F1) and tooltips on every control (desktop), help sheet (iOS); the design pass (amber LED accent, display readouts, status LEDs, app icon).

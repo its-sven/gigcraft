@@ -5,6 +5,7 @@ Versions follow the roadmap phases (`docs/plan/roadmap.md`). Downloads: the GitH
 ## 0.2.1
 
 - **Backups:** once a day each library is saved as a ZIP outside the library (desktop: the app's data folder, iOS: Files → GigCraft → Backups), the last 14 are kept; "Back up now" anywhere. Restore = unzip and open the folder.
+- **Settings to another computer:** the rig window exports rig devices, footswitches, keys, language and text size as one file and imports them.
 - **iPad/iPhone with an audio interface:** every output is used (up to 8), so the click can go to the in-ears only; output pairs per track and for the click in the iOS editor.
 
 ## 0.2.0 – band on stage (Phase 2, part 1)

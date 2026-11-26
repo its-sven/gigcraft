@@ -74,6 +74,9 @@ fn main() -> eframe::Result {
             let hooks = Hooks {
                 pick_folder: Some(Box::new(|| rfd::FileDialog::new().pick_folder())),
                 pick_file: Some(Box::new(|| rfd::FileDialog::new().pick_file())),
+                save_file: Some(Box::new(|name: &str| {
+                    rfd::FileDialog::new().set_file_name(name).save_file()
+                })),
                 midi: Some(Box::new(midi_io::Midir::new())),
                 live: Some(Box::new(live_io::Net::default())),
                 audio: Some(Box::new(audio_io::Cpal::default())),
