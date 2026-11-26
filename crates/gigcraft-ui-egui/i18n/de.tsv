@@ -429,3 +429,4 @@
 	while tracks play	während Spuren laufen
 	Tempo sync for delays and loopers: always at the song's tempo, or only while backing tracks play (with Start and Stop)	Tempo-Sync für Delays und Looper: immer im Song-Tempo oder nur während Backing-Tracks laufen (mit Start und Stopp)
 	MIDI clock per device: always at the song's tempo (delays, tremolos), or only while backing tracks play, with Start and Stop (drum machines, loopers).	MIDI-Clock pro Gerät: immer im Tempo des Songs (Delays, Tremolos) oder nur während Backing-Tracks laufen, mit Start und Stopp (Drumcomputer, Looper).
+	When a part has the name of a section (Chorus, or Verse for Verse: 2), it starts with its presets as the backing track reaches that section.	Heißt ein Teil wie ein Abschnitt (Chorus, oder Verse für Verse: 2), startet er samt Presets, sobald der Backing-Track diesen Abschnitt erreicht.

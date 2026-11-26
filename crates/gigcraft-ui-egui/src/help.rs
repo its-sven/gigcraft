@@ -254,6 +254,9 @@ fn page(app: &mut GigCraftApp, ui: &mut egui::Ui, topic: Topic) {
                         "With section start times (song editor), the chart follows the backing track and marks the current section."
                     ),
                     tr!(
+                        "When a part has the name of a section (Chorus, or Verse for Verse: 2), it starts with its presets as the backing track reaches that section."
+                    ),
+                    tr!(
                         "Screen 2 opens a second window for a monitor or projector – the chart for the band or lyrics only for singers and the audience."
                     ),
                     tr!(
