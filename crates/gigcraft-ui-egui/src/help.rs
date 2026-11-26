@@ -275,6 +275,9 @@ fn page(app: &mut GigCraftApp, ui: &mut egui::Ui, topic: Topic) {
                     tr!(
                         "The TC-Helicon Play Acoustic is switched by stepping with its own buttons, so GigCraft never changes its settings. Turn off Simulated to use the real pedal."
                     ),
+                    tr!(
+                        "MIDI clock per device: always at the song's tempo (delays, tremolos), or only while backing tracks play, with Start and Stop (drum machines, loopers)."
+                    ),
                     tr!("Use Test: program 0 and program 1 to check the connection."),
                     tr!("Footswitches: click Learn next to an action, then press the switch."),
                     tr!(

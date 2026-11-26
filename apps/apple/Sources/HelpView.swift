@@ -42,6 +42,7 @@ struct HelpView: View {
             "Under Library you find the rig: the status of your devices and MIDI Learn for footswitches.",
             "The TC-Helicon Play Acoustic is switched with its own buttons, so GigCraft never changes its settings. Turn off the simulated pedal to use the real one.",
             "Learn: tap an action, then press the footswitch.",
+            "MIDI clock: always at the song's tempo (delays), or only while backing tracks play, with Start and Stop (drum machines, loopers).",
         ]),
         Topic(id: 5, title: "Playing together", icon: "person.3", points: [
             "The band leader starts Live → Start live session – on a computer, iPad or iPhone – and gets an address and a QR code.",

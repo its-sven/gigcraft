@@ -321,6 +321,16 @@
         }
       }
     },
+    "Always, song tempo": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Immer, Song-Tempo"
+          }
+        }
+      }
+    },
     "Artist": {
       "localizations": {
         "de": {
@@ -1243,6 +1253,26 @@
         }
       }
     },
+    "MIDI clock": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MIDI-Clock"
+          }
+        }
+      }
+    },
+    "MIDI clock: always at the song's tempo (delays), or only while backing tracks play, with Start and Stop (drum machines, loopers).": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MIDI-Clock: immer im Tempo des Songs (Delays) oder nur während Backing-Tracks laufen, mit Start und Stopp (Drumcomputer, Looper)."
+          }
+        }
+      }
+    },
     "MIDI devices and pedals": {
       "localizations": {
         "de": {
@@ -1409,6 +1439,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "OK"
+          }
+        }
+      }
+    },
+    "Off": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus"
           }
         }
       }
@@ -2053,6 +2093,16 @@
         }
       }
     },
+    "Tempo sync for delays and loopers": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tempo-Sync für Delays und Looper"
+          }
+        }
+      }
+    },
     "That is not an address. Example: 192.168.1.20:8787": {
       "localizations": {
         "de": {
@@ -2319,6 +2369,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Was der externe Bildschirm zeigt"
+          }
+        }
+      }
+    },
+    "While tracks play": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Während Spuren laufen"
           }
         }
       }

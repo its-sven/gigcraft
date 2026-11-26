@@ -359,6 +359,17 @@ impl RigCore {
         outs_json(self.lock().panic(now_ms))
     }
 
+    /// The current song's tempo (none in a break or outside perform mode);
+    /// devices with MIDI clock follow it (`clock` outputs).
+    pub fn set_tempo(&self, bpm: Option<f64>) -> String {
+        outs_json(self.lock().set_tempo(bpm))
+    }
+
+    /// Backing tracks started or stopped (Start/Stop and clock for "while playing").
+    pub fn playback(&self, playing: bool) -> String {
+        outs_json(self.lock().playback(playing))
+    }
+
     pub fn learn(&self, on: bool) {
         self.lock().learn(on);
     }

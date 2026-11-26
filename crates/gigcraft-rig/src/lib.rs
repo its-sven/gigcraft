@@ -43,6 +43,28 @@ pub struct DeviceConfig {
     pub program_change: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub pc_offset: Option<i32>,
+    /// Send MIDI clock (24 per quarter note) at the song's tempo.
+    #[serde(default, skip_serializing_if = "ClockMode::is_off")]
+    pub clock: ClockMode,
+}
+
+/// When a device gets MIDI clock.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ClockMode {
+    #[default]
+    Off,
+    /// Always at the current song's tempo while performing (delays, tremolos).
+    Always,
+    /// Only while backing tracks play, with Start and Stop (drum machines, loopers).
+    WhilePlaying,
+}
+
+impl ClockMode {
+    #[must_use]
+    pub fn is_off(&self) -> bool {
+        *self == ClockMode::Off
+    }
 }
 
 fn generic() -> String {
@@ -83,6 +105,7 @@ impl RigConfig {
                 simulated: true,
                 program_change: None,
                 pc_offset: None,
+                clock: ClockMode::Off,
             }],
             mappings: Vec::new(),
             gap_ms: 0,
@@ -118,6 +141,9 @@ pub enum RigOut {
     Learned { port: String, trigger: Trigger },
     /// The configuration changed (something was learned); save it.
     ConfigChanged,
+    /// Send MIDI clock (0xF8, 24 per quarter note) to `port` at `bpm`, or stop
+    /// sending it (`None`). The platform keeps the beat with its own timer.
+    Clock { port: String, bpm: Option<f64> },
 }
 
 /// Status of one device for the UI.
@@ -150,6 +176,12 @@ pub struct Rig {
     parsers: BTreeMap<String, StreamParser>,
     queue: Vec<(u64, String, Vec<u8>)>,
     learning: bool,
+    /// Tempo of the current song (perform mode).
+    tempo: Option<f64>,
+    /// Backing tracks playing.
+    playing: bool,
+    /// Clock last asked for, per port.
+    clocks: BTreeMap<String, Option<f64>>,
 }
 
 fn eq(a: &str, b: &str) -> bool {
@@ -172,6 +204,9 @@ impl Rig {
             parsers: BTreeMap::new(),
             queue: Vec::new(),
             learning: false,
+            tempo: None,
+            playing: false,
+            clocks: BTreeMap::new(),
         };
         let _ = rig.set_config(config, 0);
         rig
@@ -240,13 +275,90 @@ impl Rig {
             );
         }
         out.extend(self.reconnect(now));
+        out.extend(self.clock_outs());
         out
     }
 
     /// The platform's current list of MIDI output ports.
     pub fn ports_changed(&mut self, outputs: &[String], now: u64) -> Vec<RigOut> {
         self.outputs = outputs.to_vec();
-        self.reconnect(now)
+        let mut out = self.reconnect(now);
+        out.extend(self.clock_outs());
+        out
+    }
+
+    /// The current song's tempo (`None`: no song or no tempo, e.g. a break or
+    /// leaving perform mode). Devices with clock follow it.
+    pub fn set_tempo(&mut self, bpm: Option<f64>) -> Vec<RigOut> {
+        self.tempo = bpm.filter(|b| b.is_finite() && *b >= 20.0 && *b <= 400.0);
+        self.clock_outs()
+    }
+
+    /// Backing tracks started or stopped: Start/Stop and clock for
+    /// devices set to "while playing".
+    pub fn playback(&mut self, playing: bool) -> Vec<RigOut> {
+        if self.playing == playing {
+            return Vec::new();
+        }
+        self.playing = playing;
+        let mut out = Vec::new();
+        if !playing {
+            out.extend(self.clock_outs());
+        }
+        for d in self.config.devices.clone() {
+            if d.clock == ClockMode::WhilePlaying
+                && let Some(port) = self.resolve_port(&d)
+            {
+                out.push(RigOut::Send {
+                    port,
+                    bytes: vec![if playing { 0xFA } else { 0xFC }],
+                });
+            }
+        }
+        if playing {
+            out.extend(self.clock_outs());
+        }
+        out
+    }
+
+    /// Clock changes per port since the last call.
+    fn clock_outs(&mut self) -> Vec<RigOut> {
+        let mut want: BTreeMap<String, Option<f64>> = BTreeMap::new();
+        for d in &self.config.devices {
+            let bpm = match d.clock {
+                ClockMode::Off => continue,
+                ClockMode::Always => self.tempo,
+                ClockMode::WhilePlaying => self.tempo.filter(|_| self.playing),
+            };
+            if let Some(port) = self.resolve_port(d) {
+                let slot = want.entry(port).or_insert(None);
+                if slot.is_none() {
+                    *slot = bpm;
+                }
+            }
+        }
+        let mut out = Vec::new();
+        // Ports that no longer get clock stop.
+        for (port, last) in &self.clocks {
+            if last.is_some() && !want.contains_key(port) {
+                out.push(RigOut::Clock {
+                    port: port.clone(),
+                    bpm: None,
+                });
+            }
+        }
+        for (port, bpm) in &want {
+            // "Never sent" and "stopped" are the same: no clock.
+            if self.clocks.get(port).copied().flatten() != *bpm {
+                out.push(RigOut::Clock {
+                    port: port.clone(),
+                    bpm: *bpm,
+                });
+            }
+        }
+        self.clocks = want;
+        self.clocks.retain(|_, b| b.is_some());
+        out
     }
 
     /// The output port for a device, if one is available.
@@ -587,7 +699,7 @@ impl Rig {
     /// pending messages and preset walks are cancelled.
     pub fn panic(&mut self, now: u64) -> Vec<RigOut> {
         self.queue.clear();
-        let mut out = Vec::new();
+        let mut out = self.playback(false);
         let devices = self.config.devices.clone();
         let mut ports: Vec<String> = devices
             .iter()

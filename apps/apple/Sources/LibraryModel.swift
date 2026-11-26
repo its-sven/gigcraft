@@ -100,6 +100,7 @@ final class LibraryModel {
             self.perform(action)
         }
         live.onPartChanged = { [weak self] in self?.sendOwnPresetsForLive() }
+        audio.onPlayingChanged = { [weak self] playing in self?.rig.playback(playing) }
         if let url = resolveBookmark(), open(url, createDemo: false) {
             applyLaunchSelection()
             return
@@ -375,6 +376,8 @@ final class LibraryModel {
     func stopPerform() {
         run("perform.stop")
         audio.unload()
+        rig.setTempo(nil)
+        rig.playback(false)
         performState = nil
         performSetlist = nil
         lastSent = []
@@ -400,6 +403,8 @@ final class LibraryModel {
         }
         performState = result
         followAudio()
+        let cur = result["current"] as? [String: Any]
+        rig.setTempo(cur?["type"] as? String == "song" ? cur?["tempo_bpm"] as? Double : nil)
     }
 
     /// Load the current song's backing tracks, decode the next song's.

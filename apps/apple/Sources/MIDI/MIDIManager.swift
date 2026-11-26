@@ -204,6 +204,21 @@ final class MIDIManager: ObservableObject {
         return true
     }
 
+    private var clocks: [String: MIDIClock] = [:]
+
+    /// MIDI clock to `portID` at `bpm`, or stop it (`nil`).
+    func setClock(portID: String, bpm: Double?) {
+        guard let bpm else {
+            clocks.removeValue(forKey: portID)?.stop()
+            return
+        }
+        if let clock = clocks[portID] {
+            clock.set(bpm: bpm)
+        } else if let dest = Self.destination(for: portID) {
+            clocks[portID] = MIDIClock(port: outputPort, dest: dest, bpm: bpm)
+        }
+    }
+
     /// Drops messages for `portID` that are scheduled for later and not yet sent (Web MIDI `MIDIOutput.clear()`).
     func clear(portID: String) {
         sender.clear(portID: portID)

@@ -96,7 +96,7 @@ Order matters: each step is usable on its own.
 | 1 Live protocol, LAN transport, web viewer with QR code | done: `gigcraft-live` (no I/O), `gigcraft-live-net` (WebSocket + viewer on one port, Bonjour announcement and discovery), ADR-0013; MultipeerConnectivity open |
 | 2 Followers with own charts/presets, ready, cues | done on desktop and iOS; iPad/iPhone can lead too (same Rust server through `LeaderCore`, Bonjour through the system) |
 | 3 Audio engine | engine and hosts done: desktop (cpal, ADR-0012) and iOS (AVAudioEngine through a real-time C function, ADR-0014), wired into perform mode and both song editors; multichannel outputs on iOS, cue slots, speed/pitch open |
-| 4 MIDI clock/MTC, timed MIDI, macros, MIDI files | open |
+| 4 MIDI clock/MTC, timed MIDI, macros, MIDI files | MIDI clock done (per device: always at the song tempo, or while tracks play with Start/Stop; desktop thread measured at < 0.3 ms deviation, iOS scheduled with CoreMIDI timestamps); MTC, timed MIDI events, macros, MIDI file playback open |
 | 5 Timed lyrics, PDF timestamps, external display | section start times: the chart follows the backing track and marks the section (desktop, iOS); second screen: desktop window, iOS external display (AirPlay/HDMI), chart or lyrics only; line-level timing and PDF page timestamps open |
 | 6 Variants, history, queue, backups, settings export | open |
 | 7 Web build (wasm) | open (the UI crate keeps network and audio behind hooks so it can build for the web) |

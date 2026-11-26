@@ -3,7 +3,7 @@
 use crate::{GigCraftApp, perform};
 use gigcraft_midi::profile;
 use gigcraft_perform::Action;
-use gigcraft_rig::{DeviceConfig, Level, Mapping, RigConfig, RigOut};
+use gigcraft_rig::{ClockMode, DeviceConfig, Level, Mapping, RigConfig, RigOut};
 
 /// MIDI ports of the platform (midir on desktop). Not available on the web.
 pub trait MidiIo {
@@ -15,6 +15,8 @@ pub trait MidiIo {
     fn send(&mut self, port: &str, bytes: &[u8]) -> Result<(), String>;
     /// Messages received since the last call, with their port.
     fn poll(&mut self) -> Vec<(String, Vec<u8>)>;
+    /// Send MIDI clock (24 per quarter note) to `port` at `bpm`, or stop (`None`).
+    fn set_clock(&mut self, port: &str, bpm: Option<f64>);
 }
 
 /// Rig state of the app.
@@ -53,6 +55,16 @@ pub(crate) fn pump(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
         }
     }
     outs.extend(app.rig.tick(now));
+    // MIDI clock follows the current song's tempo and the backing tracks.
+    let tempo = app.perform.as_ref().and_then(|p| {
+        let cur = &p.state()["current"];
+        (cur["type"] == "song")
+            .then(|| cur["tempo_bpm"].as_f64())
+            .flatten()
+    });
+    outs.extend(app.rig.set_tempo(tempo));
+    let playing = crate::audio_ui::playing(app);
+    outs.extend(app.rig.playback(playing));
     handle(app, outs, time);
     if let Some(deadline) = app.rig.next_deadline() {
         let wait = deadline.saturating_sub(now).clamp(5, 500);
@@ -104,6 +116,11 @@ pub(crate) fn handle(app: &mut GigCraftApp, outs: Vec<RigOut>, time: f64) {
                 }
             }
             RigOut::ConfigChanged => app.rig_dirty = true,
+            RigOut::Clock { port, bpm } => {
+                if let Some(io) = app.hooks.midi.as_mut() {
+                    io.set_clock(&port, bpm);
+                }
+            }
         }
     }
 }
@@ -183,6 +200,21 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                                             .changed();
                                     }
                                 });
+                            ui.label(tr!("MIDI clock"));
+                            let clock_label = |m: ClockMode| match m {
+                                ClockMode::Off => tr!("off"),
+                                ClockMode::Always => tr!("always, song tempo"),
+                                ClockMode::WhilePlaying => tr!("while tracks play"),
+                            };
+                            egui::ComboBox::from_id_salt(("clock", i))
+                                .selected_text(clock_label(d.clock))
+                                .show_ui(ui, |ui| {
+                                    for m in [ClockMode::Off, ClockMode::Always, ClockMode::WhilePlaying] {
+                                        changed |= ui.selectable_value(&mut d.clock, m, clock_label(m)).changed();
+                                    }
+                                })
+                                .response
+                                .on_hover_text(tr!("Tempo sync for delays and loopers: always at the song's tempo, or only while backing tracks play (with Start and Stop)"));
                         }
                     });
                     if let Some(st) = status.iter().find(|s| s.name == d.name) {
@@ -222,6 +254,7 @@ pub(crate) fn window(app: &mut GigCraftApp, ctx: &egui::Context, time: f64) {
                         simulated: false,
                         program_change: None,
                         pc_offset: None,
+                        clock: ClockMode::Off,
                     });
                     changed = true;
                 }

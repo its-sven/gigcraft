@@ -423,3 +423,9 @@
 	GigCraft – Screen 2	GigCraft – Bildschirm 2
 	With section start times (song editor), the chart follows the backing track and marks the current section.	Mit Startzeiten der Abschnitte (Song-Editor) folgt der Chart dem Backing-Track und markiert den laufenden Abschnitt.
 	Screen 2 opens a second window for a monitor or projector – the chart for the band or lyrics only for singers and the audience.	Bildschirm 2 öffnet ein zweites Fenster für Monitor oder Beamer – den Chart für die Band oder nur die Lyrics für Gesang und Publikum.
+	MIDI clock	MIDI-Clock
+	off	aus
+	always, song tempo	immer, Song-Tempo
+	while tracks play	während Spuren laufen
+	Tempo sync for delays and loopers: always at the song's tempo, or only while backing tracks play (with Start and Stop)	Tempo-Sync für Delays und Looper: immer im Song-Tempo oder nur während Backing-Tracks laufen (mit Start und Stopp)
+	MIDI clock per device: always at the song's tempo (delays, tremolos), or only while backing tracks play, with Start and Stop (drum machines, loopers).	MIDI-Clock pro Gerät: immer im Tempo des Songs (Delays, Tremolos) oder nur während Backing-Tracks laufen, mit Start und Stopp (Drumcomputer, Looper).

@@ -58,9 +58,33 @@ final class RigBridge {
 
     func panic() { handle(rig.panic(nowMs: nowMs)) }
 
+    /// The current song's tempo, for devices with MIDI clock.
+    func setTempo(_ bpm: Double?) { handle(rig.setTempo(bpm: bpm)) }
+
+    /// Backing tracks started or stopped.
+    func playback(_ playing: Bool) { handle(rig.playback(playing: playing)) }
+
     func learn(_ action: String?) {
         learningFor = action
         rig.learn(on: action != nil)
+    }
+
+    /// MIDI clock mode of the devices ("off", "always", "while_playing").
+    var clockMode: String {
+        let cfg = (try? JSONSerialization.jsonObject(with: Data(rig.configJson().utf8))) as? [String: Any] ?? [:]
+        return (cfg["devices"] as? [[String: Any]] ?? []).compactMap { $0["clock"] as? String }.first ?? "off"
+    }
+
+    func setClockMode(_ mode: String) {
+        var cfg = (try? JSONSerialization.jsonObject(with: Data(rig.configJson().utf8))) as? [String: Any] ?? [:]
+        var devices = cfg["devices"] as? [[String: Any]] ?? []
+        for i in devices.indices { devices[i]["clock"] = mode }
+        cfg["devices"] = devices
+        guard let data = try? JSONSerialization.data(withJSONObject: cfg),
+              let outs = try? rig.setConfigJson(configJson: String(decoding: data, as: UTF8.self), nowMs: nowMs) else { return }
+        handle(outs)
+        portsChanged(ports)
+        save()
     }
 
     /// Use the simulated pedal (no hardware) or look for a real Play Acoustic.
@@ -93,6 +117,10 @@ final class RigBridge {
                 guard let port = o["port"] as? String, let bytes = o["bytes"] as? [Int],
                       let id = ports.first(where: { $0.type == .output && $0.name == port })?.id else { continue }
                 midi.send(bytes.map { UInt8(truncatingIfNeeded: $0) }, to: id)
+            case "clock":
+                guard let port = o["port"] as? String,
+                      let id = ports.first(where: { $0.type == .output && $0.name == port })?.id else { continue }
+                midi.setClock(portID: id, bpm: o["bpm"] as? Double)
             case "notice":
                 append("\(o["device"] as? String ?? ""): \(Self.localized(o["text"] as? String ?? ""))")
             case "action":

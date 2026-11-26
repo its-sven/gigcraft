@@ -188,6 +188,12 @@ struct RigSection: View {
             Text("Rig").font(.headline).accessibilityAddTraits(.isHeader)
             ForEach(rig.status, id: \.self) { Text($0).font(.callout) }
             Toggle("Simulated Play Acoustic (no hardware)", isOn: Binding(get: { rig.usesSimulatedPedal }, set: { rig.setSimulated($0) }))
+            Picker("MIDI clock", selection: Binding(get: { rig.clockMode }, set: { rig.setClockMode($0) })) {
+                Text("Off").tag("off")
+                Text("Always, song tempo").tag("always")
+                Text("While tracks play").tag("while_playing")
+            }
+            .accessibilityHint("Tempo sync for delays and loopers")
             HStack {
                 ForEach(["next", "previous", "next_song", "previous_song"], id: \.self) { action in
                     Button {

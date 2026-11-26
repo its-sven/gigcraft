@@ -344,6 +344,11 @@ pub(crate) fn toggle(app: &mut GigCraftApp) {
     }
 }
 
+/// Are the backing tracks (or the count-in) playing?
+pub(crate) fn playing(app: &mut GigCraftApp) -> bool {
+    status(app).is_some_and(|s| s.state == PlayState::Playing)
+}
+
 /// Position of the playing song's tracks (not during the count-in).
 pub(crate) fn position(app: &mut GigCraftApp) -> Option<f64> {
     status(app)

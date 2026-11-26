@@ -129,8 +129,14 @@ final class AudioBridge {
         status = nil
     }
 
+    /// Called when playback starts or stops (MIDI clock Start/Stop).
+    var onPlayingChanged: ((Bool) -> Void)?
+
     private func refresh() {
+        let was = status?.playing ?? false
         status = audio?.status()
+        let now = status?.playing ?? false
+        if now != was { onPlayingChanged?(now) }
     }
 
     private func startPolling() {
