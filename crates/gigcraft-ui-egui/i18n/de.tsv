@@ -473,3 +473,10 @@
 	Auto-scroll (key S, or a footswitch) moves the chart by itself: as fast as the song is long, slower or faster with − and +. Scrolling by hand moves it on from there.	Auto-Scroll (Taste S oder ein Fußschalter) bewegt das Chart von selbst: so schnell, wie der Song lang ist, mit − und + langsamer oder schneller. Von Hand gescrollt geht es von dort weiter.
 	Paste… takes a song, Ultimate Guitar tab links or a playlist link. For each tab GigCraft makes a song with title, artist, key and capo and keeps the link – never the chart. A small UG in the song list marks songs with their link.	Einfügen… nimmt einen Song, Ultimate-Guitar-Tab-Links oder einen Playlist-Link. Für jeden Tab legt GigCraft einen Song mit Titel, Interpret, Tonart und Kapo an und behält den Link – nie das Chart. Ein kleines UG in der Songliste zeigt Songs mit Link.
 	Web links saved as files (.webloc, .url) and pages saved from the browser work with Import file… too, or drop them on the window.	Als Datei gespeicherte Web-Links (.webloc, .url) und im Browser gespeicherte Seiten gehen auch mit Datei importieren… – oder zieh sie aufs Fenster.
+	A web page for this song: a tab, a video, the original recording	Eine Webseite zum Song: ein Tab, ein Video, die Originalaufnahme
+	Add link	Link hinzufügen
+	Label	Bezeichnung
+	Links	Links
+	Remove this link	Diesen Link entfernen
+	The link “{value}” must start with https:// or http://	Der Link „{value}“ muss mit https:// oder http:// beginnen
+	The chart scrolls by itself, as fast as the song is long. Scroll by hand at any time.	Das Chart scrollt von selbst, passend zur Songlänge. Von Hand scrollen geht jederzeit.

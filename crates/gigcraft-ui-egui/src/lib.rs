@@ -8,6 +8,7 @@
 #[macro_use]
 pub mod i18n;
 mod audio_ui;
+mod auto_scroll;
 mod chart_view;
 mod help;
 mod live_ui;
@@ -144,6 +145,10 @@ pub struct GigCraftApp {
     song: Option<SongId>,
     setlist: Option<SetlistId>,
     transpose: i8,
+    /// Auto-scroll speed (1.0 = as long as the song), for every view.
+    scroll_factor: f32,
+    /// Auto-scroll in the song view.
+    song_scroll: auto_scroll::State,
     font_size: f32,
     message: Option<(String, bool)>,
     chart_cache: chart_view::Cache,
@@ -191,6 +196,8 @@ impl GigCraftApp {
             song: None,
             setlist: None,
             transpose: 0,
+            scroll_factor: 1.0,
+            song_scroll: auto_scroll::State::default(),
             font_size: 20.0,
             message: None,
             chart_cache: chart_view::Cache::default(),
@@ -812,6 +819,7 @@ impl GigCraftApp {
             self.song = Some(id);
             self.transpose = 0;
             self.song_draft = None;
+            self.song_scroll = auto_scroll::State::default();
         }
         if let Some(id) = pick_list {
             self.setlist = Some(id);

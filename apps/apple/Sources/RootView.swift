@@ -69,7 +69,7 @@ struct RootView: View {
                     } label: { Label("New", systemImage: "plus") }
                 }
                 ToolbarItem(placement: .bottomBar) {
-                    Button("Undo") { model.undo() }
+                    Button { model.undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
                 }
                 ToolbarItem(placement: .bottomBar) {
                     Button { showingSettings = true } label: { Label("Library", systemImage: "folder") }

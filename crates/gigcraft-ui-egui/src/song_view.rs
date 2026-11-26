@@ -39,6 +39,8 @@ pub(crate) struct Draft {
     notes: String,
     chart: String,
     parts: Vec<PartDraft>,
+    /// (label, address) per link.
+    links: Vec<(String, String)>,
     tracks: Vec<Track>,
     click_on: bool,
     click: ClickSettings,
@@ -97,6 +99,11 @@ impl Draft {
             notes: s.notes.clone(),
             chart: lib.chart(id).unwrap_or_default().to_string(),
             parts,
+            links: s
+                .links
+                .iter()
+                .map(|l| (l.label.clone().unwrap_or_default(), l.url.clone()))
+                .collect(),
             tracks: s.tracks.clone(),
             click_on: s.click.as_ref().is_some_and(|c| c.enabled),
             click: s.click.clone().unwrap_or_default(),
@@ -140,6 +147,24 @@ impl Draft {
                     .map_err(|_| tr!("Capo “{value}” is not a number", value = c))?
             ),
         };
+        let mut links = Vec::new();
+        for (label, url) in &self.links {
+            let url = url.trim();
+            if url.is_empty() {
+                continue;
+            }
+            if !(url.starts_with("https://") || url.starts_with("http://")) {
+                return Err(tr!(
+                    "The link “{value}” must start with https:// or http://",
+                    value = url
+                ));
+            }
+            let label = label.trim();
+            links.push(json!({
+                "url": url,
+                "label": if label.is_empty() { Value::Null } else { json!(label) },
+            }));
+        }
         let mut parts = Vec::new();
         for p in &self.parts {
             let mut actions = Vec::new();
@@ -189,6 +214,7 @@ impl Draft {
             "tags": tags,
             "notes": self.notes,
             "parts": serde_json::to_value(parts).unwrap_or(Value::Null),
+            "links": links,
             "tracks": serde_json::to_value(&self.tracks).unwrap_or(Value::Null),
             "markers": serde_json::to_value(self.markers()?).unwrap_or(Value::Null),
             "click": if self.click_on {
@@ -211,6 +237,10 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
     let size = app.font_size;
     let mut edit = false;
     let mut trash = false;
+    let mut scroll_toggle = false;
+    let mut scroll_speed: Option<bool> = None;
+    let now = ui.input(|i| i.time);
+    let length = song.duration_secs;
     ui.horizontal(|ui| {
         ui.heading(egui::RichText::new(&song.title).size(size * 1.4));
         if !song.artist.is_empty() {
@@ -226,6 +256,27 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
             edit = ui
                 .button(tr!("Edit"))
                 .on_hover_text(tr!("Change fields, parts, presets and the chart"))
+                .clicked();
+            ui.separator();
+            // Auto-scroll for practising (right to left: faster, speed, slower, on/off).
+            if crate::named(ui.small_button("+"), tr!("Scroll faster"))
+                .on_hover_text(tr!("Scroll faster"))
+                .clicked()
+            {
+                scroll_speed = Some(true);
+            }
+            crate::theme::readout(ui, tr!("Speed"), &format!("{:.0}%", app.scroll_factor * 100.0), 13.0);
+            if crate::named(ui.small_button("−"), tr!("Scroll slower"))
+                .on_hover_text(tr!("Scroll slower"))
+                .clicked()
+            {
+                scroll_speed = Some(false);
+            }
+            let running = app.song_scroll.running.is_some();
+            let label = if running { tr!("Stop scrolling") } else { tr!("Auto-scroll") };
+            let button = if running { crate::theme::primary(label) } else { egui::Button::new(label) };
+            scroll_toggle = crate::named(ui.add(button), tr!("Auto-scroll"))
+                .on_hover_text(tr!("The chart scrolls by itself, as fast as the song is long. Scroll by hand at any time."))
                 .clicked();
         });
     });
@@ -357,11 +408,29 @@ pub(crate) fn view(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
     for w in &chart.warnings {
         ui.colored_label(ui.visuals().warn_fg_color, w);
     }
-    egui::ScrollArea::vertical()
-        .auto_shrink(false)
-        .show(ui, |ui| {
-            chart_view::show(ui, &chart.chart, size);
-        });
+    let mut area = egui::ScrollArea::vertical().auto_shrink(false);
+    if let Some(o) = app
+        .song_scroll
+        .next_offset(now, length, size, app.scroll_factor)
+    {
+        area = area.vertical_scroll_offset(o);
+        ui.ctx().request_repaint();
+    }
+    let out = area.show(ui, |ui| {
+        chart_view::show(ui, &chart.chart, size);
+    });
+    app.song_scroll.after(
+        now,
+        out.state.clamped_offset().y,
+        out.inner_rect.height(),
+        out.content_size.y,
+    );
+    if scroll_toggle {
+        app.song_scroll.toggle(now);
+    }
+    if let Some(up) = scroll_speed {
+        app.scroll_factor = crate::auto_scroll::step(app.scroll_factor, up);
+    }
     if edit {
         app.song_draft = Draft::load(app, id);
     }
@@ -445,6 +514,31 @@ pub(crate) fn editor(app: &mut GigCraftApp, ui: &mut egui::Ui, id: SongId) {
         });
         ui.label(tr!("Notes"));
         ui.add(egui::TextEdit::multiline(&mut draft.notes).desired_rows(2).desired_width(f32::INFINITY));
+
+        ui.add_space(8.0);
+        ui.horizontal(|ui| {
+            crate::theme::section(ui, tr!("Links"));
+            if ui
+                .small_button(tr!("Add link"))
+                .on_hover_text(tr!("A web page for this song: a tab, a video, the original recording"))
+                .clicked()
+            {
+                draft.links.push((String::new(), String::new()));
+            }
+        });
+        let mut remove_link = None;
+        for (i, (label, url)) in draft.links.iter_mut().enumerate() {
+            ui.horizontal(|ui| {
+                ui.add(egui::TextEdit::singleline(label).desired_width(180.0).hint_text(tr!("Label")));
+                ui.add(egui::TextEdit::singleline(url).desired_width(380.0).hint_text("https://…"));
+                if ui.small_button(tr!("Remove")).on_hover_text(tr!("Remove this link")).clicked() {
+                    remove_link = Some(i);
+                }
+            });
+        }
+        if let Some(i) = remove_link {
+            draft.links.remove(i);
+        }
 
         ui.add_space(8.0);
         ui.horizontal(|ui| {

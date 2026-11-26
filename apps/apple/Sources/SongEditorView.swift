@@ -20,6 +20,13 @@ struct TrackDraft: Identifiable, Hashable {
     var mute = false
 }
 
+/// A web link of the song.
+struct LinkDraft: Identifiable, Hashable {
+    let id = UUID()
+    var label = ""
+    var url = ""
+}
+
 struct PartDraft: Identifiable, Hashable {
     let id = UUID()
     var name = ""
@@ -46,6 +53,7 @@ struct SongEditorView: View {
     @State private var notes = ""
     @State private var chart = ""
     @State private var parts: [PartDraft] = []
+    @State private var links: [LinkDraft] = []
     @State private var tracks: [TrackDraft] = []
     @State private var audioFiles: [String] = []
     @State private var clickOn = false
@@ -79,10 +87,21 @@ struct SongEditorView: View {
                     VStack(alignment: .leading) {
                         TextField("Part name", text: $part.name).font(.headline)
                         ForEach($part.presets) { $preset in
-                            HStack {
-                                TextField("Device", text: $preset.device)
-                                Stepper("Ch \(preset.channel)", value: $preset.channel, in: 1...16).fixedSize()
-                                Stepper("Program \(preset.program)", value: $preset.program, in: 0...127).fixedSize()
+                            // One row where there is room, two on the iPhone.
+                            ViewThatFits(in: .horizontal) {
+                                HStack {
+                                    TextField("Device", text: $preset.device).frame(minWidth: 120)
+                                    Stepper("Ch \(preset.channel)", value: $preset.channel, in: 1...16).fixedSize()
+                                    Stepper("Program \(preset.program)", value: $preset.program, in: 0...127).fixedSize()
+                                }
+                                VStack(alignment: .leading, spacing: 6) {
+                                    TextField("Device", text: $preset.device)
+                                    HStack {
+                                        Stepper("Ch \(preset.channel)", value: $preset.channel, in: 1...16).fixedSize()
+                                        Spacer(minLength: 8)
+                                        Stepper("Program \(preset.program)", value: $preset.program, in: 0...127).fixedSize()
+                                    }
+                                }
                             }
                         }
                         if !part.other.isEmpty {
@@ -99,6 +118,21 @@ struct SongEditorView: View {
                 Text("Parts and presets")
             } footer: {
                 Text("Each part sends its presets when it starts. Program numbers are MIDI values 0–127.")
+            }
+            Section {
+                ForEach($links) { $link in
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField("Label", text: $link.label).font(.headline)
+                        TextField("https://…", text: $link.url)
+                            .keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+                    }
+                }
+                .onDelete { links.remove(atOffsets: $0) }
+                Button { links.append(LinkDraft()) } label: { Label("Add link", systemImage: "link.badge.plus") }
+            } header: {
+                Text("Links")
+            } footer: {
+                Text("A web page for this song: a tab, a video, the original recording. Swipe to remove.")
             }
             Section {
                 Toggle("Click", isOn: $clickOn)
@@ -215,6 +249,7 @@ struct SongEditorView: View {
         capo = (s["capo"] as? Int).map(String.init) ?? ""
         tags = (s["tags"] as? [String] ?? []).joined(separator: ", ")
         notes = s["notes"] as? String ?? ""
+        links = (s["links"] as? [[String: Any]] ?? []).map { LinkDraft(label: $0["label"] as? String ?? "", url: $0["url"] as? String ?? "") }
         chart = rec.chart
         tracks = (s["tracks"] as? [[String: Any]] ?? []).compactMap { t in
             guard let file = t["file"] as? String else { return nil }
@@ -262,6 +297,18 @@ struct SongEditorView: View {
         if t.isEmpty { fields["tempo_bpm"] = NSNull() } else if let v = Double(t) { fields["tempo_bpm"] = v } else { issues = [String(localized: "Tempo is not a number")]; return }
         let c = capo.trimmingCharacters(in: .whitespaces)
         if c.isEmpty { fields["capo"] = NSNull() } else if let v = Int(c) { fields["capo"] = v } else { issues = [String(localized: "Capo is not a number")]; return }
+        var linkFields: [[String: Any]] = []
+        for l in links {
+            let url = l.url.trimmingCharacters(in: .whitespaces)
+            if url.isEmpty { continue }
+            guard url.hasPrefix("https://") || url.hasPrefix("http://") else {
+                issues = [String(localized: "The link “\(url)” must start with https:// or http://")]
+                return
+            }
+            let label = l.label.trimmingCharacters(in: .whitespaces)
+            linkFields.append(["url": url, "label": label.isEmpty ? NSNull() : label])
+        }
+        fields["links"] = linkFields
         var markers = otherMarkers
         for (label, text) in sectionTimes where !text.trimmingCharacters(in: .whitespaces).isEmpty {
             guard let at = Self.parseClock(text) else {

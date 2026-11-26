@@ -31,47 +31,8 @@ pub(crate) struct PerformUi {
     auto_block: Option<usize>,
     /// Auto-scroll is on: the time of the last frame it moved the chart.
     auto_scroll: Option<f64>,
-    /// Faster or slower than the song's length suggests (1.0 = as long as the song).
-    scroll_factor: f32,
     /// Height of the whole chart (from the last frame).
     content_height: f32,
-}
-
-/// Auto-scroll speed steps.
-const SCROLL_FACTORS: [f32; 9] = [0.5, 0.6, 0.75, 0.9, 1.0, 1.15, 1.3, 1.6, 2.0];
-
-impl PerformUi {
-    fn factor(&self) -> f32 {
-        if self.scroll_factor > 0.0 {
-            self.scroll_factor
-        } else {
-            1.0
-        }
-    }
-
-    fn step_speed(&mut self, up: bool) {
-        let f = self.factor();
-        let i = SCROLL_FACTORS
-            .iter()
-            .position(|x| (x - f).abs() < 0.01)
-            .unwrap_or(4);
-        let j = if up {
-            (i + 1).min(SCROLL_FACTORS.len() - 1)
-        } else {
-            i.saturating_sub(1)
-        };
-        self.scroll_factor = SCROLL_FACTORS[j];
-    }
-}
-
-/// Points per second: the chart goes by in the song's length; without a
-/// length, about a line every two seconds.
-fn scroll_speed(p: &PerformUi, length_secs: Option<u32>, size: f32) -> f32 {
-    let base = match length_secs.filter(|s| *s > 20) {
-        Some(secs) => ((p.content_height - p.view_height * 0.6).max(0.0) / secs as f32).max(4.0),
-        None => size * 0.6,
-    };
-    base * p.factor()
 }
 
 /// The chart block the backing track is in: the last section marker at or
@@ -287,6 +248,7 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
     let p = &p;
     let st = p.state.clone();
     let size = app.font_size * 1.25;
+    let factor = app.scroll_factor;
     let mut clicked: Option<Action> = None;
     let mut jump: Option<(usize, usize)> = None;
     let mut speed: Option<bool> = None;
@@ -349,7 +311,7 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
             {
                 speed = Some(false);
             }
-            crate::theme::readout(ui, tr!("Speed"), &format!("{:.0}%", p.factor() * 100.0), 13.0);
+            crate::theme::readout(ui, tr!("Speed"), &format!("{:.0}%", app.scroll_factor * 100.0), 13.0);
             if crate::named(ui.small_button("+"), tr!("Scroll faster"))
                 .on_hover_text(tr!("Scroll faster"))
                 .clicked()
@@ -551,7 +513,14 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                     let auto = p.auto_scroll.map(|last| {
                         let dt = (now - last).clamp(0.0, 0.25) as f32;
                         let length = lib.song(id).and_then(|s| s.duration_secs);
-                        p.scroll + scroll_speed(p, length, size) * dt
+                        p.scroll
+                            + crate::auto_scroll::speed(
+                                p.content_height,
+                                p.view_height,
+                                length,
+                                size,
+                                factor,
+                            ) * dt
                     });
                     if p.auto_scroll.is_some() {
                         auto_moved = Some(now);
@@ -619,9 +588,6 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
         if content_height > 0.0 {
             p.content_height = content_height;
         }
-        if let Some(up) = speed {
-            p.step_speed(up);
-        }
         if p.auto_scroll.is_some() {
             // At the end of the chart it stops by itself.
             let end = (p.content_height - p.view_height).max(0.0);
@@ -633,6 +599,9 @@ pub(crate) fn show(app: &mut GigCraftApp, ui: &mut egui::Ui) {
                 p.auto_scroll
             };
         }
+    }
+    if let Some(up) = speed {
+        app.scroll_factor = crate::auto_scroll::step(app.scroll_factor, up);
     }
     if let Some((i, part)) = jump {
         goto(app, i, part, now);

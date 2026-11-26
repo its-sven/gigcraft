@@ -625,3 +625,21 @@ fn one_import_takes_links_shortcuts_and_pages() {
         .unwrap_err();
     assert!(err.to_string().contains("ChordPro"), "{err}");
 }
+
+#[test]
+fn links_can_be_edited() {
+    let (_d, mut e) = engine();
+    let id = run(&mut e, "song.create", json!({"title": "Night Ferry"})).result["id"].clone();
+    run(
+        &mut e,
+        "song.update",
+        json!({"id": id, "fields": {"links": [
+            {"url": "https://example.org/video", "label": "Video"},
+            {"url": "https://example.org/x", "label": null}
+        ]}}),
+    );
+    let song = run(&mut e, "song.get", json!({"id": id})).result["song"].clone();
+    assert_eq!(song["links"][0]["label"], "Video");
+    assert_eq!(song["links"][1]["url"], "https://example.org/x");
+    assert!(song["links"][1].get("label").is_none());
+}
