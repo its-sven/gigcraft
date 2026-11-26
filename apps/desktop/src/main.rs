@@ -2,6 +2,9 @@
 //!
 //! `gigcraft [LIBRARY] [--song TITLE|ID [--edit]] [--setlist NAME|ID [--perform]] [--rig] [--lang en|de] [--live | --join ADDRESS] [--show-help]`
 
+// No console window behind the app on Windows (release builds).
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 mod audio_io;
 mod live_io;
 mod midi_io;

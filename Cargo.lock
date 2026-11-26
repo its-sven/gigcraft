@@ -1774,7 +1774,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-audio"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "craft-audio",
  "craft-audio-dsp",
@@ -1784,7 +1784,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-audio-cpal"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "cpal",
  "gigcraft-audio",
@@ -1793,7 +1793,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-automation"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "craft-jsonrpc",
  "craft-mcp",
@@ -1805,14 +1805,14 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-bindgen"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "uniffi",
 ]
 
 [[package]]
 name = "gigcraft-chordpro"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "chordsketch-chordpro",
  "serde",
@@ -1820,7 +1820,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "gigcraft-automation",
@@ -1831,7 +1831,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-commands"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "gigcraft-chordpro",
  "gigcraft-formats",
@@ -1847,7 +1847,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-desktop"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "eframe",
  "gigcraft-audio",
@@ -1860,7 +1860,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-ffi"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "gigcraft-audio",
  "gigcraft-chordpro",
@@ -1878,7 +1878,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-formats"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "gigcraft-chordpro",
  "gigcraft-model",
@@ -1889,7 +1889,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-live"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "gigcraft-model",
  "serde",
@@ -1898,7 +1898,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-live-net"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "gigcraft-live",
  "if-addrs",
@@ -1909,7 +1909,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-midi"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "gigcraft-model",
  "serde",
@@ -1920,7 +1920,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-model"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1931,7 +1931,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-perform"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "gigcraft-model",
  "serde",
@@ -1942,7 +1942,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-rig"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "gigcraft-midi",
  "gigcraft-model",
@@ -1954,7 +1954,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-store"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "craft-atomic",
  "gigcraft-model",
@@ -1967,7 +1967,7 @@ dependencies = [
 
 [[package]]
 name = "gigcraft-ui-egui"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "craft-i18n",
  "eframe",
@@ -5786,7 +5786,7 @@ checksum = "e450f9b2ed1dff33c94c12589a87338689467b9c4f5d8a5710bd09a847d2c8a7"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde_json",
 ]

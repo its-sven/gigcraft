@@ -30,3 +30,4 @@ apps/apple/build/
 .claude/
 apps/apple/ipa/
 apps/apple/build-device/
+dist/

@@ -63,6 +63,17 @@
 
 GigCraft is an independent project. It follows the principles of the [ArtCraft](https://getartcraft.com/) Craft apps (Rust, local-first, every action scriptable from a CLI or an AI agent) and uses their open-source [craft-libs](https://github.com/storytold/craft-libs), but it is not an official ArtCraft app. It is not affiliated with BandHelper, Stage Traxx, OnSong or any other product named in the research notes.
 
+## Download
+
+Each version is on the [releases page](https://github.com/its-sven/gigcraft/releases) (latest builds of `main`: Actions → the newest run → Artifacts). See the [changelog](CHANGELOG.md).
+
+| System | File | First start |
+|---|---|---|
+| macOS 11+ (Apple silicon and Intel) | `GigCraft-macOS-<version>.zip` | Unzip, move to Applications, then right-click → Open (the app is not notarized yet) |
+| Windows 10/11 | `GigCraft-windows-x86_64-<version>.zip` | Unzip and start `gigcraft.exe`; SmartScreen: More info → Run anyway |
+| Linux x86_64 | `GigCraft-linux-x86_64-<version>.tar.gz` | Unpack and run `./gigcraft` (`README.txt` shows how to add it to the menu) |
+| iPhone, iPad (iOS 17+) | `GigCraft-<build>.ipa` | Install with SideStore or AltStore (see below) |
+
 ## Try it
 
 Requirements: Rust (installed via [rustup](https://rustup.rs); the version in `rust-toolchain.toml` is picked automatically). For the iOS app: Xcode 16+ and [XcodeGen](https://github.com/yonaskolb/XcodeGen).

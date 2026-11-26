@@ -5,6 +5,9 @@
 //! - `cargo xtask apple [--release]`
 //!   build the core for iOS device, iOS simulator and macOS, generate Swift
 //!   bindings and pack `apps/apple/Frameworks/GigCraftCore.xcframework`.
+//! - `cargo xtask package [--build N]`
+//!   the desktop app as a download for this OS in `dist/`: macOS a universal
+//!   `GigCraft.app` (zip), Linux a tar.gz with a desktop entry, Windows a zip.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
@@ -18,7 +21,15 @@ fn main() -> ExitCode {
         Some("ci") => ci(),
         Some("layering") => layering(),
         Some("apple") => apple(args.iter().any(|a| a == "--release")),
-        _ => Err("usage: cargo xtask <ci | layering | apple [--release]>".into()),
+        Some("package") => package(
+            args.iter()
+                .position(|a| a == "--build")
+                .and_then(|i| args.get(i + 1))
+                .map_or("0", String::as_str),
+        ),
+        _ => Err(
+            "usage: cargo xtask <ci | layering | apple [--release] | package [--build N]>".into(),
+        ),
     };
     match result {
         Ok(()) => ExitCode::SUCCESS,
@@ -256,5 +267,164 @@ fn apple(release: bool) -> Result {
         "apple ok: {} and Generated/GigCraftCore.swift",
         xcf.display()
     );
+    Ok(())
+}
+
+/// The workspace version from Cargo.toml (`0.2.0`).
+fn version() -> Result<String> {
+    let toml = std::fs::read_to_string(root().join("Cargo.toml")).map_err(|e| e.to_string())?;
+    toml.lines()
+        .find_map(|l| {
+            l.strip_prefix("version = \"")
+                .and_then(|v| v.strip_suffix('"'))
+        })
+        .map(str::to_string)
+        .ok_or_else(|| "no workspace version in Cargo.toml".into())
+}
+
+fn package(build: &str) -> Result {
+    let dist = root().join("dist");
+    std::fs::create_dir_all(&dist).map_err(|e| e.to_string())?;
+    let version = version()?;
+    if cfg!(target_os = "macos") {
+        package_macos(&dist, &version, build)
+    } else if cfg!(target_os = "linux") {
+        package_linux(&dist, &version)
+    } else {
+        package_windows(&dist, &version)
+    }
+}
+
+fn release_build(target: Option<&str>) -> Result<PathBuf> {
+    let mut c = cargo();
+    c.args(["build", "--release", "--locked", "-p", "gigcraft-desktop"]);
+    if let Some(t) = target {
+        c.args(["--target", t]);
+    }
+    run(&mut c)?;
+    let dir = root().join("target");
+    let dir = match target {
+        Some(t) => dir.join(t).join("release"),
+        None => dir.join("release"),
+    };
+    Ok(dir.join(if cfg!(windows) {
+        "gigcraft.exe"
+    } else {
+        "gigcraft"
+    }))
+}
+
+fn package_macos(dist: &Path, version: &str, build: &str) -> Result {
+    // One app for Apple silicon and Intel.
+    let arm = release_build(Some("aarch64-apple-darwin"))?;
+    let intel = release_build(Some("x86_64-apple-darwin"))?;
+    let work = root().join("target/package");
+    let _ = std::fs::remove_dir_all(&work);
+    let app = work.join("GigCraft.app/Contents");
+    for d in ["MacOS", "Resources"] {
+        std::fs::create_dir_all(app.join(d)).map_err(|e| e.to_string())?;
+    }
+    run(Command::new("lipo")
+        .args(["-create", "-output"])
+        .arg(app.join("MacOS/gigcraft"))
+        .arg(&arm)
+        .arg(&intel))?;
+    // Icon: the 1024 px PNG as an .icns.
+    let iconset = work.join("GigCraft.iconset");
+    std::fs::create_dir_all(&iconset).map_err(|e| e.to_string())?;
+    let icon = root().join("docs/img/icon.png");
+    for size in [16u32, 32, 128, 256, 512] {
+        for (scale, suffix) in [(1, ""), (2, "@2x")] {
+            let px = (size * scale).to_string();
+            run(Command::new("sips")
+                .args(["-z", &px, &px])
+                .arg(&icon)
+                .arg("--out")
+                .arg(iconset.join(format!("icon_{size}x{size}{suffix}.png")))
+                .stdout(std::process::Stdio::null()))?;
+        }
+    }
+    run(Command::new("iconutil")
+        .args(["-c", "icns", "-o"])
+        .arg(app.join("Resources/GigCraft.icns"))
+        .arg(&iconset))?;
+    let plist = format!(
+        r#"<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleName</key><string>GigCraft</string>
+  <key>CFBundleDisplayName</key><string>GigCraft</string>
+  <key>CFBundleIdentifier</key><string>io.github.its-sven.gigcraft.desktop</string>
+  <key>CFBundleExecutable</key><string>gigcraft</string>
+  <key>CFBundleIconFile</key><string>GigCraft</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleShortVersionString</key><string>{version}</string>
+  <key>CFBundleVersion</key><string>{build}</string>
+  <key>LSMinimumSystemVersion</key><string>11.0</string>
+  <key>LSApplicationCategoryType</key><string>public.app-category.music</string>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>NSLocalNetworkUsageDescription</key><string>GigCraft serves your setlist to the band on the local network.</string>
+</dict>
+</plist>
+"#
+    );
+    std::fs::write(app.join("Info.plist"), plist).map_err(|e| e.to_string())?;
+    // Ad-hoc signature: required to run on Apple silicon; not notarized.
+    run(Command::new("codesign")
+        .args(["--force", "--deep", "--sign", "-"])
+        .arg(work.join("GigCraft.app")))?;
+    let zip = dist.join(format!("GigCraft-macOS-{version}.zip"));
+    let _ = std::fs::remove_file(&zip);
+    run(Command::new("ditto")
+        .args(["-c", "-k", "--keepParent"])
+        .arg(work.join("GigCraft.app"))
+        .arg(&zip))?;
+    eprintln!("packaged {}", zip.display());
+    Ok(())
+}
+
+fn package_linux(dist: &Path, version: &str) -> Result {
+    let bin = release_build(None)?;
+    let name = format!("GigCraft-linux-x86_64-{version}");
+    let work = root().join("target/package").join(&name);
+    let _ = std::fs::remove_dir_all(&work);
+    std::fs::create_dir_all(&work).map_err(|e| e.to_string())?;
+    std::fs::copy(&bin, work.join("gigcraft")).map_err(|e| e.to_string())?;
+    std::fs::copy(root().join("docs/img/icon.png"), work.join("gigcraft.png"))
+        .map_err(|e| e.to_string())?;
+    std::fs::write(
+        work.join("gigcraft.desktop"),
+        "[Desktop Entry]\nType=Application\nName=GigCraft\nComment=Setlists, chord charts and presets for the stage\nExec=gigcraft\nIcon=gigcraft\nCategories=Audio;Music;\n",
+    )
+    .map_err(|e| e.to_string())?;
+    std::fs::write(
+        work.join("README.txt"),
+        "GigCraft for Linux\n\nRun ./gigcraft. To add it to your menu: copy gigcraft to ~/.local/bin,\ngigcraft.png to ~/.local/share/icons and gigcraft.desktop to ~/.local/share/applications.\n",
+    )
+    .map_err(|e| e.to_string())?;
+    let tar = dist.join(format!("{name}.tar.gz"));
+    run(Command::new("tar")
+        .arg("-czf")
+        .arg(&tar)
+        .arg("-C")
+        .arg(root().join("target/package"))
+        .arg(&name))?;
+    eprintln!("packaged {}", tar.display());
+    Ok(())
+}
+
+fn package_windows(dist: &Path, version: &str) -> Result {
+    let bin = release_build(None)?;
+    let zip = dist.join(format!("GigCraft-windows-x86_64-{version}.zip"));
+    let _ = std::fs::remove_file(&zip);
+    // Windows 10+ ships bsdtar, which writes zip files.
+    run(Command::new("tar")
+        .args(["-a", "-c", "-f"])
+        .arg(&zip)
+        .arg("-C")
+        .arg(bin.parent().unwrap_or(Path::new(".")))
+        .arg("gigcraft.exe"))?;
+    eprintln!("packaged {}", zip.display());
     Ok(())
 }
