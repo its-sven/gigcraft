@@ -429,3 +429,44 @@ fn song_update_sets_audio_settings_with_undo() {
     assert!(got.result["song"].get("tracks").is_none());
     assert!(got.result["song"].get("markers").is_none());
 }
+
+#[test]
+fn the_backing_track_switches_parts() {
+    let (_d, mut e) = engine();
+    let id = new_song(&mut e, "Tracked", "3:00");
+    run(
+        &mut e,
+        "song.update",
+        json!({"id": id, "fields": {
+            "parts": [{"name": "Verse"}, {"name": "Chorus"}],
+            "markers": [{"name": "Verse: 1", "at_secs": 0.0}, {"name": "Chorus", "at_secs": 30.0}, {"name": "Verse: 2", "at_secs": 60.0}],
+        }}),
+    );
+    let sl = run(&mut e, "setlist.create", json!({"name": "T"})).result["id"].clone();
+    run(&mut e, "setlist.add_song", json!({"id": sl, "song": id}));
+    run(&mut e, "perform.start", json!({"setlist": sl}));
+    // At 10 s still the verse: nothing to do.
+    let r = run(&mut e, "perform.track_position", json!({"secs": 10.0})).result;
+    assert_eq!(r["part"], 0);
+    assert_eq!(r["effects"].as_array().map(Vec::len), Some(0));
+    // At 31 s the chorus: its presets go out.
+    let r = run(&mut e, "perform.track_position", json!({"secs": 31.0})).result;
+    assert_eq!(r["part"], 1);
+    assert!(
+        r["effects"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|e| e["type"] == "send_part")
+    );
+    // Again at 32 s: already there.
+    let r = run(&mut e, "perform.track_position", json!({"secs": 32.0})).result;
+    assert_eq!(r["effects"].as_array().map(Vec::len), Some(0));
+    // "Verse: 2" belongs to the part "Verse".
+    let r = run(&mut e, "perform.track_position", json!({"secs": 61.0})).result;
+    assert_eq!(r["part"], 0);
+    assert!(matches!(
+        e.run("perform.track_position", &json!({})),
+        Err(CommandError::InvalidParams(_))
+    ));
+}

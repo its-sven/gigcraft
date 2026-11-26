@@ -99,6 +99,24 @@ pub enum Effect {
     Edge,
 }
 
+/// The part a section marker belongs to: same name ("Chorus"), or the
+/// marker starts with the part's name and a separator ("Verse: 2" → "Verse").
+#[must_use]
+pub fn part_for_marker(part_names: &[String], marker: &str) -> Option<usize> {
+    let m = marker.trim().to_lowercase();
+    part_names
+        .iter()
+        .position(|p| p.trim().to_lowercase() == m)
+        .or_else(|| {
+            part_names.iter().position(|p| {
+                let p = p.trim().to_lowercase();
+                !p.is_empty()
+                    && m.strip_prefix(&p)
+                        .is_some_and(|rest| rest.starts_with(|c: char| !c.is_alphanumeric()))
+            })
+        })
+}
+
 /// One position in the running order.
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]

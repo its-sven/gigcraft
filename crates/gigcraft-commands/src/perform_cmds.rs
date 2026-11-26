@@ -51,6 +51,44 @@ pub(crate) fn run(e: &mut Engine, id: &str, p: &Params<'_>) -> Result<Value, Com
             Ok(report(e, &effects))
         }
         "perform.state" => Ok(report(e, &[])),
+        "perform.track_position" => {
+            // The backing track moved on: switch to the part its section belongs to.
+            let secs = p
+                .opt_f64("secs")?
+                .ok_or_else(|| CommandError::InvalidParams("secs is required".into()))?;
+            let current = e
+                .show
+                .as_ref()
+                .ok_or_else(|| {
+                    CommandError::Rejected("perform mode is not running (perform.start)".into())
+                })?
+                .current()
+                .cloned();
+            let target = match current {
+                Some(Item::Song {
+                    song, part_names, ..
+                }) => e
+                    .lib
+                    .song(song)
+                    .and_then(|s| {
+                        s.markers
+                            .iter()
+                            .filter(|m| m.at_secs <= secs)
+                            .max_by(|a, b| a.at_secs.total_cmp(&b.at_secs))
+                    })
+                    .and_then(|m| gigcraft_perform::part_for_marker(&part_names, &m.name)),
+                _ => None,
+            };
+            let show = running(e)?;
+            let effects = match target {
+                Some(part) if part != show.part => {
+                    let index = show.index;
+                    show.goto(index, part)
+                }
+                _ => Vec::new(),
+            };
+            Ok(report(e, &effects))
+        }
         "perform.snapshot" => Ok(json!({ "snapshot": snapshot(e) })),
         "perform.stop" => {
             e.show = None;

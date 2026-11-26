@@ -57,6 +57,8 @@ pub(crate) struct AudioUi {
     testing: bool,
     /// Press Play once the next song is loaded (`--play`).
     pub(crate) autoplay: bool,
+    /// When the track position was last handed to perform mode (egui time).
+    last_track: f64,
 }
 
 impl Default for AudioUi {
@@ -77,6 +79,7 @@ impl Default for AudioUi {
             decoded_rx,
             testing: false,
             autoplay: false,
+            last_track: 0.0,
         }
     }
 }
@@ -281,6 +284,15 @@ pub(crate) fn pump(app: &mut GigCraftApp, ctx: &egui::Context) {
         {
             request_clips(app, id);
         }
+    }
+    // Parts follow the backing track (section start times → part presets).
+    let now = ctx.input(|i| i.time);
+    if app.perform.is_some()
+        && now - app.audio.last_track >= 0.25
+        && let Some(secs) = position(app)
+    {
+        app.audio.last_track = now;
+        crate::perform::track(app, secs, now);
     }
     let playing = status(app).is_some_and(|s| s.state == PlayState::Playing);
     if playing || !app.audio.waiting.is_empty() || arrived {

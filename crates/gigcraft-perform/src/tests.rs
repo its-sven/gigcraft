@@ -162,3 +162,18 @@ fn keymap_defaults_learn_and_serde() {
     let json = serde_json::to_value(Action::PreviousSong).expect("json");
     assert_eq!(json, "previous_song");
 }
+
+#[test]
+fn markers_find_their_part() {
+    let parts: Vec<String> = ["Intro", "Verse", "Chorus", "Solo"]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
+    assert_eq!(part_for_marker(&parts, "Chorus"), Some(2));
+    assert_eq!(part_for_marker(&parts, " chorus "), Some(2));
+    assert_eq!(part_for_marker(&parts, "Verse: 2"), Some(1));
+    assert_eq!(part_for_marker(&parts, "Verse 2"), Some(1));
+    // A prefix that is part of a longer word is not a match.
+    assert_eq!(part_for_marker(&parts, "Versed"), None);
+    assert_eq!(part_for_marker(&parts, "Bridge"), None);
+}

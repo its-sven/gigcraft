@@ -88,6 +88,21 @@ pub(crate) fn act(app: &mut GigCraftApp, action: Action, now: f64) {
     }
 }
 
+/// The backing track reached `secs`: switch to the part of its section and
+/// send that part's presets (the chart stays where it is).
+pub(crate) fn track(app: &mut GigCraftApp, secs: f64, now: f64) {
+    let Some(out) = app.run("perform.track_position", json!({ "secs": secs })) else {
+        return;
+    };
+    if out.result["effects"].as_array().is_none_or(Vec::is_empty) {
+        return;
+    }
+    rig_effects(app, &out.result, now);
+    if let Some(p) = app.perform.as_mut() {
+        p.state = out.result;
+    }
+}
+
 fn goto(app: &mut GigCraftApp, index: usize, part: usize, now: f64) {
     if let Some(out) = app.run("perform.goto", json!({ "index": index, "part": part })) {
         rig_effects(app, &out.result, now);

@@ -101,6 +101,7 @@ final class LibraryModel {
         }
         live.onPartChanged = { [weak self] in self?.sendOwnPresetsForLive() }
         audio.onPlayingChanged = { [weak self] playing in self?.rig.playback(playing) }
+        audio.onPosition = { [weak self] secs in self?.trackPosition(secs) }
         if let url = resolveBookmark(), open(url, createDemo: false) {
             applyLaunchSelection()
             return
@@ -405,6 +406,13 @@ final class LibraryModel {
         followAudio()
         let cur = result["current"] as? [String: Any]
         rig.setTempo(cur?["type"] as? String == "song" ? cur?["tempo_bpm"] as? Double : nil)
+    }
+
+    /// The backing track reached `secs`: switch to the part of its section.
+    private func trackPosition(_ secs: Double) {
+        guard performState != nil, let out = run("perform.track_position", ["secs": secs]),
+              let r = out["result"] as? [String: Any], !(r["effects"] as? [Any] ?? []).isEmpty else { return }
+        apply(r)
     }
 
     /// Load the current song's backing tracks, decode the next song's.
